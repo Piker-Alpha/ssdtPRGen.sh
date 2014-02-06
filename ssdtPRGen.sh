@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 9.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 9.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -157,7 +157,7 @@
 #
 # Script version info.
 #
-gScriptVersion=9.2
+gScriptVersion=9.3
 
 #
 # Change this to 1 when your CPU is stuck in Low Frequency Mode!
@@ -2070,7 +2070,7 @@ function _initIvyBridgeSetup()
 			gACST_CPU0=13   # C1, C3, C6
 			gACST_CPU1=13   # C1, C3, C6
 		;;
-esac
+	esac
 }
 
 #--------------------------------------------------------------------------------
@@ -2140,7 +2140,7 @@ function _initHaswellSetup()
 			gACST_CPU0=13   # C1, C3, C6
 			gACST_CPU1=13   # C1, C3, C6
 		;;
-    esac
+	esac
 }
 
 #--------------------------------------------------------------------------------
@@ -2181,7 +2181,7 @@ function main()
     printf "\nssdtPRGen.sh v0.9 Copyright (c) 2011-2012 by † RevoGirl\n"
     echo   '             v6.6 Copyright (c) 2013 by † Jeroen'
     printf "             v$gScriptVersion Copyright (c) 2013-$(date "+%Y") by Pike R. Alpha\n"
-    echo   '----------------------------------------------------------------'
+    echo   '-----------------------------------------------------------------'
     printf "System information: $gProductName $gProductVersion ($gBuildVersion)\n"
 
     let assumedTDP=0
@@ -2190,26 +2190,31 @@ function main()
 
     _getCPUNumberFromBrandString
 
-    _debugPrint "\ngProcessorNumber: $gProcessorNumber\n"
+#   _debugPrint "\ngProcessorNumber: $gProcessorNumber\n"
 
-    if [[ "$1" != "" ]]; then
+    if [[ "$1" != "" ]];
+      then
         # Sandy Bridge checks
-        if [[ ${1:0:4} == "i3-2" || ${1:0:4} == "i5-2" || ${1:0:4} == "i7-2" ]]; then
+        if [[ ${1:0:4} == "i3-2" || ${1:0:4} == "i5-2" || ${1:0:4} == "i7-2" ]];
+          then
             let modelSpecified=1
             gProcessorNumber=$1
         fi
         # Ivy Bridge checks
-        if [[ ${1:0:4} == "i3-3" || ${1:0:4} == "i5-3" || ${1:0:4} == "i7-3" ]]; then
+        if [[ ${1:0:4} == "i3-3" || ${1:0:4} == "i5-3" || ${1:0:4} == "i7-3" ]];
+          then
             let modelSpecified=1
             gProcessorNumber=$1
         fi
         # Haswell checks
-        if [[ ${1:0:4} == "i3-4" || ${1:0:4} == "i5-4" || ${1:0:4} == "i7-4" ]]; then
+        if [[ ${1:0:4} == "i3-4" || ${1:0:4} == "i5-4" || ${1:0:4} == "i7-4" ]];
+          then
             let modelSpecified=1
             gProcessorNumber=$1
         fi
         # Xeon check
-        if [[ ${1:0:1} == "E" ]]; then
+        if [[ ${1:0:1} == "E" ]];
+          then
             let modelSpecified=1
             gProcessorNumber=$1
         fi
@@ -2217,32 +2222,38 @@ function main()
 
     _getCPUDataByProcessorNumber
 
-    if [[ $modelSpecified -eq 1 && $gTypeCPU -eq 0 ]]; then
-       _exitWithError $PROCESSOR_NUMBER_ERROR
+    if [[ $modelSpecified -eq 1 && $gTypeCPU -eq 0 ]];
+      then
+        _exitWithError $PROCESSOR_NUMBER_ERROR
     fi
 
-    if [[ $gBridgeType -eq 0 ]]; then
+    if [[ $gBridgeType -eq 0 ]];
+      then
         local model=$(_getCPUModel)
 
-        if (($model==0x2A)); then
+        if (($model==0x2A));
+          then
             let gTdp=95
             let gBridgeType=2
         fi
 
-        if (($model==0x2D)); then
+        if (($model==0x2D));
+          then
             let assumedTDP=1
             let gTdp=130
             let gBridgeType=2
         fi
 
-        if (($model==0x3A || $model==0x3B || $model==0x3E)); then
+        if (($model==0x3A || $model==0x3B || $model==0x3E));
+          then
             let assumedTDP=1
             let gTdp=77
             let gBridgeType=4
         fi
 
         # Haswell
-        if (($model==0x3C)); then
+        if (($model==0x3C));
+          then
             let assumedTDP=1
             let gTdp=84
             let gBridgeType=8
@@ -2250,14 +2261,16 @@ function main()
         fi
 
         # Haswell SVR
-        if (($model==0x3F)); then
+        if (($model==0x3F));
+          then
             let assumedTDP=1
             let gTdp=130
             let gBridgeType=8
         fi
 
         # Haswell ULT
-        if (($model==0x45)); then
+        if (($model==0x45));
+          then
             let assumedTDP=1
             let gTdp=15
             let gBridgeType=8
@@ -2285,142 +2298,156 @@ function main()
     local cpuSignature=$(_getCPUSignature)
 
     echo "Generating ${gSsdtID}.dsl for a $modelID [$boardID]"
-    echo "$bridgeTypeString Core $gProcessorNumber processor [$cpuSignature] setup [0x$cpu_type]"
+    echo "$bridgeTypeString Core $gProcessorNumber processor [$cpuSignature] setup [0x${cpu_type}]"
 
     #
     # gTypeCPU is greater than 0 when the processor is found in one of the CPU lists
     #
     if (($gTypeCPU));
-        then
-            local ifs=$IFS
-            IFS=","
-            local cpuData=($gProcessorData)
-            let gTdp=${cpuData[1]}
-            let lfm=${cpuData[2]}
-            let frequency=${cpuData[3]}
-            let maxTurboFrequency=${cpuData[4]}
+      then
+        local ifs=$IFS
+        IFS=","
+        local cpuData=($gProcessorData)
+        let gTdp=${cpuData[1]}
+        let lfm=${cpuData[2]}
+        let frequency=${cpuData[3]}
+        let maxTurboFrequency=${cpuData[4]}
 
-            if [ $maxTurboFrequency == 0 ]; then
-                let maxTurboFrequency=$frequency
+        if [ $maxTurboFrequency == 0 ];
+          then
+            let maxTurboFrequency=$frequency
+        fi
+
+        let gLogicalCPUs=${cpuData[6]}
+
+        IFS=$ifs
+
+        echo 'With a maximum TDP of '$gTdp' Watt, as specified by Intel'
+
+        #
+        # Check Low Frequency Mode (may be 0 aka still unknown)
+        #
+        if (($lfm > 0));
+          then
+            let gBaseFrequency=$lfm
+          else
+            echo -e "\nWarning: Low Frequency Mode is 0 (unknown/unconfirmed)"
+
+            if (($gTypeCPU == gMobileCPU));
+              then
+                echo -e "         Now using 1200 MHz for Mobile processor\n"
+                let gBaseFrequency=1200
+               else
+                 echo -e "         Now using 1600 MHz for Server/Desktop processors\n"
+                 let gBaseFrequency=1600
             fi
+        fi
+      else
+        let gLogicalCPUs=$(echo `sysctl machdep.cpu.thread_count` | sed -e 's/^machdep.cpu.thread_count: //')
+        let frequency=$(echo `sysctl hw.cpufrequency` | sed -e 's/^hw.cpufrequency: //')
+        let frequency=($frequency / 1000000)
 
-            let gLogicalCPUs=${cpuData[6]}
-
-            IFS=$ifs
-
-            echo 'With a maximum TDP of '$gTdp' Watt, as specified by Intel'
-
-            #
-            # Check Low Frequency Mode (may be 0 aka still unknown)
-            #
-            if (($lfm > 0));
-                then
-                    let gBaseFrequency=$lfm
-                else
-                    echo -e "\nWarning: Low Frequency Mode is 0 (unknown/unconfirmed)"
-
-                    if (($gTypeCPU == gMobileCPU));
-                        then
-                            echo -e "         Now using 1200 MHz for Mobile processor\n"
-                            let gBaseFrequency=1200
-                        else
-                            echo -e "         Now using 1600 MHz for Server/Desktop processors\n"
-                            let gBaseFrequency=1600
-                    fi
-            fi
-        else
-            let gLogicalCPUs=$(echo `sysctl machdep.cpu.thread_count` | sed -e 's/^machdep.cpu.thread_count: //')
-            let frequency=$(echo `sysctl hw.cpufrequency` | sed -e 's/^hw.cpufrequency: //')
-            let frequency=($frequency / 1000000)
-
-            if [[ $assumedTDP -eq 1 ]]; then
-              echo "With a maximum TDP of ${gTdp} Watt - assumed/undetected CPU may require override value!"
-            fi
+        if [[ $assumedTDP -eq 1 ]];
+          then
+            echo "With a maximum TDP of ${gTdp} Watt - assumed/undetected CPU may require override value!"
+        fi
     fi
 
     #
     # Script argument checks
     #
-
-    if [[ $# -ge 2 ]]; then
-        if [[ "$2" =~ ^[0-9]+$ ]]; then
+    if [[ $# -ge 2 ]];
+      then
+        if [[ "$2" =~ ^[0-9]+$ ]];
+          then
             if [[ $2 -lt $frequency || $2 -gt $gMaxOCFrequency ]];
-                then
-                    _exitWithError $MAX_TURBO_FREQUENCY_ERROR
-                else
-                    if [[ $2 -gt $maxTurboFrequency ]]; then
-                        echo "Override value: Max Turbo Frequency, now using: $2 MHz!"
-                        let maxTurboFrequency=$2
-                    fi
+              then
+                _exitWithError $MAX_TURBO_FREQUENCY_ERROR
+
+              else
+                if [[ $2 -gt $maxTurboFrequency ]];
+                  then
+                    echo "Override value: Max Turbo Frequency, now using: $2 MHz!"
+                    let maxTurboFrequency=$2
+                fi
             fi
         fi
     fi
 
-    if [ $# -ge 3 ]; then
+    if [ $# -ge 3 ];
+      then
         if [[ "$3" =~ ^[0-9]+$ ]];
-            then
-                if [[ $3 -lt 10 || $3 -gt 150 ]];
-                    then
-                        _exitWithError $MAX_TDP_ERROR
-                    else
-                        if [[ $gTdp != $3 ]]; then
-                            let gTdp=$3
-                            echo "Override value: Max TDP, now using: $gTdp Watt!"
-                        fi
-                fi
-            else
+          then
+            if [[ $3 -lt 10 || $3 -gt 150 ]];
+              then
                 _exitWithError $MAX_TDP_ERROR
-        fi
-    fi
 
-    if [ $# -ge 4 ]; then
-        if [[ "$4" =~ ^[0-9]+$ ]];
-            then
-                local detectedBridgeType=$gBridgeType
-
-                case "$4" in
-                    0) let gBridgeType=2
-                       local bridgeTypeString='Sandy Bridge'
-                       ;;
-                    1) let gBridgeType=4
-                       local bridgeTypeString='Ivy Bridge'
-                       ;;
-                    2) let gBridgeType=8
-                       local bridgeTypeString='Haswell'
-                       ;;
-                    *) _exitWithError $TARGET_CPU_ERROR
-                       ;;
-                esac
-
-                if [[ $detectedBridgeType -ne $((2 << $4)) ]]; then
-                    echo "Override value: CPU type, now using: $bridgeTypeString"
+              else
+                if [[ $gTdp != $3 ]];
+                  then
+                    let gTdp=$3
+                    echo "Override value: Max TDP, now using: $gTdp Watt!"
                 fi
-            else
-                _exitWithError $TARGET_CPU_ERROR
+            fi
+          else
+            _exitWithError $MAX_TDP_ERROR
         fi
     fi
 
-    if [ $# -eq 5 ]; then
+    if [ $# -ge 4 ];
+      then
+        if [[ "$4" =~ ^[0-9]+$ ]];
+          then
+            local detectedBridgeType=$gBridgeType
+
+            case "$4" in
+                  0) let gBridgeType=2
+                     local bridgeTypeString='Sandy Bridge'
+                     ;;
+                  1) let gBridgeType=4
+                     local bridgeTypeString='Ivy Bridge'
+                     ;;
+                  2) let gBridgeType=8
+                     local bridgeTypeString='Haswell'
+                     ;;
+                  *) _exitWithError $TARGET_CPU_ERROR
+                     ;;
+            esac
+
+            if [[ $detectedBridgeType -ne $((2 << $4)) ]];
+              then
+                echo "Override value: CPU type, now using: $bridgeTypeString"
+            fi
+          else
+            _exitWithError $TARGET_CPU_ERROR
+        fi
+    fi
+
+    if [ $# -eq 5 ];
+      then
         if [ ${#5} -eq 3 ];
-            then
-                gProcLabel=$(echo "$5" | tr '[:lower:]' '[:upper:]')
-                echo "Override value: Now using '$gProcLabel' for ACPI processor names!"
-                _updateProcessorNames ${#gProcessorNames[@]}
-            else
-                _exitWithError $PROCESSOR_LABEL_LENGTH_ERROR
+          then
+            gProcLabel=$(echo "$5" | tr '[:lower:]' '[:upper:]')
+            echo "Override value: Now using '$gProcLabel' for ACPI processor names!"
+            _updateProcessorNames ${#gProcessorNames[@]}
+
+          else
+            _exitWithError $PROCESSOR_LABEL_LENGTH_ERROR
         fi
     fi
 
     echo "Number logical CPU's: $gLogicalCPUs (Core Frequency: $frequency MHz)"
 
-    if [ $gLogicalCPUs -gt ${#gProcessorNames[@]} ]; then
+    if [ $gLogicalCPUs -gt ${#gProcessorNames[@]} ];
+      then
         _updateProcessorNames $gLogicalCPUs
     fi
 
     #
     # Check maxTurboFrequency
     #
-    if [ $maxTurboFrequency -eq 0 ]; then
+    if [ $maxTurboFrequency -eq 0 ];
+      then
         _exitWithError $MAX_TURBO_FREQUENCY_ERROR
     fi
 
@@ -2432,7 +2459,8 @@ function main()
     #
     # Check number of Turbo states.
     #
-    if [ $turboStates -lt 0 ]; then
+    if [ $turboStates -lt 0 ];
+      then
         let turboStates=0
     fi
 
@@ -2440,12 +2468,12 @@ function main()
     # Report number of Turbo States
     #
     if [ $turboStates -gt 0 ];
-        then
-            let minTurboFrequency=($frequency+100)
-            echo "Number of Turbo States: $turboStates ($minTurboFrequency-$maxTurboFrequency MHz)"
+      then
+        let minTurboFrequency=($frequency+100)
+        echo "Number of Turbo States: $turboStates ($minTurboFrequency-$maxTurboFrequency MHz)"
 
-        else
-            echo "Number of Turbo States: 0"
+      else
+        echo "Number of Turbo States: 0"
     fi
 
     local packageLength=$(echo "((($maxTurboFrequency - $gBaseFrequency)+100) / 100)" | bc)
@@ -2496,22 +2524,24 @@ function main()
     #
     # Some Sandy Bridge/Ivy Bridge CPUPM specific configuration checks
     #
-    if [ $gBridgeType -ne $HASWELL ];
+    if [[ $gBridgeType -ne $HASWELL ]];
       then
-        if [ ${cpu_type:0:2} != $cpuTypeString ];
+        if [[ ${cpu_type:0:2} != $cpuTypeString ]];
           then
             echo -e "\nWarning: 'cpu-type' may be set improperly (0x$cpu_type instead of 0x$cpuTypeString${cpu_type:2:2})"
           elif [[ $gSystemType -eq 0 ]];
             then
                 echo -e "\nWarning: 'board-id' [$boardID] is not supported by $bridgeTypeString PM"
             else
-                if [ "$gMacModelIdentifier" != "$modelID" ]; then
-                    echo "Error: board-id [$boardID] and model [$modelID] mismatch"
-                fi
+              if [ "$gMacModelIdentifier" != "$modelID" ];
+                then
+                  echo "Error: board-id [$boardID] and model [$modelID] mismatch"
+              fi
         fi
     fi
 
-    if [ $currentSystemType -ne $gSystemType ]; then
+    if [ $currentSystemType -ne $gSystemType ];
+      then
         echo -e "\nWarning: 'system-type' may be set improperly ($currentSystemType instead of $gSystemType)"
     fi
 }
@@ -2521,20 +2551,21 @@ function main()
 clear
 
 if [ $# -eq 0 ];
-    then
+  then
+    main "" $1 $2 $3 $4
+  else
+    if [[ "$1" =~ ^[0-9]+$ ]];
+      then
         main "" $1 $2 $3 $4
-    else
-        if [[ "$1" =~ ^[0-9]+$ ]];
-            then
-                main "" $1 $2 $3 $4
-            else
-                main "$1" $2 $3 $4 $5
-        fi
+      else
+        main "$1" $2 $3 $4 $5
+    fi
 fi
 
 _findIasl
 
-if (($gCallIasl)); then
+if (($gCallIasl));
+  then
     #
     # Compile ssdt.dsl
     #
@@ -2543,8 +2574,10 @@ if (($gCallIasl)); then
     #
     # Copy ssdt_pr.aml to /Extra/ssdt.aml (example)
     #
-    if (($gAutoCopy)); then
-        if [ -f ${gPath}/${gSsdtID}.aml ]; then
+    if (($gAutoCopy));
+      then
+        if [ -f ${gPath}/${gSsdtID}.aml ];
+          then
             _setDestinationPath
             echo -e
             read -p "Do you want to copy ${gPath}/${gSsdtID}.aml to ${gDestinationPath}${gDestinationFile}? (y/n)?" choice
@@ -2553,7 +2586,8 @@ if (($gCallIasl)); then
                       ;;
             esac
 
-            if (($gUnmountEFIPartition)); then
+            if (($gUnmountEFIPartition));
+              then
                 echo -e '\nUnmounting EFI partition...'
                 sudo umount -f /Volumes/EFI
                 echo 'Removing temporarily mount point...'
@@ -2564,7 +2598,8 @@ if (($gCallIasl)); then
 
 fi
 
-if (( $gCallOpen )); then
+if ((gCallOpen));
+  then
     open $gSsdtPR
 fi
 
