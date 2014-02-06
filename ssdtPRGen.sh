@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 9.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 9.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -157,7 +157,7 @@
 #
 # Script version info.
 #
-gScriptVersion=9.3
+gScriptVersion=9.4
 
 #
 # Change this to 1 when your CPU is stuck in Low Frequency Mode!
@@ -214,9 +214,9 @@ let gBaseFrequency=1600
 gProcLabel="CPU"
 
 #
-# This is the default (ACPI 1.0 compliant) processor scope (verified by _getProcessorScope).
+# The Processor scope will be initialised by _getProcessorScope).
 #
-gScope="\_PR_"
+gScope=""
 
 #
 # Other global variables.
@@ -1469,31 +1469,175 @@ function _getACPIProcessorScope()
 
 function _getProcessorScope()
 {
-    #
-    # We run egrep twice here for Snow Leopard compatibility, otherwise it fails.
-    #
-    if [[ $(ioreg -c AppleACPIPlatformExpert -rd1 -w0 | egrep -o 'DSDT"=<[0-9a-f]+' | egrep -o '5b830b') ]]; then
-        echo 'Processor Declaration(s) Found in DSDT'
-        return
+  local filename="/tmp/dsdt.txt"
+
+  ioreg -c AppleACPIPlatformExpert -rd1 -w0 | egrep -o 'DSDT"=<[0-9a-f]+' > "$filename"
+  #
+  # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects.
+  #
+  _getACPIProcessorScope $filename
+  #
+  # Did we find any with Processor declarations?
+  #
+  if [[ $gScope != "" ]];
+    then
+      #
+      # Yes. We're done searching for the Processor scope.
+      #
+      return
+    else
+      printf "Name (_HID, \"ACPI0004\") NOT found in the DSDT\n"
+  fi
+
+  #
+  # Additional check for Processor declarations with child objects.
+  #
+  if [[ $(cat "$filename" | egrep -o '5b83[0-9a-f]{2}04') ]];
+    then
+      printf "Processor {.} Declaration(s) found in DSDT"
+    else
+      #
+      # Check for Processor declarations without child objects.
+      #
+      if [[ $(cat "$filename" | egrep -o '5b830b') ]];
+        then
+          printf "Processor {} Declaration(s) found in DSDT"
+      fi
+  fi
+
+  #
+  # Check for Processor declarations with RootChar in DSDT.
+  #
+  local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}5c2e[0-9a-f]{8}')
+
+  if [[ $data ]];
+    then
+      printf "Processor {...} Declaration(s) with RootChar ('\\\') found in DSDT"
+      gScope="\\"$(echo ${data:10:8} | xxd -r -p)
+
+      if [[ $gScope == "\_PR_" ]];
+        then
+          echo ' (ACPI 1.0 compliant)'
+        elif [[ $gScope == "\_SB_" ]];
+          then
+            echo ' (none ACPI 1.0 compliant)'
+          else
+            echo ' - ERROR: Invalid Scope Used!'
+      fi
+
+      return
+  fi
+
+  #
+  # Check for Processor declarations with DualNamePrefix in the DSDT.
+  #
+  local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}2e[0-9a-f]{8}')
+
+  if [[ $data ]]; then
+    printf "Processor {...} Declaration(s) with DualNamePrefix ('.') found in DSDT"
+    gScope="\\"$(echo ${data:8:8} | xxd -r -p)
+
+    if [[ $gScope == "\_PR_" ]];
+      then
+        echo ' (ACPI 1.0 compliant)'
+      elif [[ $gScope == "\_SB_" ]];
+        then
+          echo ' (none ACPI 1.0 compliant)'
+        else
+          echo ' - ERROR: Invalid Scope Used!'
     fi
 
-    if [[ $(ioreg -c AppleACPIPlatformExpert -rd1 -w0 | egrep -o 'DSDT"=<[0-9a-f]+' | egrep -o '5f50525f') ]];
+    return
+  fi
+
+  #
+  # Check for Processor declarations with MultiNamePrefix (without leading backslash) in the DSDT.
+  #
+  local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}2f[0-9a-f]{2}')
+
+  if [[ $data ]];
+    then
+      printf "Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
+
+      let scopeLength=("0x"${data:8:2})*4*2
+      local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}2f[0-9a-f]{'$scopeLength'}')
+      partOne=$(echo ${data:10:8} | xxd -r -p)
+      partTwo=$(echo ${data:18:8} | xxd -r -p)
+      gScope="\\${partOne}.${partTwo}"
+
+      if [[ $gScope =~ "\_PR_" ]];
         then
-            gScope="\_PR_"
-            echo ' (ACPI 1.0 compliant)'
-            return
+          echo ' (ACPI 1.0 compliant)'
+        elif [[ $gScope =~ "\_SB_" ]];
+          then
+            echo ' (none ACPI 1.0 compliant)'
+          else
+            echo ' - ERROR: Invalid Scope Used!'
+      fi
+
+      return
+  fi
+
+  #
+  # Check for Processor declarations with MultiNamePrefix (with leading backslash) in the DSDT.
+  #
+  local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}5c2f[0-9a-f]{2}')
+
+  if [[ $data ]];
+    then
+      printf "Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
+
+      let scopeLength=("0x"${data:10:2})*4*2
+      local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}5c2f[0-9a-f]{'$scopeLength'}')
+      partOne=$(echo ${data:12:8} | xxd -r -p)
+      partTwo=$(echo ${data:20:8} | xxd -r -p)
+      gScope="\\${partOne}.${partTwo}"
+
+      if [[ $gScope =~ "\_PR_" ]];
+        then
+          echo ' (ACPI 1.0 compliant)'
+        elif [[ $gScope =~ "\_SB_" ]];
+          then
+            echo ' (none ACPI 1.0 compliant)'
         else
-            gScope="\_SB_"
-            return
-    fi
-    #
-    # Additional/experimental code for support of broken ACPI tables.
-    #
-    if [[ $(ioreg -c AppleACPIPlatformExpert -rd1 -w0 | egrep -o 'DSDT"=<[0-9a-f]+' | egrep -o '5f5052') ]];
+          echo ' - ERROR: Invalid Scope Used!'
+      fi
+
+      return
+  fi
+
+  #
+  # Check for Processor declarations with ParentPrefixChar in the DSDT.
+  #
+  local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}5e[0-9a-f]{8}')
+
+  if [[ $data ]];
+    then
+      printf "Processor {...} Declaration(s) with ParentPrefixChar ('^') found in DSDT\n"
+      gScope=$(echo ${data:6:2} | xxd -r -p)
+
+# ioreg -w0 -p IOACPIPlane -c IOACPIPlatformDevice -n _SB -r > /tmp/dsdt.txt
+
+      if [[ $gScope =~ "^" ]];
         then
-            gScope="\_PR_"
-            echo ' (ACPI 1.0 compliant)'
-    fi
+          printf "Searching for Parent Scope ... "
+        else
+          echo ' - ERROR: Invalid Scope Used!'
+      fi
+
+      return
+  fi
+
+  #
+  # Additional/experimental code for support of broken ACPI tables.
+  #
+  local data=$(cat "$filename" | egrep -o '5f5052')
+
+  if [[ $data ]];
+    then
+       gScope="\_PR_"
+       echo ' (ACPI 1.0 compliant)'
+  fi
 }
 
 #--------------------------------------------------------------------------------
