@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 9.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 9.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -157,7 +157,7 @@
 #
 # Script version info.
 #
-gScriptVersion=9.1
+gScriptVersion=9.2
 
 #
 # Change this to 1 when your CPU is stuck in Low Frequency Mode!
@@ -728,7 +728,7 @@ function _printScopeStart()
     echo '    Scope ('${gScope}'.'${gProcessorNames[0]}')'                              >> $gSsdtPR
     echo '    {'                                                                        >> $gSsdtPR
 
-    if (( gDebug & 1 )); then
+    if (( $gDebug & 1 )); then
         _injectDebugInfo
     fi
 
@@ -884,7 +884,7 @@ function _printMethodDSM()
     echo '        Method (_DSM, 4, NotSerialized)'                                      >> $gSsdtPR
     echo '        {'                                                                    >> $gSsdtPR
 
-    if ((gDebug)); then
+    if (( $gDebug )); then
         #
         # Note: This will be called twice!
         #
@@ -916,7 +916,7 @@ function _printMethodDSM()
 
 function _debugPrint()
 {
-    if (( gDebug & 2 )); then
+    if (( $gDebug & 2 )); then
         printf "$1"
     fi
 }
@@ -959,7 +959,7 @@ function _printScopeACST()
     echo '        Method (ACST, 0, NotSerialized)'                                      >> $gSsdtPR
     echo '        {'                                                                    >> $gSsdtPR
 
-    if ((gDebug)); then
+    if (( $gDebug )); then
         echo '            Store ("Method '${gProcessorNames[$targetCPU]}'.ACST Called", Debug)'  >> $gSsdtPR
     fi
 
@@ -990,7 +990,7 @@ function _printScopeACST()
             latency_C7=0xF5
     fi
 
-    if ((gDebug)); then
+    if (( $gDebug )); then
         echo '            Store ("'${gProcessorNames[$targetCPU]}' C-States    : '$targetCStates'", Debug)' >> $gSsdtPR
         echo ''                                                                         >> $gSsdtPR
     fi
@@ -1188,7 +1188,7 @@ function _printScopeCPUn()
         echo '        Method (APSS, 0, NotSerialized)'                                  >> $gSsdtPR
         echo '        {'                                                                >> $gSsdtPR
 
-        if ((gDebug)); then
+        if (( $gDebug )); then
             echo '            Store ("Method '${gProcessorNames[$currentCPU]}'.APSS Called", Debug)'  >> $gSsdtPR
             echo ''                                                                     >> $gSsdtPR
         fi
@@ -1281,6 +1281,188 @@ function _updateProcessorNames()
 
         let currentCPU+=1
     done
+}
+
+#--------------------------------------------------------------------------------
+
+function _getACPIProcessorScope()
+{
+  local filename=$1
+
+  local varList
+  local variableList=(10,6,4,40,2 12,8,6,42,4)
+  local let checkGlobalProcessorScope=0
+  local let scopeLength=0
+  local let index=0
+
+  #
+  # Loop through all Name (_HID, ACPI0004) objects.
+  #
+  for varList in "${variableList[@]}"
+  do
+    #
+    # Save default (0) delimiter.
+    #
+    local ifs=$IFS
+    #
+    # Change delimiter to a space character.
+    #
+    IFS=","
+    #
+    # Split vars.
+    #
+    local vars=(${varList})
+    #
+    # Up index of variableList.
+    #
+    let index+=1
+    #
+    # Restore the default delimiter.
+    #
+    IFS=$ifs
+    #
+    # Check for (a) Device(s) with a _HID object value of 'ACPI0004' in the DSDT.
+    #
+    local data=$(cat "$filename" | egrep -o '5b82[0-9a-f]{'${vars[0]}'}085f4849440d414350493030303400')
+    #
+    # Example:
+    #          5b824d9553434b30085f4849440d414350493030303400 (N times)
+    #          0123456789 123456789 123456789 123456789 12345
+    #
+
+    if [[ $data ]];
+      then
+        local hidObjectList=($data)
+        local let objectCount=${#hidObjectList[@]}
+
+        if [ $objectCount -gt 0 ];
+          then
+            printf "${objectCount} Name (_HID, \"ACPI0004\") object(s) found in the DSDT\n"
+        fi
+        #
+        # Loop through all Name (_HID, ACPI0004) objects.
+        #
+        for hidObjectData in "${hidObjectList[@]}"
+        do
+          #
+          # Get the name of the device.
+          #
+          local deviceName=$(echo ${hidObjectData:${vars[1]}:8} | xxd -r -p)
+          # echo $deviceName
+          #
+          # Get the length of the device scope.
+          #
+          let scopeLength=("0x"${hidObjectData:${vars[2]}:2})
+          # echo $scopeLength
+          #
+          # Convert number of bytes to number of characters.
+          #
+          let scopeLength*=2
+          # echo $scopeLength
+          #
+          # Lower scopeLength with the number of bytes that we used for this match.
+          #
+          let scopeLength-=${vars[3]}
+          # echo $scopeLength
+          #
+          # Initialise string.
+          #
+          local repetitionString=""
+          #
+          # Prevent "egrep: invalid repetition count(s)"
+          #
+          if [[ $scopeLength -gt 255 ]];
+            then
+              while [ $scopeLength -gt 255 ];
+              do
+                local repetitionString+="[0-9a-f]{255}"
+                let scopeLength-=255
+              done
+          fi
+
+          repetitionString+="[0-9a-f]{${scopeLength}}"
+          # echo $repetitionString
+          #
+          # Extract the whole Device () {} scope.
+          #
+          local deviceObjectData=$(cat "$filename" | egrep -o "5b82[0-9a-f]{${vars[4]}}${hidObjectData:${vars[1]}:8}085f4849440d414350493030303400${repetitionString}" | tr -d '\n')
+          # echo $deviceObjectData
+          #
+          # We should now have something like this (example):
+          #
+          #          Device (SCK0)
+          #          {
+          #              Name (_HID, "ACPI0004")
+          #              Processor (C000, 0x00, 0x00000410, 0x06)
+          #              {
+          #                  Name (_HID, "ACPI0007")
+          #              }
+          #
+          #          5b823053434b30085f4849440d4143504930303034005b831a43303030001004000006085f4849440d414350493030303700
+          #          0123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789
+          #
+          # Check for Processor declarations.
+          #
+          let checkGlobalProcessorScope=0
+          #
+          # Convert (example) 'C000' to '43303030'
+          #
+          local processorNameBytes=$(echo -n ${gProcessorNames[0]} | xxd -ps)
+          #
+          # Search for the first Processor {} declaration.
+          #
+          # Example:
+          #          5b831a4330303000 (C000)
+          #          0123456789 12345
+          #
+          local processorObjectData=$(echo "$deviceObjectData" | egrep -o "5b83[0-9a-f]{2}${processorNameBytes}")
+          #
+          # Do we have a match for the first processor declaration?
+          #
+          if [[ $processorObjectData ]];
+            then
+              #
+              # Yes. Print the result.
+              #
+              let checkGlobalProcessorScope=1
+              printf "Processor declaration (${gProcessorNames[0]}) {0x${processorObjectData:4:2} bytes} found in Device (%s) (none ACPI 1.0 compliant)\n" $deviceName
+            else
+              #
+              # No. Search for the first Processor {...} declaration with enclosed child objects.
+              #
+              # Example:
+              #          5b834a044330303000 (C200)
+              #          0123456789 1234567
+              #
+              processorObjectData=$(echo "$deviceObjectData" | egrep -o "5b83[0-9a-f]{4}${processorNameBytes}")
+
+              if [[ $processorObjectData ]];
+                then
+                  let checkGlobalProcessorScope=1
+                  printf "Processor declaration (${gProcessorNames[0]}) found in Device (%s) {...} (none ACPI 1.0 compliant)\n" $deviceName
+              fi
+          fi
+          #
+          # Free up some memory.
+          #
+          local processorObjectData=""
+          #
+          # Do we need to update the processor scope variable?
+          #
+          if [[ $checkGlobalProcessorScope -eq 1 ]];
+            then
+              #
+              # Update the processor scope.
+              #
+              gScope="\_SB_.${deviceName}"
+              #
+              # Done.
+              #
+              return
+          fi
+        done
+    fi
+  done
 }
 
 #--------------------------------------------------------------------------------
@@ -2382,7 +2564,7 @@ if (($gCallIasl)); then
 
 fi
 
-if ((gCallOpen)); then
+if (( $gCallOpen )); then
     open $gSsdtPR
 fi
 
