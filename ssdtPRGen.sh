@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 9.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 9.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -96,6 +96,8 @@
 #			- Added extra OS checks (as a test) to filter out possibly unwanted LFM P-States (Pike, January 2014)
 #			- Let gIvyWorkAround control the additional LFM P-States (Pike, January 2014)
 #			- Fixed a typo in processor data (i7-4960K should be i7-4960X) (Pike, January 2014)
+#			- Missing Haswell i3 processor data added (Pike, Februari 2014)
+#			- TDP can now also be a floating-point number (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -157,7 +159,7 @@
 #
 # Script version info.
 #
-gScriptVersion=9.4
+gScriptVersion=9.5
 
 #
 # Change this to 1 when your CPU is stuck in Low Frequency Mode!
@@ -623,11 +625,27 @@ i5-4258U,28,800,2400,2900,2,4
 i5-4250U,15,800,1300,2600,2,4
 i5-4200U,15,800,1600,2600,2,4
 i5-4200Y,12,800,1400,1900,2,4
+# Socket FCPGA946
+i3-4000M,37,800,2400,2400,2,4
+i3-4100M,37,800,2500,2500,2,4
+# Socket FCLGA1150
+i3-4130,54,800,3400,3400,2,4
+i3-4130T,35,800,3000,3000,2,4
+i3-4330,54,800,3500,3500,2,4
+i3-4330T,35,800,3000,3000,2,4
+i3-4340,54,800,3600,3600,2,4
+i3-4330TE,35,800,2400,2400,2,4
+# Socket FCBGA1364
+i3-4100E,37,800,2400,2400,2,4
+i3-4102E,25,800,1600,1600,2,4
 # Socket FCBGA1168
-i3-4158U,28,800,2000,2000,2,4
-i3-4100U,15,800,1800,1800,2,4
+i3-4005U,15,800,1700,1700,2,4
 i3-4010U,15,800,1700,1700,2,4
+i3-4100U,15,800,1800,1800,2,4
 i3-4010Y,12,800,1300,1300,2,4
+i3-4158U,28,800,2000,2000,2,4
+i3-4012Y,11.5,800,1500,1500,2,4
+i3-4020Y,11.5,800,1500,1500,2,4
 )
 
 #--------------------------------------------------------------------------------
@@ -691,7 +709,7 @@ function _injectDebugInfo()
     echo '            Store ("frequency        : '$frequency'", Debug)'                 >> $gSsdtPR
     echo '            Store ("busFrequency     : '$gBusFrequency'", Debug)'             >> $gSsdtPR
     echo '            Store ("logicalCPUs      : '$gLogicalCPUs'", Debug)'              >> $gSsdtPR
-    echo '            Store ("tdp              : '$gTdp'", Debug)'                      >> $gSsdtPR
+    echo '            Store ("max TDP          : '$gTdp'", Debug)'                      >> $gSsdtPR
     echo '            Store ("packageLength    : '$packageLength'", Debug)'             >> $gSsdtPR
     echo '            Store ("turboStates      : '$turboStates'", Debug)'               >> $gSsdtPR
     echo '            Store ("maxTurboFrequency: '$maxTurboFrequency'", Debug)'         >> $gSsdtPR
@@ -794,7 +812,23 @@ function _printScopeStart()
     # TODO: Remove this when CPUPM for IB works properly!
     if (($useWorkArounds)); then
         let extraF=($maxTurboFrequency+1)
-        let maxTDP=($gTdp*1000)
+        #
+        # Is the global TDP a floating-point number?
+        #
+        if [[ $gTdp =~ "." ]];
+          then
+            #
+            # Yes, convert it and calculate maximum TDP.
+            #
+            local let tdp=$(echo "$gTdp" | sed -e 's/\.//g')
+            local let maxTDP=($tdp*100)
+          else
+            #
+            # No. Calculate maximum TDP.
+            #
+            local let maxTDP=($gTdp*1000)
+        fi
+
         let extraR=($maxTurboFrequency/100)+1
         echo "            /* Workaround for the Ivy Bridge PM 'bug' */"                 >> $gSsdtPR
       printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x%02X00, 0x%02X00 },\n" $extraF $maxTDP $extraR $extraR >> $gSsdtPR
@@ -806,9 +840,24 @@ function _printScopeStart()
 
 function _printPackages()
 {
-    let maxTDP=($1*1000)
-    local maxNonTurboFrequency=$2
-    local frequency=$3
+    local maxNonTurboFrequency=$1
+    local frequency=$2
+    #
+    # Is the global TDP a floating-point number?
+    #
+    if [[ $gTdp =~ "." ]];
+      then
+        #
+        # Yes, convert it and calculate maximum TDP.
+        #
+        local let tdp=$(echo "$gTdp" | sed -e 's/\.//g')
+        local let maxTDP=($tdp*100)
+      else
+        #
+        # No. Calculate maximum TDP.
+        #
+        local let maxTDP=($gTdp*1000)
+    fi
 
     let minRatio=($gBaseFrequency/$gBusFrequency)
     let p1Ratio=($maxNonTurboFrequency/$gBusFrequency)
@@ -2452,7 +2501,7 @@ function main()
         local ifs=$IFS
         IFS=","
         local cpuData=($gProcessorData)
-        let gTdp=${cpuData[1]}
+        gTdp=${cpuData[1]}
         let lfm=${cpuData[2]}
         let frequency=${cpuData[3]}
         let maxTurboFrequency=${cpuData[4]}
@@ -2627,7 +2676,7 @@ function main()
     _printHeader
     _printExternals
     _printScopeStart $turboStates $packageLength
-    _printPackages $gTdp $frequency $maxTurboFrequency
+    _printPackages $frequency $maxTurboFrequency
 
     case "$gBridgeType" in
         $SANDY_BRIDGE)
