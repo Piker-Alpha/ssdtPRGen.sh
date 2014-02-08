@@ -1985,7 +1985,7 @@ function _setDestinationPath
       if [[ $gDestinationFile != "ssdt_pr.aml" ]];
         then
           gSsdtID="ssdt_pr"
-          gSsdtPR="${gPath}/${gSsdtID}.dsl"
+          gSsdtPR="/Volumes/EFI/Extra/ACPI/${gSsdtID}.dsl"
           gDestinationFile="ssdt_pr.aml"
           _debugPrint "ACPI target filename changed to: ${gDestinationFile}\n"
       fi
