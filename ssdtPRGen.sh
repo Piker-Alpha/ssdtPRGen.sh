@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 9.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 9.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -106,6 +106,7 @@
 #			- Support for RevoEFI added (Pike, Februari 2014)
 #			- Changed SSDT.dsl open behaviour/ask for confirmation (Pike, Februari 2014)
 #			- Additional processor scope check to get \_SB_ (Pike, Februari 2014)
+#			- Set gIvyWorkAround=0 when XCPM is being used (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -167,7 +168,12 @@
 #
 # Script version info.
 #
-gScriptVersion=9.7
+gScriptVersion=9.8
+
+#
+# Initial xcpm mode (default value is 0).
+#
+let gXcpm=0
 
 #
 # Change this to 1 when your CPU is stuck in Low Frequency Mode!
@@ -175,6 +181,8 @@ gScriptVersion=9.7
 # 1 - Injects one extra Turbo P-State at he top with max-Turbo frequency + 1 MHz.
 # 2 - Injects N extra Turbo P-States at the bottom.
 # 3 - Injects both of them.
+#
+# Note: Will be changed to 0 in _checkForXCPM() when XCPM mode is being used.
 #
 let gIvyWorkAround=3
 
@@ -266,6 +274,8 @@ let BROADWELL=16
 let HASWELL=8
 let IVY_BRIDGE=4
 let SANDY_BRIDGE=2
+
+let gBridgeType=0
 
 let gTypeCPU=0
 gProcessorData="Unknown CPU"
@@ -730,17 +740,9 @@ function _injectDebugInfo()
   #
   # Local variable definitions/initialisation.
   #
-  local xcpm=0
   local turboStates=$1
   local maxTurboFrequency=$2
   local packageLength=$3
-  #
-  # Check OS version ('machdep.xcpm' is introduced in 10.8.5)
-  #
-  if [[ $gOSVersion > 1084 ]];
-    then
-      xcpm=$(/usr/sbin/sysctl -n machdep.xcpm.mode)
-  fi
 
   echo '        Method (_INI, 0, NotSerialized)'                                      >> $gSsdtPR
   echo '        {'                                                                    >> $gSsdtPR
@@ -756,7 +758,7 @@ function _injectDebugInfo()
   echo '            Store ("turboStates      : '$turboStates'", Debug)'               >> $gSsdtPR
   echo '            Store ("maxTurboFrequency: '$maxTurboFrequency'", Debug)'         >> $gSsdtPR
   echo '            Store ("gIvyWorkAround   : '$gIvyWorkAround'", Debug)'            >> $gSsdtPR
-  echo '            Store ("machdep.xcpm.mode: '$xcpm'", Debug)'                      >> $gSsdtPR
+  echo '            Store ("machdep.xcpm.mode: '$gXcpm'", Debug)'                     >> $gSsdtPR
   echo '        }'                                                                    >> $gSsdtPR
   echo ''                                                                             >> $gSsdtPR
 }
@@ -797,7 +799,6 @@ function _printScopeStart()
   let turboStates=$1
   let packageLength=$2
   let maxTurboFrequency=$3
-  # TODO: Remove this when CPUPM for IB works properly!
   let useWorkArounds=0
 
   echo '    Scope ('${gScope}'.'${gProcessorNames[0]}')'                              >> $gSsdtPR
@@ -1057,12 +1058,6 @@ function _printScopeACST()
   #
   # Local variable definition.
   #
-  local latency_C1
-  local latency_C2
-  local latency_C3
-  local latency_C6
-  local latency_C7
-
   local C1 C2 C3 C6 C7
 
   local hintCode
@@ -1083,6 +1078,11 @@ function _printScopeACST()
   #
   # Note: C-state latency in uS and C-state power in mW.
   #
+  local latency_C1=Zero
+  local latency_C2=0x43
+  local latency_C3=0xCD
+  local latency_C6=0xF5
+  local latency_C7=0xF5
   #
   # Local variable initialisation.
   #
@@ -2318,6 +2318,43 @@ set -x
 
 #--------------------------------------------------------------------------------
 
+function _checkForXCPM()
+{
+  #
+  # Check OS version ('machdep.xcpm' is introduced in 10.8.5)
+  #
+  if [[ $gOSVersion > 1084 ]];
+    then
+      #
+      # Yes. Update global variable.
+      #
+      let gXcpm=$(/usr/sbin/sysctl -n machdep.xcpm.mode)
+      #
+      # Is xcpm active?
+      #
+      if [[ $gXcpm -eq 1 && $gIvyWorkAround -gt 0 ]];
+        then
+          #
+          # Yes. Disable Ivy Bridge workarounds.
+          #
+          let gIvyWorkAround=0
+          #
+          # Is the target processor an Ivy Bridge one?
+          #
+          if [[ $gBridgeType == $IVY_BRIDGE ]];
+            then
+              #
+              # Yes. inform the user about the change.
+              #
+              printf "\nXCPM detected (Ivy Bridge workarounds disabled)\n\n"
+          fi
+      fi
+  fi
+}
+
+
+#--------------------------------------------------------------------------------
+
 function _initSandyBridgeSetup()
 {
   gSystemType=2
@@ -2841,6 +2878,7 @@ function main()
 
     _printHeader
     _printExternals
+    _checkForXCPM
     _printScopeStart $turboStates $packageLength $maxTurboFrequency
     _printPackages $frequency $turboStates $maxTurboFrequency
 
