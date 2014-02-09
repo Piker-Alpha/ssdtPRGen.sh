@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 9.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 9.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -105,6 +105,7 @@
 #			- Destination path/filename no longer defauls to RevoBoot (Pike, Februari 2014)
 #			- Support for RevoEFI added (Pike, Februari 2014)
 #			- Changed SSDT.dsl open behaviour/ask for confirmation (Pike, Februari 2014)
+#			- Additional processor scope check to get \_SB_ (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -166,7 +167,7 @@
 #
 # Script version info.
 #
-gScriptVersion=9.6
+gScriptVersion=9.7
 
 #
 # Change this to 1 when your CPU is stuck in Low Frequency Mode!
@@ -1828,14 +1829,30 @@ function _getProcessorScope()
       return
   fi
   #
-  # Additional/experimental code for support of broken ACPI tables.
+  # No match so far. Let's check for '_PR_' in the DSDT.
+  #
+  local data=$(cat "$filename" | egrep -o '5f50525f')
+
+  if [[ $data ]];
+    then
+      gScope="\_PR_"
+      printf 'Processor {} Declaration(s) found in DSDT (ACPI 1.0 compliant)'
+  fi
+  #
+  # If that also fails then, as a last resort, check for '_PR' in broken ACPI tables.
   #
   local data=$(cat "$filename" | egrep -o '5f5052')
 
   if [[ $data ]];
     then
-       gScope="\_PR_"
-       echo ' (ACPI 1.0 compliant)'
+      gScope="\_PR_"
+      printf 'Processor {} Declaration(s) found in DSDT (ACPI 1.0 compliant)'
+    else
+      #
+      # Not a single check matched thus the processor scope is '_SB_'
+      #
+      gScope="\_SB_"
+      printf 'Processor {} Declaration(s) found in DSDT (ACPI 1.0 compliant)'
   fi
 }
 
