@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 9.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 9.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -107,6 +107,9 @@
 #			- Changed SSDT.dsl open behaviour/ask for confirmation (Pike, Februari 2014)
 #			- Additional processor scope check to get \_SB_ (Pike, Februari 2014)
 #			- Set gIvyWorkAround=0 when XCPM is being used (Pike, Februari 2014)
+#			- Added a lost return (Pike, Februari 2014)
+#			- Fixed some layout issues (Pike, Februari 2014)
+#			- Removed a misleading piece of text (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -168,7 +171,7 @@
 #
 # Script version info.
 #
-gScriptVersion=9.8
+gScriptVersion=9.9
 
 #
 # Initial xcpm mode (default value is 0).
@@ -1700,14 +1703,14 @@ function _getProcessorScope()
   #
   if [[ $(cat "$filename" | egrep -o '5b83[0-9a-f]{2}04') ]];
     then
-      printf "Processor {.} Declaration(s) found in DSDT"
+      printf 'Processor {.} Declaration(s) found in DSDT\n'
     else
       #
       # Check for Processor declarations without child objects.
       #
       if [[ $(cat "$filename" | egrep -o '5b830b') ]];
         then
-          printf "Processor {} Declaration(s) found in DSDT"
+          printf 'Processor {} Declaration(s) found in DSDT\n'
       fi
   fi
   #
@@ -1836,7 +1839,8 @@ function _getProcessorScope()
   if [[ $data ]];
     then
       gScope="\_PR_"
-      printf 'Processor {} Declaration(s) found in DSDT (ACPI 1.0 compliant)'
+      printf 'Processor {} Declaration(s) found in DSDT (ACPI 1.0 compliant)\n'
+      return
   fi
   #
   # If that also fails then, as a last resort, check for '_PR' in broken ACPI tables.
@@ -1846,13 +1850,13 @@ function _getProcessorScope()
   if [[ $data ]];
     then
       gScope="\_PR_"
-      printf 'Processor {} Declaration(s) found in DSDT (ACPI 1.0 compliant)'
+      printf 'Processor {} Declaration(s) found in DSDT (ACPI 1.0 compliant)\n'
     else
       #
       # Not a single check matched thus the processor scope is '_SB_'
       #
       gScope="\_SB_"
-      printf 'Processor {} Declaration(s) found in DSDT (ACPI 1.0 compliant)'
+      printf 'Processor {} Declaration(s) found in DSDT\n'
   fi
 }
 
@@ -2805,6 +2809,9 @@ function main()
                      ;;
                   2) let gBridgeType=8
                      local bridgeTypeString='Haswell'
+                     ;;
+                  4) let gBridgeType=16
+                     local bridgeTypeString='Broadwell'
                      ;;
                   *) _exitWithError $TARGET_CPU_ERROR
                      ;;
