@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 9.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 10.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -110,6 +110,7 @@
 #			- Added a lost return (Pike, Februari 2014)
 #			- Fixed some layout issues (Pike, Februari 2014)
 #			- Removed a misleading piece of text (Pike, Februari 2014)
+#			- Search for Scope (\_PR_) instead of just "_PR_" (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -171,7 +172,7 @@
 #
 # Script version info.
 #
-gScriptVersion=9.9
+gScriptVersion=10.0
 
 #
 # Initial xcpm mode (default value is 0).
@@ -252,7 +253,7 @@ let gIsLegacyRevoBoot=0
 # Other global variables.
 #
 
-gRevision='0x0000'${gScriptVersion:0:1}${gScriptVersion:2:1}'00'
+gRevision='0x000'${gScriptVersion:0:2}${gScriptVersion:3:1}'00'
 
 #
 # Path and filename setup.
@@ -1831,33 +1832,43 @@ function _getProcessorScope()
 
       return
   fi
+
   #
-  # No match so far. Let's check for '_PR_' in the DSDT.
+  # Check for Scope (\_PR_) in the DSDT.
   #
-  local data=$(cat "$filename" | egrep -o '5f50525f')
+  local data=$(cat "$filename" | egrep -o '10[0-9a-f]{2}5c5f50525f')
 
   if [[ $data ]];
     then
       gScope="\_PR_"
-      printf 'Processor {} Declaration(s) found in DSDT (ACPI 1.0 compliant)\n'
+      printf 'Scope (\_PR_) {} found in the DSDT (ACPI 1.0 compliant)\n'
       return
   fi
   #
-  # If that also fails then, as a last resort, check for '_PR' in broken ACPI tables.
+  # Check for Scope (_PR_) in the DSDT.
   #
-  local data=$(cat "$filename" | egrep -o '5f5052')
+  local data=$(cat "$filename" | egrep -o '10[0-9a-f]{2}5f50525f')
 
   if [[ $data ]];
     then
       gScope="\_PR_"
-      printf 'Processor {} Declaration(s) found in DSDT (ACPI 1.0 compliant)\n'
-    else
-      #
-      # Not a single check matched thus the processor scope is '_SB_'
-      #
-      gScope="\_SB_"
-      printf 'Processor {} Declaration(s) found in DSDT\n'
+      printf 'Scope (_PR_) {} found in the DSDT (ACPI 1.0 compliant)\n'
+      return
   fi
+  #
+  # Check for Scope (_PR) in DSDT (broken ACPI table).
+  #
+  local data=$(cat "$filename" | egrep -o '10[0-9a-f]{2}5f5052')
+
+  if [[ $data ]];
+    then
+      gScope="\_PR_"
+      printf 'Scope (_PR) {} found in the DSDT (ACPI 1.0 compliant)\n'
+      return
+  fi
+
+  gScope="\_SB_"
+  printf 'Using Scope (\_SB_) {} as processor scope\n'
 }
 
 #--------------------------------------------------------------------------------
