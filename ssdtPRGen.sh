@@ -2973,7 +2973,7 @@ function main()
                   let gTdp=15
                   let gBridgeType=8
                   ;;
-               *) _confirmUnsupported 'Error: Unknown/unsupported processor mode detected!\n'
+               *) _confirmUnsupported 'Error: Unknown/unsupported processor model detected!\n'
                   ;;
         esac
     fi
