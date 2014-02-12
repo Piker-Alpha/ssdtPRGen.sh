@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 10.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 10.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -114,6 +114,7 @@
 #			- Major rewrite/new routines added to search for the processor scope (Pike, Februari 2014)
 #			- New error message/added text about SMBIOS (Pike, Februari 2014)
 #			- Ask for confirmation when the script may break/produce errors (Pike, Februari 2014)
+#			- Double "${" error on line 1640 fixed (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -129,6 +130,7 @@
 #			- Thanks to 'dhnguyen92' on Github issues for the tip about a typo in the i7-2640M model data.
 #			- Thanks to 'fabiosun' on Github issues for the tip about a typo in the cpu-type check.
 #			- Thanks to 'Hackmodford ' on Github issues for testing/confirming that PM in Mavericks was changed.
+#			- Thanks to 'Rals2007' for reporting the double "${${" error on line 1640.
 #
 # Bugs:
 #			- Bug reports can be filed at https://github.com/Piker-Alpha/RevoBoot/issues
@@ -175,7 +177,7 @@
 #
 # Script version info.
 #
-gScriptVersion=10.4
+gScriptVersion=10.5
 
 #
 # Initial xcpm mode (default value is 0).
@@ -1637,7 +1639,7 @@ function _checkForProcessorDeclarations()
       #          5b834a044330303000 (C200)
       #          0123456789 1234567
       #
-      processorObjectData=$(echo "$targetData" | egrep -o "${${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{4}${processorNameBytes}")
+      processorObjectData=$(echo "$targetData" | egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{4}${processorNameBytes}")
 
       if [[ $processorObjectData ]];
         then
