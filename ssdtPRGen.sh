@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 10.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 10.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -111,6 +111,7 @@
 #			- Fixed some layout issues (Pike, Februari 2014)
 #			- Removed a misleading piece of text (Pike, Februari 2014)
 #			- Search for Scope (\_PR_) instead of just "_PR_" (Pike, Februari 2014)
+#			- Major rewrite/new routines added to search for the processor scope (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -172,7 +173,7 @@
 #
 # Script version info.
 #
-gScriptVersion=10.0
+gScriptVersion=10.3
 
 #
 # Initial xcpm mode (default value is 0).
@@ -240,7 +241,7 @@ let gBaseFrequency=1600
 gProcLabel="CPU"
 
 #
-# The Processor scope will be initialised by _getProcessorScope).
+# The Processor scope will be initialised by _initProcessorScope).
 #
 gScope=""
 
@@ -314,6 +315,21 @@ let PROCESSOR_DECLARATION_ERROR=8
 # Note: For future use (when we figured out what we need).
 #
 let LFM_REQUIRED_OS=1091
+
+#
+# Setup supported byte encodings
+#
+# Note: value is number of characters that we read.
+#
+let AML_SINGLE_BYTE_ENCODING=2
+let AML_DUAL_BYTE_ENCODING=4
+
+#
+# Setup used AML encoding values.
+#
+AML_SCOPE_OPCODE=10
+AML_NAME_OPCODE=5b82
+AML_PROCESSOR_SCOPE_OPCODE=5b83
 
 #
 # Processor Number, Max TDP, Low Frequency Mode, Clock Speed, Max Turbo Frequency, Cores, Threads
@@ -1490,13 +1506,166 @@ function _updateProcessorNames()
 
 #--------------------------------------------------------------------------------
 
+function _getPackageLength()
+{
+  #
+  # Local variable definition/initialisation.
+  #
+  local data=$1
+  local pkgLengthByte=0
+  local start=0
+  local end=0
+  local packageLength=0
+  #
+  # Called with a AML Scope object?
+  #
+  if [[ ${data:0:2} == $AML_SCOPE_OPCODE ]];
+    then
+      # Yes.
+      let start=$AML_SINGLE_BYTE_ENCODING
+    else
+      # No. Must be a Processor declaration.
+      let start=$AML_DUAL_BYTE_ENCODING
+  fi
+  #
+  # Get package length from given data.
+  #
+  let pkgLengthByte="0x"${1:${start}:2}
+  #
+  # The package length is encoded as a series of 1 to 4 bytes with the most significant
+  # two bits of byte zero indicating how many following bytes are in the encoding.
+  # The next two bits are only used in one-byte encodings, which allows for one-byte
+  # encodings on a length up to 0x3F. Longer encodings, which do not use these two bits,
+  # have a maximum length of the following:
+  #
+  # 0x0FFF for two-byte encodings.
+  # 0x0FFFFF for three-byte encodings.
+  # 0x0FFFFFFFFF for four-byte encodings.
+  #
+  if [[ $pkgLengthByte -gt 192 ]];
+    then
+      _debugPrint 'Four-byte encoding detected (maximum length 0x0FFFFFFFFF/68719476735)\n'
+      let end=8
+      let mask=0x3ffffffff
+    elif [[ $pkgLengthByte -gt 128 ]];
+      then
+        _debugPrint 'Three-byte encoding detected (maximum length 0x0FFFFF/1048575)\n'
+        let end=6
+        let mask=0x3fffff
+    elif [[ $pkgLengthByte -gt 64 ]];
+      then
+        _debugPrint 'Two-byte encoding detected (maximum length 0x0FFF/4095)\n'
+        let end=4
+        let mask=0x3fff
+    else
+      _debugPrint 'One-byte encoding detected (maximum length 0x3F/77)\n'
+      let end=2
+      let mask=0x3f
+  fi
+  #
+  # Get package length from data.
+  #
+  # Example: 10395f50525f
+  #            ^^
+  #
+  let packageLength=("0x"${data:${start}:${end}})
+  #
+  # Ready return value (logical AND of packageLength with mask).
+  #
+  # Example: 0x39/57
+  #
+  let gFunctionReturn=$(($packageLength & $mask))
+}
+
+#--------------------------------------------------------------------------------
+
+function _checkForProcessorDeclarations()
+{
+  #
+  # Local variable definitions/initialisation.
+  #
+  local targetData=$1
+  local deviceName=$2
+  local isACPI10Compliant=$3
+  #
+  # Convert (example) 'C000' to '43303030'
+  #
+  local processorNameBytes=$(echo -n ${gProcessorNames[0]} | xxd -ps)
+
+  #
+  # Search for the first Processor {} declaration in $objectData.
+  #
+  # Example:
+  #          5b831a4330303000 (C000)
+  #          0123456789 12345
+  #
+  local processorObjectData=$(echo "${targetData}" | egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{2}${processorNameBytes}")
+  #
+  # Do we have a match for the first processor declaration?
+  #
+  if [[ $processorObjectData ]];
+    then
+      #
+      # Yes. Print the result.
+      #
+      _debugPrint "Processor declaration (${gProcessorNames[0]}) {0x${processorObjectData:4:2} bytes} found in "
+
+      if [[ $deviceName ]];
+        then
+          _debugPrint "Device (%s) (non ACPI 1.0 compliant)\n" $deviceName
+        else
+          _debugPrint 'the DSDT '
+
+          if [[ $isACPI10Compliant ]];
+            then
+              _debugPrint '(ACPI 1.0 compliant)\n'
+            else
+              _debugPrint '(not ACPI 1.0 compliant)\n'
+          fi
+      fi
+      #
+      # Return SUCCESS.
+      #
+      return 0
+    else
+      #
+      # No. Search for the first Processor {...} declaration with enclosed child objects.
+      #
+      # Example:
+      #          5b834a044330303000 (C200)
+      #          0123456789 1234567
+      #
+      processorObjectData=$(echo "$targetData" | egrep -o "${${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{4}${processorNameBytes}")
+
+      if [[ $processorObjectData ]];
+        then
+          _debugPrint "Processor declaration (${gProcessorNames[0]}) found in Device (%s) {...} (non ACPI 1.0 compliant)\n" $deviceName
+           #
+           # Return SUCCESS.
+           #
+          return 0
+      fi
+  fi
+
+  #
+  # Free up some memory.
+  #
+  unset processorObjectData
+  #
+  # Return ERROR.
+  #
+  return 1
+}
+
+#--------------------------------------------------------------------------------
+
 function _getACPIProcessorScope()
 {
   #
   # Local variable definitions/initialisation.
   #
   local filename=$1
-  local variableList=(10,6,4,40,2 12,8,6,42,4)
+  local variableList=(10,6,4,40 12,8,6,42)
   local varList
   local checkGlobalProcessorScope
   local scopeLength
@@ -1505,7 +1674,10 @@ function _getACPIProcessorScope()
   # Local variable initialisation.
   #
   let index=0
-
+  #
+  # Convert (example) 'C000' to '43303030'
+  #
+  local processorNameBytes=$(echo -n ${gProcessorNames[0]} | xxd -ps)
   #
   # Loop through all Name (_HID, ACPI0004) objects.
   #
@@ -1534,21 +1706,21 @@ function _getACPIProcessorScope()
     #
     # Check for (a) Device(s) with a _HID object value of 'ACPI0004' in the DSDT.
     #
-    local data=$(cat "$filename" | egrep -o '5b82[0-9a-f]{'${vars[0]}'}085f4849440d414350493030303400')
+    local matchingData=$(egrep -o "${AML_NAME_OPCODE}[0-9a-f]{${vars[0]}}085f4849440d414350493030303400" "$filename")
     #
     # Example:
     #          5b824d9553434b30085f4849440d414350493030303400 (N times)
     #          0123456789 123456789 123456789 123456789 12345
     #
-
     if [[ $data ]];
       then
-        local hidObjectList=($data)
+        local hidObjectList=($matchingData)
         local let objectCount=${#hidObjectList[@]}
 
         if [ $objectCount -gt 0 ];
           then
-            printf "${objectCount} Name (_HID, \"ACPI0004\") object(s) found in the DSDT\n"
+            _debugPrint "${objectCount} Name (_HID, \"ACPI0004\") object(s) found in the DSDT\n"
+            echo "$matchingData"
         fi
         #
         # Loop through all Name (_HID, ACPI0004) objects.
@@ -1563,8 +1735,9 @@ function _getACPIProcessorScope()
           #
           # Get the length of the device scope.
           #
-          let scopeLength=("0x"${hidObjectData:${vars[2]}:2})
-          # echo $scopeLength
+          _getPackageLength $hidObjectData
+          let scopeLength=$gFunctionReturn
+          _debugPrint "scopeLength: $scopeLength\n"
           #
           # Convert number of bytes to number of characters.
           #
@@ -1596,8 +1769,7 @@ function _getACPIProcessorScope()
           #
           # Extract the whole Device () {} scope.
           #
-          local deviceObjectData=$(cat "$filename" | egrep -o "5b82[0-9a-f]{${vars[4]}}${hidObjectData:${vars[1]}:8}085f4849440d414350493030303400${repetitionString}" | tr -d '\n')
-          # echo $deviceObjectData
+          local deviceObjectData=$(egrep -o "${hidObjectData}${repetitionString}" "$filename" | tr -d '\n')
           #
           # We should now have something like this (example):
           #
@@ -1616,54 +1788,16 @@ function _getACPIProcessorScope()
           #
           let checkGlobalProcessorScope=0
           #
-          # Convert (example) 'C000' to '43303030'
           #
-          local processorNameBytes=$(echo -n ${gProcessorNames[0]} | xxd -ps)
           #
-          # Search for the first Processor {} declaration.
+          _checkForProcessorDeclarations $deviceObjectData $deviceName 0
           #
-          # Example:
-          #          5b831a4330303000 (C000)
-          #          0123456789 12345
+          # Check return status (0 is SUCCESS).
           #
-          local processorObjectData=$(echo "$deviceObjectData" | egrep -o "5b83[0-9a-f]{2}${processorNameBytes}")
-          #
-          # Do we have a match for the first processor declaration?
-          #
-          if [[ $processorObjectData ]];
+          if [[ $? -eq 0 ]];
             then
               #
-              # Yes. Print the result.
-              #
-              let checkGlobalProcessorScope=1
-              printf "Processor declaration (${gProcessorNames[0]}) {0x${processorObjectData:4:2} bytes} found in Device (%s) (none ACPI 1.0 compliant)\n" $deviceName
-            else
-              #
-              # No. Search for the first Processor {...} declaration with enclosed child objects.
-              #
-              # Example:
-              #          5b834a044330303000 (C200)
-              #          0123456789 1234567
-              #
-              processorObjectData=$(echo "$deviceObjectData" | egrep -o "5b83[0-9a-f]{4}${processorNameBytes}")
-
-              if [[ $processorObjectData ]];
-                then
-                  let checkGlobalProcessorScope=1
-                  printf "Processor declaration (${gProcessorNames[0]}) found in Device (%s) {...} (none ACPI 1.0 compliant)\n" $deviceName
-              fi
-          fi
-          #
-          # Free up some memory.
-          #
-          local processorObjectData=""
-          #
-          # Do we need to update the processor scope variable?
-          #
-          if [[ $checkGlobalProcessorScope -eq 1 ]];
-            then
-              #
-              # Update the processor scope.
+              # Update the global processor scope.
               #
               gScope="\_SB_.${deviceName}"
               #
@@ -1676,12 +1810,173 @@ function _getACPIProcessorScope()
   done
 }
 
+
 #--------------------------------------------------------------------------------
 
 function _getProcessorScope()
 {
-  local filename="/tmp/dsdt.txt"
+  #
+  # Local variable definitions/initialisation.
+  #
+  local index=0
+  local filename=$1
+  #
+  # Target Scopes ('\_PR_', '\_PR', '_PR_', '_PR', '\_SB_', '\_SB', , '_SB_', '_SB')
+  #
+  local grepPatternList=('5c5f50525f' '5c5f5052' '5f50525f' '5f5052' '5c5f53425f' '5c5f5342' '5f53425f' '5f5342')
+  #
+  # Loop through the target pattern list.
+  #
+  for grepPattern in "${grepPatternList[@]}"
+  do
+    #
+    # Up scope index counter.
+    #
+    let index+=1;
+    #
+    # Setup array with supported type of byte encodings.
+    #
+    local byteEncodingList=($AML_SINGLE_BYTE_ENCODING $AML_DUAL_BYTE_ENCODING)
 
+    for typeEncoding in "${byteEncodingList[@]}"
+    do
+      #
+      #
+      #
+      local data=$(egrep -o "${AML_SCOPE_OPCODE}[0-9a-f]{${typeEncoding}}${grepPattern}" "$filename")
+
+      if [[ $data ]];
+        then
+          local scopeObjectList=($data)
+          #
+          # Get number of target objects to check.
+          #
+          let objectCount=${#scopeObjectList[@]}
+          #
+          # Get Scope name from current pattern.
+          #
+          local scopeName=$(echo -n $grepPattern | xxd -ps -r)
+
+          if [[ $objectCount -gt 0 ]];
+            then
+              if [ $typeEncoding -eq $AML_SINGLE_BYTE_ENCODING ];
+                then
+                  local scopeDots=".";
+                else
+                  local scopeDots="..";
+                fi
+
+              _debugPrint $objectCount' Scope ('$scopeName') {'$scopeDots'} object(s) found in the DSDT\n'
+          fi
+          #
+          # Loop through all Scope (...) objects.
+          #
+          for scopeObjectData in "${scopeObjectList[@]}"
+          do
+            _debugPrint $scopeObjectData
+            #
+            # Get the length of the Scope.
+            #
+            _getPackageLength $scopeObjectData
+            let scopeLength=$gFunctionReturn
+            _debugPrint "scopeLength: $scopeLength\n"
+            # echo $scopeLength
+            #
+            # Convert number of bytes to number of characters.
+            #
+            let scopeLength*=2
+            # echo $scopeLength
+            #
+            # Get number of characters in grep pattern.
+            #
+            let grepPatternLength="${#AML_SCOPE_OPCODE}+$typeEncoding+${#grepPattern}"
+            #
+            # Lower scopeLength with the number of characters that we used for the match.
+            #
+            let scopeLength-=$grepPatternLength
+            # echo $scopeLength
+            #
+            # Initialise string.
+            #
+            local repetitionString=""
+            #
+            # Prevent "egrep: invalid repetition count(s)"
+            #
+            if [[ $scopeLength -gt 255 ]];
+              then
+                while [ $scopeLength -gt 255 ];
+                do
+                  local repetitionString+="[0-9a-f]{255}"
+                  let scopeLength-=255
+                done
+            fi
+
+            repetitionString+="[0-9a-f]{${scopeLength}}"
+            # echo $repetitionString
+            #
+            # Extract the whole Scope() {}.
+            #
+            local scopeObjectData=$(egrep -o "${scopeObjectData}${repetitionString}" "$filename" | tr -d '\n')
+            # echo "$scopeObjectData"
+            _debugPrint "scopeObjectData length ${#scopeObjectData}\n"
+
+            if [[ $scopeObjectData ]];
+              then
+                #
+                # Check for target scope in $scopeObjectData, there is no device name ("")
+                # and $(($index < 5)) informs it about the ACPI 1.0 compliance (trye/false).
+                #
+                _checkForProcessorDeclarations $scopeObjectData "" $(($index < 5))
+                #
+                # Check return status (0 is SUCCESS).
+                #
+                if [[ $? -eq 0 ]];
+                  then
+                    printf 'Scope ('$scopeName') {'$scopeLength' bytes} with Processor declarations found in the DSDT (ACPI 1.0 compliant)\n'
+                    #
+                    # Construct processor scope name.
+                    #
+                    # Note: Without the leading '\' the IASL compiler fails with:
+                    #
+                    #       Error 4085 - Object not found or not accessible from scope ^  (_PR_.CPU0.APSS)
+                    #       Error 4085 - Object not found or not accessible from scope ^  (_PR_.CPU1.ACST)
+                    #
+                    gScope='\'$scopeName
+                    return
+                  else
+                    printf 'Scope ('$scopeName') {'$scopeLength' bytes} without Processor declarations ...\n'
+                fi
+            fi
+          done
+      fi
+    done
+  done
+}
+
+#--------------------------------------------------------------------------------
+
+function _initProcessorScope()
+{
+  #
+  # Local variable declarations.
+  #
+  local filename="/tmp/dsdt.txt"
+  #
+  # Note: Dry runs can be done with help of; xxd -c 256 -ps [path]dsdt.aml | tr -d '\n'
+  #       You may also need to change the CPU ID to get a match.
+  #
+  # gProcessorNames[0]="C000"
+  #
+  local processorDeclarationsFound
+  #
+  # Local variable initialisation.
+  #
+  let processorDeclarationsFound=0
+  #
+  # Extract DSDT from ioreg output.
+  #
+  # Note: Comment this out for dry runs!
+  #
   ioreg -c AppleACPIPlatformExpert -rd1 -w0 | egrep -o 'DSDT"=<[0-9a-f]+' > "$filename"
   #
   # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects.
@@ -1693,182 +1988,170 @@ function _getProcessorScope()
   if [[ $gScope != "" ]];
     then
       #
-      # Yes. We're done searching for the Processor scope.
+      # Yes. We're done searching for the processor scope/declarations.
       #
       return
     else
-      printf "Name (_HID, \"ACPI0004\") NOT found in the DSDT\n"
+      _debugPrint "Name (_HID, \"ACPI0004\") NOT found in the DSDT\n"
   fi
   #
-  # Additional check for Processor declarations with child objects.
+  # Search for Scope (_PR) and the like.
   #
-  if [[ $(cat "$filename" | egrep -o '5b83[0-9a-f]{2}04') ]];
+  _getProcessorScope $filename
+  #
+  # Do we have a processor scope with processor declarations?
+  #
+  if [[ $gScope != "" ]];
     then
-      printf 'Processor {.} Declaration(s) found in DSDT\n'
+      #
+      # Yes. We're done searching for the processor scope/declarations.
+      #
+      return
     else
       #
-      # Check for Processor declarations without child objects.
+      # Additional check for processor declarations with child objects.
       #
-      if [[ $(cat "$filename" | egrep -o '5b830b') ]];
+      if [[ $(egrep -o '5b83[0-9a-f]{2}04' "$filename") ]];
         then
-          printf 'Processor {} Declaration(s) found in DSDT\n'
-      fi
-  fi
-  #
-  # Check for Processor declarations with RootChar in DSDT.
-  #
-  local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}5c2e[0-9a-f]{8}')
-
-  if [[ $data ]];
-    then
-      printf "Processor {...} Declaration(s) with RootChar ('\\\') found in DSDT"
-      gScope="\\"$(echo ${data:10:8} | xxd -r -p)
-
-      if [[ $gScope == "\_PR_" ]];
-        then
-          echo ' (ACPI 1.0 compliant)'
-        elif [[ $gScope == "\_SB_" ]];
-          then
-            echo ' (none ACPI 1.0 compliant)'
-          else
-            echo ' - ERROR: Invalid Scope Used!'
-      fi
-
-      return
-  fi
-  #
-  # Check for Processor declarations with DualNamePrefix in the DSDT.
-  #
-  local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}2e[0-9a-f]{8}')
-
-  if [[ $data ]]; then
-    printf "Processor {...} Declaration(s) with DualNamePrefix ('.') found in DSDT"
-    gScope="\\"$(echo ${data:8:8} | xxd -r -p)
-
-    if [[ $gScope == "\_PR_" ]];
-      then
-        echo ' (ACPI 1.0 compliant)'
-      elif [[ $gScope == "\_SB_" ]];
-        then
-          echo ' (none ACPI 1.0 compliant)'
+          printf 'Processor {.} Declaration(s) found in DSDT\n'
+          let processorDeclarationsFound=1
         else
-          echo ' - ERROR: Invalid Scope Used!'
-    fi
-
-    return
-  fi
-  #
-  # Check for Processor declarations with MultiNamePrefix (without leading backslash) in the DSDT.
-  #
-  local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}2f[0-9a-f]{2}')
-
-  if [[ $data ]];
-    then
-      printf "Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
-
-      let scopeLength=("0x"${data:8:2})*4*2
-      local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}2f[0-9a-f]{'$scopeLength'}')
-      partOne=$(echo ${data:10:8} | xxd -r -p)
-      partTwo=$(echo ${data:18:8} | xxd -r -p)
-      gScope="\\${partOne}.${partTwo}"
-
-      if [[ $gScope =~ "\_PR_" ]];
-        then
-          echo ' (ACPI 1.0 compliant)'
-        elif [[ $gScope =~ "\_SB_" ]];
-          then
-            echo ' (none ACPI 1.0 compliant)'
-          else
-            echo ' - ERROR: Invalid Scope Used!'
+          #
+          # Check for processor declarations without child objects.
+          #
+          if [[ $(egrep -o '5b830b' "$filename") ]];
+            then
+              printf 'Processor {} Declaration(s) found in DSDT\n'
+              let processorDeclarationsFound=1
+          fi
       fi
 
-      return
-  fi
-  #
-  # Check for Processor declarations with MultiNamePrefix (with leading backslash) in the DSDT.
-  #
-  local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}5c2f[0-9a-f]{2}')
+      #
+      # Check for processor declarations with RootChar in DSDT.
+      #
+      local data=$(egrep -o '5b83[0-9a-f]{2}5c2e[0-9a-f]{8}' "$filename")
 
-  if [[ $data ]];
-    then
-      printf "Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
-
-      let scopeLength=("0x"${data:10:2})*4*2
-      local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}5c2f[0-9a-f]{'$scopeLength'}')
-      partOne=$(echo ${data:12:8} | xxd -r -p)
-      partTwo=$(echo ${data:20:8} | xxd -r -p)
-      gScope="\\${partOne}.${partTwo}"
-
-      if [[ $gScope =~ "\_PR_" ]];
+      if [[ $data ]];
         then
-          echo ' (ACPI 1.0 compliant)'
-        elif [[ $gScope =~ "\_SB_" ]];
-          then
-            echo ' (none ACPI 1.0 compliant)'
-        else
-          echo ' - ERROR: Invalid Scope Used!'
+          printf "Processor {...} Declaration(s) with RootChar ('\\\') found in DSDT"
+          gScope="\\"$(echo ${data:10:8} | xxd -r -p)
+
+          if [[ $gScope == "\_PR_" ]];
+            then
+              echo ' (ACPI 1.0 compliant)'
+            elif [[ $gScope == "\_SB_" ]];
+              then
+                echo ' (none ACPI 1.0 compliant)'
+              else
+                echo ' - ERROR: Invalid Scope Used!'
+          fi
+
+         return
       fi
 
-      return
-  fi
-  #
-  # Check for Processor declarations with ParentPrefixChar in the DSDT.
-  #
-  local data=$(cat "$filename" | egrep -o '5b83[0-9a-f]{2}5e[0-9a-f]{8}')
+      #
+      # Check for processor declarations with DualNamePrefix in the DSDT.
+      #
+      local data=$(egrep -o '5b83[0-9a-f]{2}2e[0-9a-f]{8}' "$filename")
 
-  if [[ $data ]];
-    then
-      printf "Processor {...} Declaration(s) with ParentPrefixChar ('^') found in DSDT\n"
-      gScope=$(echo ${data:6:2} | xxd -r -p)
-
-# ioreg -w0 -p IOACPIPlane -c IOACPIPlatformDevice -n _SB -r > /tmp/dsdt.txt
-
-      if [[ $gScope =~ "^" ]];
+      if [[ $data ]];
         then
-          printf "Searching for Parent Scope ... "
-        else
-          echo ' - ERROR: Invalid Scope Used!'
+          printf "Processor {...} Declaration(s) with DualNamePrefix ('.') found in DSDT"
+          gScope="\\"$(echo ${data:8:8} | xxd -r -p)
+
+          if [[ $gScope == "\_PR_" ]];
+            then
+              echo ' (ACPI 1.0 compliant)'
+            elif [[ $gScope == "\_SB_" ]];
+              then
+                echo ' (none ACPI 1.0 compliant)'
+              else
+                echo ' - ERROR: Invalid Scope Used!'
+          fi
+
+         return
       fi
 
-      return
+      #
+      # Check for processor declarations with MultiNamePrefix (without leading backslash) in the DSDT.
+      #
+      local data=$(egrep -o '5b83[0-9a-f]{2}2f[0-9a-f]{2}' "$filename")
+
+      if [[ $data ]];
+        then
+          printf "Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
+
+          let scopeLength=("0x"${data:8:2})*4*2
+          local data=$(egrep -o '5b83[0-9a-f]{2}2f[0-9a-f]{'$scopeLength'}' "$filename")
+          partOne=$(echo ${data:10:8} | xxd -r -p)
+          partTwo=$(echo ${data:18:8} | xxd -r -p)
+          gScope="\\${partOne}.${partTwo}"
+
+          if [[ $gScope =~ "\_PR_" ]];
+            then
+              echo ' (ACPI 1.0 compliant)'
+            elif [[ $gScope =~ "\_SB_" ]];
+              then
+                echo ' (none ACPI 1.0 compliant)'
+              else
+                echo ' - ERROR: Invalid Scope Used!'
+          fi
+
+          return
+      fi
+
+      #
+      # Check for processor declarations with MultiNamePrefix (with leading backslash) in the DSDT.
+      #
+      local data=$(egrep -o '5b83[0-9a-f]{2}5c2f[0-9a-f]{2}' "$filename")
+
+      if [[ $data ]];
+        then
+          printf "Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
+
+          let scopeLength=("0x"${data:10:2})*4*2
+          local data=$(egrep -o '5b83[0-9a-f]{2}5c2f[0-9a-f]{'$scopeLength'}' "$filename")
+          partOne=$(echo ${data:12:8} | xxd -r -p)
+          partTwo=$(echo ${data:20:8} | xxd -r -p)
+          gScope="\\${partOne}.${partTwo}"
+
+          if [[ $gScope =~ "\_PR_" ]];
+            then
+              echo ' (ACPI 1.0 compliant)'
+            elif [[ $gScope =~ "\_SB_" ]];
+              then
+                echo ' (none ACPI 1.0 compliant)'
+              else
+                echo ' - ERROR: Invalid Scope Used!'
+          fi
+
+          return
+      fi
+
+      #
+      # Check for processor declarations with ParentPrefixChar in the DSDT.
+      #
+      local data=$(egrep -o '5b83[0-9a-f]{2}5e[0-9a-f]{8}' "$filename")
+
+      if [[ $data ]];
+        then
+          printf "Processor {...} Declaration(s) with ParentPrefixChar ('^') found in DSDT\n"
+          gScope=$(echo ${data:6:2} | xxd -r -p)
+
+          # ioreg -w0 -p IOACPIPlane -c IOACPIPlatformDevice -n _SB -r > /tmp/dsdt2.txt
+
+          if [[ $gScope =~ "^" ]];
+            then
+              printf "Searching for Parent Scope ... "
+            else
+              echo ' - ERROR: Invalid Scope Used!'
+          fi
+
+          return
+      fi
   fi
 
-  #
-  # Check for Scope (\_PR_) in the DSDT.
-  #
-  local data=$(cat "$filename" | egrep -o '10[0-9a-f]{2}5c5f50525f')
-
-  if [[ $data ]];
-    then
-      gScope="\_PR_"
-      printf 'Scope (\_PR_) {} found in the DSDT (ACPI 1.0 compliant)\n'
-      return
-  fi
-  #
-  # Check for Scope (_PR_) in the DSDT.
-  #
-  local data=$(cat "$filename" | egrep -o '10[0-9a-f]{2}5f50525f')
-
-  if [[ $data ]];
-    then
-      gScope="\_PR_"
-      printf 'Scope (_PR_) {} found in the DSDT (ACPI 1.0 compliant)\n'
-      return
-  fi
-  #
-  # Check for Scope (_PR) in DSDT (broken ACPI table).
-  #
-  local data=$(cat "$filename" | egrep -o '10[0-9a-f]{2}5f5052')
-
-  if [[ $data ]];
-    then
-      gScope="\_PR_"
-      printf 'Scope (_PR) {} found in the DSDT (ACPI 1.0 compliant)\n'
-      return
-  fi
-
-  gScope="\_SB_"
-  printf 'Using Scope (\_SB_) {} as processor scope\n'
+  gScope="\_SB"
 }
 
 #--------------------------------------------------------------------------------
@@ -2701,7 +2984,7 @@ function main()
 
     _getBoardID
     _getProcessorNames
-    _getProcessorScope
+    _initProcessorScope
 
     local modelID=$(_getModelName)
     local cpu_type=$(_getCPUtype)
