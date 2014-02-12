@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 10.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 10.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -112,6 +112,8 @@
 #			- Removed a misleading piece of text (Pike, Februari 2014)
 #			- Search for Scope (\_PR_) instead of just "_PR_" (Pike, Februari 2014)
 #			- Major rewrite/new routines added to search for the processor scope (Pike, Februari 2014)
+#			- New error message/added text about SMBIOS (Pike, Februari 2014)
+#			- Ask for confirmation when the script may break/produce errors (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -173,7 +175,7 @@
 #
 # Script version info.
 #
-gScriptVersion=10.3
+gScriptVersion=10.4
 
 #
 # Initial xcpm mode (default value is 0).
@@ -2861,6 +2863,20 @@ function _exitWithError()
 
 #--------------------------------------------------------------------------------
 
+function _confirmUnsupported()
+{
+  printf "\n$1"
+  read -p "Do you want to continue (y/n)? " unsuportedConfirmed
+  case "$unsuportedConfirmed" in
+       y|Y) return
+            ;;
+         *) exit 1
+            ;;
+  esac
+}
+
+#--------------------------------------------------------------------------------
+
 function main()
 {
   #
@@ -2925,61 +2941,54 @@ function main()
       then
         local model=$(_getCPUModel)
 
-        if (($model==0x2A));
-          then
-            let gTdp=95
-            let gBridgeType=2
-        fi
-
-        if (($model==0x2D));
-          then
-            let assumedTDP=1
-            let gTdp=130
-            let gBridgeType=2
-        fi
-
-        if (($model==0x3A || $model==0x3B || $model==0x3E));
-          then
-            let assumedTDP=1
-            let gTdp=77
-            let gBridgeType=4
-        fi
-
-        # Haswell
-        if (($model==0x3C));
-          then
-            let assumedTDP=1
-            let gTdp=84
-            let gBridgeType=8
-            let gMaxOCFrequency=8000
-        fi
-
-        # Haswell SVR
-        if (($model==0x3F));
-          then
-            let assumedTDP=1
-            let gTdp=130
-            let gBridgeType=8
-        fi
-
-        # Haswell ULT
-        if (($model==0x45));
-          then
-            let assumedTDP=1
-            let gTdp=15
-            let gBridgeType=8
-        fi
+        case $model in
+            # Sandy Bridge
+            0x2A) let gTdp=95
+                  let gBridgeType=2
+                  ;;
+            # Sandy Bridge Xeon
+            0x2D) let assumedTDP=1
+                  let gTdp=130
+                  let gBridgeType=2
+                  ;;
+            # Ivy Bridge, Ivy Bridge EX and Ivy Bridge Xeon
+            0x3A|0x3B|0x3E)
+                  let assumedTDP=1
+                  let gTdp=77
+                  let gBridgeType=4
+                  ;;
+            # Haswell
+            0x3C) let assumedTDP=1
+                  let gTdp=84
+                  let gBridgeType=8
+                  let gMaxOCFrequency=8000
+                  ;;
+            # Haswell SVR
+            0x3F) let assumedTDP=1
+                  let gTdp=130
+                  let gBridgeType=8
+                  ;;
+            # Haswell ULT
+            0x45) let assumedTDP=1
+                  let gTdp=15
+                  let gBridgeType=8
+                  ;;
+               *) _confirmUnsupported 'Error: Unknown/unsupported processor mode detected!\n'
+                  ;;
+        esac
     fi
 
     case $gBridgeType in
-        2) local bridgeTypeString="Sandy Bridge"
-           ;;
-        4) local bridgeTypeString="Ivy Bridge"
-           ;;
-        8) local bridgeTypeString="Haswell"
-           ;;
-        *) local bridgeTypeString="Unknown"
-           ;;
+         2) local bridgeTypeString="Sandy Bridge"
+            ;;
+         4) local bridgeTypeString="Ivy Bridge"
+            ;;
+         8) local bridgeTypeString="Haswell"
+            ;;
+        16) local bridgeTypeString="Broadwell"
+            ;;
+         *) local bridgeTypeString="Unknown"
+            ;;
     esac
 
     _getBoardID
@@ -3234,9 +3243,12 @@ function main()
             then
                 echo -e "\nWarning: 'board-id' [$boardID] is not supported by $bridgeTypeString PM"
             else
-              if [ "$gMacModelIdentifier" != "$modelID" ];
+              if [ "$gMacModelIdentifier" == "" ];
                 then
-                  echo "Error: board-id [$boardID] and model [$modelID] mismatch"
+                  _confirmUnsupported 'Error: Unknown model ['$modelID'] detected (check SMBIOS data)\n'
+                elif [ "$gMacModelIdentifier" != "$modelID" ];
+                  then
+                    _confirmUnsupported 'Warning: board-id ['$boardID'] and model ['$modelID'] mismatch (check SMBIOS data)\n'
               fi
         fi
     fi
