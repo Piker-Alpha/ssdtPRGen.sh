@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 11.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 11.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -123,6 +123,7 @@
 #			- fixed cpu/bridge type override logic (Pike, Februari 2014)
 #			- more comments added (Pike, Februari 2014)
 #			- change bridge type from Sandy Bridge to Ivy Bridge when -w argument is used (Pike, Februari 2014)
+#			- Use Scope (_PR) {} if found for DSDT's without Processor declarations (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -158,7 +159,7 @@
 #
 # Script version info.
 #
-gScriptVersion=11.4
+gScriptVersion=11.5
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -269,6 +270,11 @@ let gLogicalCPUs=0
 # Clock frequency (uninitialised).
 #
 let gFrequency=-1
+
+#
+# Set to 1 if _PR scope is found in the DSDT.
+#
+let gScopePRFound=0
 
 #
 # Output styling.
@@ -2014,9 +2020,9 @@ function _getProcessorScope()
   local index=0
   local filename=$1
   #
-  # Target Scopes ('\_PR_', '\_PR', '\PR', '_PR_', '_PR', 'PR', '\_SB_', '\_SB', , '_SB_', '_SB')
+  # Target Scopes ('\_PR_', '\_PR', '_PR_', '_PR', '\_SB_', '\_SB', , '_SB_', '_SB')
   #
-  local grepPatternList=('5c5f50525f' '5c5f5052' '5c5052' '5f50525f' '5f5052' '5052' '5c5f53425f' '5c5f5342' '5f53425f' '5f5342')
+  local grepPatternList=('5c5f50525f' '5c5f5052' '5f50525f' '5f5052' '5c5f53425f' '5c5f5342' '5f53425f' '5f5342')
   #
   # Loop through the target pattern list.
   #
@@ -2057,9 +2063,14 @@ function _getProcessorScope()
                   local scopeDots=".";
                 else
                   local scopeDots="..";
-                fi
+              fi
 
               _debugPrint $objectCount' Scope ('$scopeName') {'$scopeDots'} object(s) found in the DSDT\n'
+
+              if [[ $index -lt 5 && $scopeName =~ "PR" ]];
+                then
+                  let gScopePRFound=1
+              fi
           fi
           #
           # Loop through all Scope (...) objects.
@@ -2346,8 +2357,19 @@ function _initProcessorScope()
           return
       fi
   fi
+  #
+  # Did we find a Scope (_PR) {} object in the DSDT?
+  #
+  # Note: We end up here if all patterns failed to match anything but the _PR scope.
+  #
+  if [[ $gScopePRFound -eq 1 ]];
+    then
+      gScope="\_PR"
+    else
+      gScope="\_SB"
+  fi
 
-  gScope="\_SB"
+  _PRINT_MSG '\nWarning: No Processor declarations found in the DSDT!\n\t Using assumed Scope ('$gScope') {}\n'
 }
 
 
@@ -2565,7 +2587,7 @@ function _getCPUNumberFromBrandString
   #
   # Show brandstring (this helps me to debug stuff).
   #
-  printf "Brandstring '${gBrandString}'\n"
+  printf "Brandstring '${gBrandString}'\n\n"
   #
   # Save default (0) delimiter
   #
