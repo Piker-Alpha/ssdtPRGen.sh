@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 11.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 11.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -139,6 +139,7 @@
 #			- Thanks to 'fabiosun' on Github issues for the tip about a typo in the cpu-type check.
 #			- Thanks to 'Hackmodford ' on Github issues for testing/confirming that PM in Mavericks was changed.
 #			- Thanks to 'Rals2007' for reporting the double "${${" error on line 1640.
+#			- Thanks to 'MMMProd' for reporting the -eg instead of -eq error on line 3567.
 #
 # Bugs:
 #			- Bug reports can be filed at https://github.com/Piker-Alpha/RevoBoot/issues
@@ -157,7 +158,7 @@
 #
 # Script version info.
 #
-gScriptVersion=11.2
+gScriptVersion=11.3
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -3564,7 +3565,7 @@ function _getScriptArguments()
                           #
                           # Running on Sandy Bridge platform?
                           #
-                          if [[ $gBridgeType -eg $SANDY_BRIDGE ]];
+                          if [[ $gBridgeType -eq $SANDY_BRIDGE ]];
                             then
                               #
                               # Yes. Change it to Ivy Bridge.
