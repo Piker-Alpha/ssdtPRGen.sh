@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 11.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 11.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -158,7 +158,7 @@
 #
 # Script version info.
 #
-gScriptVersion=11.3
+gScriptVersion=11.4
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -263,7 +263,7 @@ gModelID=""
 #
 # Number of logical processors.
 #
-let gLogicalCPUs=-1
+let gLogicalCPUs=0
 
 #
 # Clock frequency (uninitialised).
@@ -1511,7 +1511,7 @@ function _printScopeACST()
   #
   # Do we need to add a closing bracket?
   #
-  if [[ $gBridgeType -eq $SANDY_BRIDGE && $gXcpm -eq 0 ]];
+  if [[ $gBridgeType -eq $SANDY_BRIDGE && $gXcpm -ne 1 ]];
     then
       echo '    }'                                                                      >> $gSsdtPR
   fi
