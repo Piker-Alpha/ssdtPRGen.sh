@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 11.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 11.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -122,6 +122,7 @@
 #			- argument -l is now used to override the number of logical processors (Pike, Februari 2014)
 #			- fixed cpu/bridge type override logic (Pike, Februari 2014)
 #			- more comments added (Pike, Februari 2014)
+#			- change bridge type from Sandy Bridge to Ivy Bridge when -w argument is used (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -156,7 +157,7 @@
 #
 # Script version info.
 #
-gScriptVersion=11.1
+gScriptVersion=11.2
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -3560,9 +3561,14 @@ function _getScriptArguments()
                               let gIvyWorkAround=$1
                               _PRINT_MSG "Override value: (-w) Ivy Bridge workarounds, now set to: ${1}!"
                           fi
-
-                          if [[ $gBridgeType -ne $IVY_BRIDGE ]];
+                          #
+                          # Running on Sandy Bridge platform?
+                          #
+                          if [[ $gBridgeType -eg $SANDY_BRIDGE ]];
                             then
+                              #
+                              # Yes. Change it to Ivy Bridge.
+                              #
                               gBridgeType=$IVY_BRIDGE
                               _PRINT_MSG "Override value: CPU type changed, now using: Ivy Bridge!"
                           fi
