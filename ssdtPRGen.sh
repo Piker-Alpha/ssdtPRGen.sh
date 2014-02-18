@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 11.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 11.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -118,6 +118,10 @@
 #			- gSystemType for Ivy Bridge desktop models fixed (Pike, Februari 2014)
 #			- major rewrite to support more flexible script arguments (Pike, Februari 2014)
 #			- lists with supported board-id/model combinations added (Pike, Februari 2014)
+#			- renamed argument -l to -s (Pike, Februari 2014)
+#			- argument -l is now used to override the number of logical processors (Pike, Februari 2014)
+#			- fixed cpu/bridge type override logic (Pike, Februari 2014)
+#			- more comments added (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -152,7 +156,7 @@
 #
 # Script version info.
 #
-gScriptVersion=11.0
+gScriptVersion=11.1
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -242,7 +246,7 @@ let gExtraStyling=1
 #
 # Global variable used by some functions to return a value to the callee. 
 #
-gFunctionReturn=0
+let gFunctionReturn=0
 
 #
 # Global variable used for the used/target board-id.
@@ -253,6 +257,16 @@ gBoardID=""
 # Global variable used for the used/target board-id.
 #
 gModelID=""
+
+#
+# Number of logical processors.
+#
+let gLogicalCPUs=-1
+
+#
+# Clock frequency (uninitialised).
+#
+let gFrequency=-1
 
 #
 # Output styling.
@@ -291,7 +305,10 @@ let IVY_BRIDGE=4
 let HASWELL=8
 let BROADWELL=16
 
-let gBridgeType=0
+#
+# Global variable used as target cpu/bridge type.
+#
+let gBridgeType=-1
 
 let gTypeCPU=0
 gProcessorData="Unknown CPU"
@@ -1165,7 +1182,7 @@ function _printPackages()
 
 function _printMethodDSM()
 {
-  if [[ $gXcpm -eq 1 ]];
+  if [[ $gBridgeType -ge $IVY_BRIDGE || $gXcpm -eq 1 ]];
     then
       #
       # New stand-alone version of Method _DSM - Copyright (c) 2009 by Master Chief
@@ -1492,7 +1509,7 @@ function _printScopeACST()
   #
   # Do we need to add a closing bracket?
   #
-  if [[ $targetCPU -eq 0 && $gXcpm -ne 1 ]];
+  if [[ $gBridgeType -eq $SANDY_BRIDGE && $gXcpm -eq 0 ]];
     then
       echo '    }'                                                                      >> $gSsdtPR
   fi
@@ -1995,9 +2012,9 @@ function _getProcessorScope()
   local index=0
   local filename=$1
   #
-  # Target Scopes ('\_PR_', '\_PR', '_PR_', '_PR', '\_SB_', '\_SB', , '_SB_', '_SB')
+  # Target Scopes ('\_PR_', '\_PR', '\PR', '_PR_', '_PR', 'PR', '\_SB_', '\_SB', , '_SB_', '_SB')
   #
-  local grepPatternList=('5c5f50525f' '5c5f5052' '5f50525f' '5f5052' '5c5f53425f' '5c5f5342' '5f53425f' '5f5342')
+  local grepPatternList=('5c5f50525f' '5c5f5052' '5c5052' '5f50525f' '5f5052' '5052' '5c5f53425f' '5c5f5342' '5f53425f' '5f5342')
   #
   # Loop through the target pattern list.
   #
@@ -2669,7 +2686,14 @@ function _getCPUDataByProcessorNumber
           then
             gProcessorData="$cpuData"
             let gTypeCPU=$targetType
-            let gBridgeType=$1
+            #
+            # Is gBridgeType still uninitialised i.e. is argument -c not used?
+            #
+            if [[ $gBridgeType -eq -1 ]];
+              then
+                let gBridgeType=$1
+            fi
+
             IFS=$ifs
             return
         fi
@@ -3157,7 +3181,7 @@ function _invalidArgumentError()
 #
 #--------------------------------------------------------------------------------
 #
-function _listSupportedBoardIDsAndModels()
+function _showSupportedBoardIDsAndModels()
 {
   #
   # Save default (0) delimiter.
@@ -3231,10 +3255,10 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}a${STYLE_RESET}cpi Processor name (example: CPU0, C000)\n"
           printf "       -${STYLE_BOLD}b${STYLE_RESET}oard-id (example: Mac-F60DEB81FF30ACF6)\n"
           printf "       -${STYLE_BOLD}c${STYLE_RESET}pu type [0/1/2/3]\n"
-          printf "          0 = Sandy Bridge\n"
-          printf "          1 = Ivy Bridge\n"
-          printf "          2 = Haswell\n"
-          printf "          3 = Broadwell\n"
+          printf "          1 = Sandy Bridge\n"
+          printf "          2 = Ivy Bridge\n"
+          printf "          3 = Haswell\n"
+          printf "          4 = Broadwell\n"
           printf "       -${STYLE_BOLD}d${STYLE_RESET}ebug output [0/1/3]\n"
           printf "          0 = no debug injection/debug output\n"
           printf "          1 = inject debug statements in: ${gSsdtID}.dsl\n"
@@ -3243,13 +3267,14 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}f${STYLE_RESET}requency (clock frequency)\n"
           printf "       -${STYLE_BOLD}h${STYLE_RESET}elp info (this)\n"
           printf "       -${STYLE_BOLD}lfm${STYLE_RESET}ode, lowest idle frequency\n"
-          printf "       -${STYLE_BOLD}l${STYLE_RESET}ist supported board-id and model combinations:\n"
+          printf "       -${STYLE_BOLD}l${STYLE_RESET}ogical processors [2-128]\n"
+          printf "       -${STYLE_BOLD}m${STYLE_RESET}odel (example: MacPro6,1)\n"
+          printf "       -${STYLE_BOLD}p${STYLE_RESET}rocessor model (example: 'E3-1285L v3')\n"
+          printf "       -${STYLE_BOLD}s${STYLE_RESET}how supported board-id and model combinations:\n"
           printf "          'Sandy Bridge'\n"
           printf "          'Ivy Bridge'\n"
           printf "           Haswell\n"
           printf "           Broadwell\n"
-          printf "       -${STYLE_BOLD}m${STYLE_RESET}odel (example: MacPro6,1)\n"
-          printf "       -${STYLE_BOLD}p${STYLE_RESET}rocessor model (example: 'E3-1285L v3')\n"
           printf "       -${STYLE_BOLD}turbo${STYLE_RESET} maximum (turbo) frequency:\n"
           printf "          6300 for Sandy Bridge and Ivy Bridge\n"
           printf "          8000 for Haswell and Broadwell\n"
@@ -3278,7 +3303,7 @@ function _getScriptArguments()
             #
             # Note 'uro' was only added to support '-turbo'
             #
-            if [[ "${flag}" =~ ^[-abcdfhlmpturowx]+$ ]];
+            if [[ "${flag}" =~ ^[-abcdfhlmpsturowx]+$ ]];
               then
                 #
                 # Yes. Figure out what flag it is.
@@ -3322,22 +3347,23 @@ function _getScriptArguments()
                           local detectedBridgeType=$gBridgeType
 
                           case "$1" in
-                              0) let gBridgeType=$SANDY_BRIDGE
+                              0) local bridgeType=$SANDY_BRIDGE
                                  local bridgeTypeString="Sandy Bridge"
                                  ;;
-                              1) let gBridgeType=$IVY_BRIDGE
+                              1) local bridgeType=$IVY_BRIDGE
                                  local bridgeTypeString="Ivy Bridge"
                                  ;;
-                              2) let gBridgeType=$HASWELL
+                              2) local bridgeType=$HASWELL
                                  local bridgeTypeString="Haswell"
                                  ;;
-                              3) let gBridgeType=$BROADWELL
+                              3) local bridgeType=$BROADWELL
                                  local bridgeTypeString="Broadwell"
                                  ;;
                           esac
 
                           if [[ $detectedBridgeType -ne $((2 << $1)) ]];
                             then
+                              let gBridgeType=$bridgeType
                               _PRINT_MSG "Override value: (-c) CPU type, now using: ${bridgeTypeString}!"
                           fi
                         else
@@ -3378,18 +3404,21 @@ function _getScriptArguments()
 
                   -l) shift
 
-                      case "$1" in
-                          'Sandy Bridge') _listSupportedBoardIDsAndModels "${1}"
-                                          ;;
-                            'Ivy Bridge') _listSupportedBoardIDsAndModels "${1}"
-                                          ;;
-                               'Haswell') _listSupportedBoardIDsAndModels "${1}"
-                                          ;;
-                             'Broadwell') _listSupportedBoardIDsAndModels "${1}"
-                                          ;;
-                                       *) _invalidArgumentError "-l $1"
-                                          ;;
-                      esac
+                      if [[ "$1" =~ ^[0-9]+$ ]];
+                        then
+                          #
+                          # Sanity checking.
+                          #
+                          if [[ $1 -gt 1 && $1 -lt 129 ]];
+                            then
+                              let gLogicalCPUs=$1
+                              _PRINT_MSG "Override value: (-l) number of logical processors, now using: ${gLogicalCPUs}!"
+                            else
+                              _invalidArgumentError "-l $1"
+                          fi
+                        else
+                          _invalidArgumentError "-l $1"
+                      fi
                       ;;
 
                   -m) shift
@@ -3455,10 +3484,29 @@ function _getScriptArguments()
                       fi
                       ;;
 
+                  -s) shift
+
+                      case "$1" in
+                          'Sandy Bridge') _showSupportedBoardIDsAndModels "${1}"
+                                          ;;
+                            'Ivy Bridge') _showSupportedBoardIDsAndModels "${1}"
+                                          ;;
+                               'Haswell') _showSupportedBoardIDsAndModels "${1}"
+                                          ;;
+                             'Broadwell') _showSupportedBoardIDsAndModels "${1}"
+                                          ;;
+                                       *) _invalidArgumentError "-s $1"
+                                          ;;
+                      esac
+                      ;;
+
                   -turbo) shift
 
                           if [[ "$1" =~ ^[0-9]+$ ]];
                             then
+                              #
+                              # Sanity checking.
+                              #
                               if [[ $1 -gt $gMaxOCFrequency ]];
                                 then
                                   _exitWithError $MAX_TURBO_FREQUENCY_ERROR
@@ -3476,6 +3524,9 @@ function _getScriptArguments()
 
                       if [[ "$1" =~ ^[0-9]+$ ]];
                         then
+                          #
+                          # Sanity checking.
+                          #
                           if [[ $1 -lt 11 || $1 -gt 150 ]];
                             then
                               _exitWithError $MAX_TDP_ERROR
@@ -3485,6 +3536,9 @@ function _getScriptArguments()
                           fi
                         elif [[ "$1" =~ ^[0-9\.]*$ ]];
                           then
+                            #
+                            # Sanity checking.
+                            #
                             if [[ $1 < "11.5" || $1 > "150" ]];
                               then
                                 _exitWithError $MAX_TDP_ERROR
@@ -3521,13 +3575,8 @@ function _getScriptArguments()
 
                       if [[ "$1" =~ ^[01]+$ ]];
                         then
-                          if [[ $1 -eq 0 || $1 -eq 1 ]];
-                            then
-                              let gXcpm=$1
-                              _PRINT_MSG "Override value: (-x) XCPM mode, now set to: ${1}!"
-                            else
-                              _invalidArgumentError "-x $1"
-                          fi
+                          let gXcpm=$1
+                          _PRINT_MSG "Override value: (-x) XCPM mode, now set to: ${1}!"
                         else
                           _invalidArgumentError "-x $1"
                       fi
@@ -3592,6 +3641,7 @@ function main()
 
   _getCPUNumberFromBrandString
   _getCPUDataByProcessorNumber
+
   #
   # Was the -p flag used and no target processor found?
   #
@@ -3599,8 +3649,12 @@ function main()
     then
       _exitWithError $PROCESSOR_NUMBER_ERROR
   fi
-
-  if [[ $gBridgeType -eq 0 ]];
+  #
+  # Check if -c argument wasn't used.
+  #
+  # Note: Only happens if we failed to locate the processor data!
+  #
+  if [[ $gBridgeType -eq -1 ]];
     then
       local model=$(_getCPUModel)
 
@@ -3678,16 +3732,28 @@ function main()
   #
   if [ $gTypeCPU -gt 0 ];
     then
+      #
+      # Save default (0) delimiter.
+      #
       local ifs=$IFS
+      #
+      # Change delimiter to a comma character.
+      #
       IFS=","
+      #
+      # Convert processor data into array.
+      #
       local cpuData=($gProcessorData)
       #
-      # TDP override detected?
+      # -t argument used?
       #
       if [[ "$gTdp" > "0" ]];
         then
           echo "With a maximum TDP of '$gTdp' Watt, as specified by argument: -t ${gTdp}"
         else
+          #
+          # No. Get TDP from CPU data.
+          #
           gTdp=${cpuData[1]}
           echo 'With a maximum TDP of '$gTdp' Watt, as specified by Intel'
 
@@ -3696,37 +3762,66 @@ function main()
               echo "With a maximum TDP of ${gTdp} Watt - assumed/undetected CPU may require override value!"
           fi
       fi
-
+      #
+      # Check if -lfm argument was used.
+      #
       if [[ $gLfm -gt 0 ]];
         then
+          #
+          # Yes. Use override value.
+          #
           let lfm=$gLfm
         else
+          #
+          # No. Get LFM from CPU data.
+          #
           let lfm=${cpuData[2]}
       fi
-
+      #
+      # Check if -f argument wasn't used.
+      #
       if [[ $gFrequency -gt 0 ]];
         then
+          #
+          # Yes. Use override frequency.
+          #
           let frequency=$gFrequency
         else
+          #
+          # No. Get clock frequency from CPU data.
+          #
           let frequency=${cpuData[3]}
       fi
-
+      #
+      # Check if -turbo argument wasn't used.
+      #
       if [[ $gMaxTurboFrequency -gt 0 ]];
         then
           let maxTurboFrequency=$gMaxTurboFrequency
         else
           let maxTurboFrequency=${cpuData[4]}
       fi
-
+      #
+      # Sanity check.
+      #
       if [ $maxTurboFrequency == 0 ];
         then
           let maxTurboFrequency=$frequency
       fi
-
-      let gLogicalCPUs=${cpuData[6]}
-
+      #
+      # Check if -l argument wasn't used.
+      #
+      if [ $gLogicalCPUs -eq 0 ];
+        then
+          #
+          # No. Get thread count (logical cores) from CPU data.
+          #
+          let gLogicalCPUs=${cpuData[6]}
+      fi
+      #
+      # Restore default (0) delimiter.
+      #
       IFS=$ifs
-
       #
       # Check Low Frequency Mode (may be 0 aka still unknown)
       #
@@ -3746,8 +3841,31 @@ function main()
           fi
       fi
     else
-      let gLogicalCPUs=$(echo `sysctl machdep.cpu.thread_count` | sed -e 's/^machdep.cpu.thread_count: //')
-      let frequency=$(echo `sysctl hw.cpufrequency` | sed -e 's/^hw.cpufrequency: //')
+      #
+      # No CPU data found.
+      #
+      # Note: We only get here when the -p argument wasn't used.
+      #
+      # Now check if -l argument wasn't used.
+      #
+      if [ $gLogicalCPUs -eq 0 ];
+        then
+          #
+          # No. Get thread count (logical cores) from the running system.
+          #
+          let gLogicalCPUs=$(echo `sysctl machdep.cpu.thread_count` | sed -e 's/^machdep.cpu.thread_count: //')
+      fi
+      #
+      # Check if -f argument wasn't used.
+      #
+      if [ $gFrequency -eq -1 ];
+        then
+          #
+          # No. Get the clock frequency from the running system.
+          #
+          let frequency=$(echo `sysctl hw.cpufrequency` | sed -e 's/^hw.cpufrequency: //')
+      fi
+
       let frequency=($frequency / 1000000)
   fi
 
