@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 11.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 11.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -124,6 +124,10 @@
 #			- more comments added (Pike, Februari 2014)
 #			- change bridge type from Sandy Bridge to Ivy Bridge when -w argument is used (Pike, Februari 2014)
 #			- Use Scope (_PR) {} if found for DSDT's without Processor declarations (Pike, Februari 2014)
+#			- less cluttered output (Pike, Februari 2014)
+#			- check all processor declarations instead of just the first one (Pike, Februari 2014)
+#			- show warning if not all processor declarations are found in the DSDT (Pike, Februari 2014)
+#			- first set of changes for multi-processor support (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -159,7 +163,7 @@
 #
 # Script version info.
 #
-gScriptVersion=11.5
+gScriptVersion=11.6
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -275,6 +279,13 @@ let gFrequency=-1
 # Set to 1 if _PR scope is found in the DSDT.
 #
 let gScopePRFound=0
+
+#
+# For future use!
+#
+# Note: Set this to 0 when you want to inject ACPI Processor (...) {} declarations intead of External () objects.
+#
+let gInjectExternalObjects=1
 
 #
 # Output styling.
@@ -651,7 +662,7 @@ i7-3540M,35,1200,3000,3700,2,4
 i7-3537U,17,800,2000,3100,2,4
 i7-3520M,35,1200,2900,3600,2,4
 i7-3517UE,17,0,1700,2800,2,4
-i7-3517U,17,0,1900,3000,2,4
+i7-3517U,17,800,1900,3000,2,4
 # i5-3600 Mobile Processor Series
 i5-3610ME,35,0,2700,3300,2,4
 # i5-3400 Mobile Processor Series
@@ -851,7 +862,7 @@ function _printHeader()
 {
     echo '/*'                                                                         >  $gSsdtPR
     echo ' * Intel ACPI Component Architecture'                                       >> $gSsdtPR
-    echo ' * AML Disassembler version 20130210-00 [Feb 10 2013]'                      >> $gSsdtPR
+    echo ' * AML Disassembler version 20140210-00 [Feb 10 2014]'                      >> $gSsdtPR
     echo ' * Copyright (c) 2000 - 2014 Intel Corporation'                             >> $gSsdtPR
     echo ' * '                                                                        >> $gSsdtPR
     echo ' * Original Table Header:'                                                  >> $gSsdtPR
@@ -863,7 +874,7 @@ function _printHeader()
     echo ' *     OEM Table ID     "CpuPm"'                                            >> $gSsdtPR
   printf ' *     OEM Revision     '$gRevision' (%d)\n' $gRevision                     >> $gSsdtPR
     echo ' *     Compiler ID      "INTL"'                                             >> $gSsdtPR
-    echo ' *     Compiler Version 0x20130210 (538116624)'                             >> $gSsdtPR
+    echo ' *     Compiler Version 0x20140210 (538182160)'                             >> $gSsdtPR
     echo ' */'                                                                        >> $gSsdtPR
     echo ''                                                                           >> $gSsdtPR
     echo 'DefinitionBlock ("'$gSsdtID'.aml", "SSDT", 1, "APPLE ", "CpuPm", '$gRevision')' >> $gSsdtPR
@@ -875,24 +886,120 @@ function _printHeader()
 #--------------------------------------------------------------------------------
 #
 
-function _printExternals()
+function _printExternalObjects()
 {
   #
   # Local variable definition.
   #
-  local currentCPU
+  local numberOfLogicalCPUsPerScope
   #
   # Local variable initialisation.
   #
-  local let currentCPU=0
+  printf 'Number of scopes: '
+  printf ${#gScope[@]}
+  printf '\n'
 
-  while [ $currentCPU -lt $gLogicalCPUs ];
+  let logicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
+  #
+  # Loop through all processor scopes.
+  #
+  for scope in "${gScope[@]}"
   do
-    echo '    External ('${gScope}'.'${gProcessorNames[$currentCPU]}', DeviceObj)'    >> $gSsdtPR
-    let currentCPU+=1
+    let index=0
+    #
+    # Inject External () object for each logical processor in this processor scope.
+    #
+    while [ $index -lt $logicalCPUsPerScope ];
+    do
+      echo '    External ('${scope}'.'${gProcessorNames[$index]}', DeviceObj)'        >> $gSsdtPR
+      #
+      # Next logical processor.
+      #
+      let index+=1
+    done
   done
-
+  #
+  # Inject an empty line for readability.
+  #
   echo ''                                                                             >> $gSsdtPR
+  #
+  # Done.
+  #
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
+
+function _getPBlockAddress()
+{
+  #
+  # Local variable definition/initialisation.
+  #
+  local filename="/tmp/facp.txt"
+  #
+  # Extract FACP from ioreg.
+  #
+  local data=$(ioreg -c AppleACPIPlatformExpert -rd1 -w0 | egrep -o 'FACP"=<[0-9a-f]+')
+  #
+  # The offset is (0x98/152 * 2) + 7 (for: FACP"=<)
+  #
+  pblockAddress="0x${data:317:2}${data:315:2}${data:313:2}10"
+  #
+  # Return P_BLK address + 10
+  #
+  echo $pblockAddress
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
+
+function _printProcessorDefinitions()
+{
+  #
+  # Local variable definition.
+  #
+  local numberOfLogicalCPUsPerScope
+  #
+  # Local variable initialisation.
+  #
+  let logicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
+  #
+  #
+  #
+  local pBlockAddress=$(_getPBlockAddress)
+  #
+  # Loop through all processor scopes.
+  #
+  for scope in "${gScope[@]}"
+  do
+    let index=0
+    echo '    Scope('${scope}')'                                                      >> $gSsdtPR
+    echo '    {'                                                                      >> $gSsdtPR
+    #
+    # Inject Processor () object for each logical processor in this processor scope.
+    #
+    while [ $index -lt $logicalCPUsPerScope ];
+    do
+      echo '        Processor ('${gProcessorNames[$index]}', '$index', '$pBlockAddress', 0x06) {}' >> $gSsdtPR
+      #
+      # Next logical processor.
+      #
+      let index+=1
+    done
+
+    echo '    }'                                                                      >> $gSsdtPR
+  done
+  #
+  # Inject an empty line for readability.
+  #
+  echo ''                                                                             >> $gSsdtPR
+  #
+  # Done.
+  #
 }
 
 
@@ -911,47 +1018,40 @@ function _injectDebugInfo()
 
   echo '        Method (_INI, 0, NotSerialized)'                                      >> $gSsdtPR
   echo '        {'                                                                    >> $gSsdtPR
-  echo '            Store ("ssdtPRGen version: '$gScriptVersion' / '$gProductName' '$gProductVersion' ('$gBuildVersion')", Debug)'  >> $gSsdtPR
-  echo '            Store ("target processor : '$gProcessorNumber'", Debug)'          >> $gSsdtPR
-  echo '            Store ("running processor: '$gBrandString'", Debug)'              >> $gSsdtPR
-  echo '            Store ("baseFrequency    : '$gBaseFrequency'", Debug)'            >> $gSsdtPR
-  echo '            Store ("frequency        : '$frequency'", Debug)'                 >> $gSsdtPR
-  echo '            Store ("busFrequency     : '$gBusFrequency'", Debug)'             >> $gSsdtPR
-  echo '            Store ("logicalCPUs      : '$gLogicalCPUs'", Debug)'              >> $gSsdtPR
-  echo '            Store ("maximum TDP      : '$gTdp'", Debug)'                      >> $gSsdtPR
-  echo '            Store ("packageLength    : '$packageLength'", Debug)'             >> $gSsdtPR
-  echo '            Store ("turboStates      : '$turboStates'", Debug)'               >> $gSsdtPR
-  echo '            Store ("maxTurboFrequency: '$maxTurboFrequency'", Debug)'         >> $gSsdtPR
-
+  echo '            Store ("ssdtPRGen version....: '$gScriptVersion' / '$gProductName' '$gProductVersion' ('$gBuildVersion')", Debug)'  >> $gSsdtPR
+  echo '            Store ("target processor.....: '$gProcessorNumber'", Debug)'      >> $gSsdtPR
+  echo '            Store ("running processor....: '$gBrandString'", Debug)'          >> $gSsdtPR
+  echo '            Store ("baseFrequency........: '$gBaseFrequency'", Debug)'        >> $gSsdtPR
+  echo '            Store ("frequency............: '$frequency'", Debug)'             >> $gSsdtPR
+  echo '            Store ("busFrequency.........: '$gBusFrequency'", Debug)'         >> $gSsdtPR
+  echo '            Store ("logicalCPUs..........: '$gLogicalCPUs'", Debug)'          >> $gSsdtPR
+  echo '            Store ("maximum TDP..........: '$gTdp'", Debug)'                  >> $gSsdtPR
+  echo '            Store ("packageLength........: '$packageLength'", Debug)'         >> $gSsdtPR
+  echo '            Store ("turboStates..........: '$turboStates'", Debug)'           >> $gSsdtPR
+  echo '            Store ("maxTurboFrequency....: '$maxTurboFrequency'", Debug)'     >> $gSsdtPR
+  #
+  # Ivy Bridge workarounds requested?
+  #
   if [[ $gIvyWorkAround -gt 0 ]];
     then
-       echo '            Store ("gIvyWorkAround   : '$gIvyWorkAround'", Debug)'       >> $gSsdtPR
+       echo '            Store ("IvyWorkArounds.......: '$gIvyWorkAround'", Debug)'   >> $gSsdtPR
   fi
-
+  #
+  # XCPM mode initialised?
+  #
   if [[ $gXcpm -ne -1 ]];
     then
-      echo '            Store ("machdep.xcpm.mode: '$gXcpm'", Debug)'                 >> $gSsdtPR
+       echo '            Store ("machdep.xcpm.mode....: '$gXcpm'", Debug)'            >> $gSsdtPR
+  fi
+  #
+  # Do we have more than one ACPI processor scope?
+  #
+ if [[ "${#gScope[@]}" -gt 1 ]];
+   then
+      echo '            Store ("number of ACPI scopes: '${#gScope[@]}'", Debug)'      >> $gSsdtPR
   fi
 
   echo '        }'                                                                    >> $gSsdtPR
-  echo ''                                                                             >> $gSsdtPR
-}
-
-
-#
-#--------------------------------------------------------------------------------
-#
-
-function _printProcessorDefinitions()
-{
-  let currentCPU=0;
-
-  while [ $currentCPU -lt $1 ];
-  do
-    echo '    External ('${gScope}'.'${gProcessorNames[$currentCPU]}', DeviceObj)'    >> $gSsdtPR
-    let currentCPU+=1
-  done
-
   echo ''                                                                             >> $gSsdtPR
 }
 
@@ -980,6 +1080,16 @@ function _printScopeStart()
   let packageLength=$2
   let maxTurboFrequency=$3
   let useWorkArounds=0
+  #
+  # Have we injected External () objects?
+  #
+  if [ $gInjectExternalObjects -ne 1 ];
+    then
+      #
+      # No. Inject ACPI Processor (...) {} declarations.
+      #
+      _printProcessorDefinitions
+  fi
 
   echo '    Scope ('${gScope}'.'${gProcessorNames[0]}')'                              >> $gSsdtPR
   echo '    {'                                                                        >> $gSsdtPR
@@ -1005,7 +1115,7 @@ function _printScopeStart()
 
       let packageLength=($2+$lowFrequencyPStates)
 
-      if [[ lowFrequencyPStates -gt 0 ]];
+      if [[ $lowFrequencyPStates -gt 0 ]];
         then
           printf "        Name (APLF, 0x%02x)\n" $lowFrequencyPStates                 >> $gSsdtPR
         else
@@ -1772,6 +1882,88 @@ function _getPackageLength()
 #
 #--------------------------------------------------------------------------------
 #
+function _checkProcessorDeclarationsforAP()
+{
+  #
+  # Local variable definitions/initialisation.
+  #
+  local targetData="$1"
+  local deviceName=$2
+  local typeEncoding=$3
+  local index=0
+  #
+  # Loop through all ACPI processor names extracted from the ioreg.
+  #
+  for logicalCore in "${gProcessorNames[@]}"
+  do
+    #
+    # Convert (example) 'C000' to '43303030'
+    #
+    local processorNameBytes=$(echo -n ${gProcessorNames[$index]} | xxd -ps)
+    #
+    # Search for a Processor {} declaration in targetData for the application processor.
+    #
+    # Examples (single/dual byte encoding):
+    #          5b831a4330303000 (C000)
+    #          0123456789 12345
+    #
+    #          5b834a044330303000 (C200)
+    #          0123456789 1234567
+    #
+    local processorObjectData=$(echo "${targetData}" | egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{$typeEncoding}${processorNameBytes}")
+    #
+    # ACPI processor declaration name found?
+    #
+    if [[ $processorObjectData ]];
+      then
+        _debugPrint "logicalCore: ${index} ${gProcessorNames[$index]}"
+        #
+        # Up
+        #
+        let index+=1
+    fi
+  done
+  #
+  # Do we have all ACPI processor declarations?
+  #
+  if [[ $index -eq ${#gProcessorNames[0]} ]];
+    then
+      #
+      # Yes. Return SUCCESS.
+      #
+      return 0
+    else
+      #
+      # No. Was a deviceName given?
+      #
+      if [[ $deviceName == "" ]];
+        then
+          #
+          # No. Don't display a deviceName in the warning.
+          #
+          local deviceText=""
+        else
+          #
+          # Yes. Display the deviceName in the warning.
+          #
+          local deviceText=" in device ${$deviceName}"
+      fi
+
+      _PRINT_MSG "Warning: only ${index} of ${#gProcessorNames[0]} processor declarations found${deviceText}!"
+  fi
+  #
+  # Return number of ACPI processor declarations that we found (so far).
+  #
+  # Note: This number should match the number of logical cores (single processor setups) but can
+  #       be lower when a deviceName was given (multi-processor setups may use multiple devices).
+  #
+  return $index
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
 
 function _checkForProcessorDeclarations()
 {
@@ -1781,13 +1973,13 @@ function _checkForProcessorDeclarations()
   local targetData=$1
   local deviceName=$2
   local isACPI10Compliant=$3
+  local status=0
   #
   # Convert (example) 'C000' to '43303030'
   #
   local processorNameBytes=$(echo -n ${gProcessorNames[0]} | xxd -ps)
-
   #
-  # Search for the first Processor {} declaration in $objectData.
+  # Search for the first ACPI Processor {} declaration in $objectData.
   #
   # Example:
   #          5b831a4330303000 (C000)
@@ -1795,7 +1987,7 @@ function _checkForProcessorDeclarations()
   #
   local processorObjectData=$(echo "${targetData}" | egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{2}${processorNameBytes}")
   #
-  # Do we have a match for the first processor declaration?
+  # Do we have a match for the first ACPI processor declaration?
   #
   if [[ $processorObjectData ]];
     then
@@ -1818,12 +2010,17 @@ function _checkForProcessorDeclarations()
           fi
       fi
       #
-      # Return SUCCESS.
+      # The ACPI processor declaration for the first logical core (bootstrap processor / BSP) is found,
+      # now check the targetData for processor declaration for the application processors (AP).
       #
-      return 0
+      _checkProcessorDeclarationsforAP "$targetData" "" $AML_SINGLE_BYTE_ENCODING
+      #
+      # Return number of ACPI processor declarations that we found (so far).
+      #
+      return $?
     else
       #
-      # No. Search for the first Processor {...} declaration with enclosed child objects.
+      # No. Search for the first ACPI Processor {...} declaration with enclosed child objects.
       #
       # Example:
       #          5b834a044330303000 (C200)
@@ -1834,10 +2031,15 @@ function _checkForProcessorDeclarations()
       if [[ $processorObjectData ]];
         then
           _debugPrint "Processor declaration (${gProcessorNames[0]}) found in Device (%s) {...} (non ACPI 1.0 compliant)\n" $deviceName
-           #
-           # Return SUCCESS.
-           #
-          return 0
+          #
+          # The ACPI processor declaration for the first logical core (bootstrap processor / BSP) is found,
+          # now check the targetData for processor declaration for the application processors (AP).
+          #
+          _checkProcessorDeclarationsforAP "$targetData" "" $AML_DUAL_BYTE_ENCODING
+          #
+          # Return number of ACPI processor declarations that we found (so far).
+          #
+          return $?
       fi
   fi
 
@@ -1848,7 +2050,10 @@ function _checkForProcessorDeclarations()
   #
   # Return ERROR.
   #
-  return 1
+  # Note: The return value can be anything between 0 and 255 and thus -1 is actually 255
+  #       but we use -1 here to make it clear (obviously) that something went wrong.
+  #
+  return -1
 }
 
 
@@ -2148,7 +2353,7 @@ function _getProcessorScope()
                     gScope='\'$scopeName
                     return
                   else
-                    printf 'Scope ('$scopeName') {'$scopeLength' bytes} without Processor declarations ...\n'
+                    _debugPrint 'Scope ('$scopeName') {'$scopeLength' bytes} without Processor declarations ...\n'
                 fi
             fi
           done
@@ -3938,7 +4143,17 @@ function main()
   echo "Number of P-States: $packageLength ($gBaseFrequency-$maxTurboFrequency MHz)"
 
   _printHeader
-  _printExternals
+  #
+  # Do we need to inject External () objects?
+  #
+  if [ $gInjectExternalObjects -eq 1 ];
+    then
+      #
+      # Yes. Inject External () objects for all processor declarations.
+      #
+      _printExternalObjects
+  fi
+
   _checkForXCPM
   _printScopeStart $turboStates $packageLength $maxTurboFrequency
   _printPackages $frequency $turboStates $maxTurboFrequency
