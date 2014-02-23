@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 11.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 12.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -128,6 +128,10 @@
 #			- check all processor declarations instead of just the first one (Pike, Februari 2014)
 #			- show warning if not all processor declarations are found in the DSDT (Pike, Februari 2014)
 #			- first set of changes for multi-processor support (Pike, Februari 2014)
+#			- inconsistency in argument -c values fixed (Pike, Februari 2014)
+#			- fixed a couple of typos (Pike, Februari 2014)
+#			- show less/ignore some debug warnings (Pike, Februari 2014)
+#			- multi-processor support added (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -163,7 +167,7 @@
 #
 # Script version info.
 #
-gScriptVersion=11.6
+gScriptVersion=12.0
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -891,25 +895,26 @@ function _printExternalObjects()
   #
   # Local variable definition.
   #
+  local index
+  local scopeIndex
+  local maxCoresPerScope
   local numberOfLogicalCPUsPerScope
   #
   # Local variable initialisation.
   #
-  printf 'Number of scopes: '
-  printf ${#gScope[@]}
-  printf '\n'
-
+  let index=0
+  let scopeIndex=1
   let logicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
   #
   # Loop through all processor scopes.
   #
   for scope in "${gScope[@]}"
   do
-    let index=0
+    let maxCoresPerScope=($logicalCPUsPerScope*$scopeIndex)
     #
     # Inject External () object for each logical processor in this processor scope.
     #
-    while [ $index -lt $logicalCPUsPerScope ];
+    while [ $index -lt $maxCoresPerScope ];
     do
       echo '    External ('${scope}'.'${gProcessorNames[$index]}', DeviceObj)'        >> $gSsdtPR
       #
@@ -917,14 +922,11 @@ function _printExternalObjects()
       #
       let index+=1
     done
+      #
+      # Next processor scope.
+      #
+      let scopeIndex+=1
   done
-  #
-  # Inject an empty line for readability.
-  #
-  echo ''                                                                             >> $gSsdtPR
-  #
-  # Done.
-  #
 }
 
 
@@ -962,41 +964,79 @@ function _printProcessorDefinitions()
   #
   # Local variable definition.
   #
+  local index
+  local scopeIndex
+  local maxCoresPerScope
   local numberOfLogicalCPUsPerScope
+  local pBlockAddress=$(_getPBlockAddress)
   #
   # Local variable initialisation.
   #
+  let index=0
+  let scopeIndex=1
   let logicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
-  #
-  #
-  #
-  local pBlockAddress=$(_getPBlockAddress)
   #
   # Loop through all processor scopes.
   #
   for scope in "${gScope[@]}"
   do
-    let index=0
-    echo '    Scope('${scope}')'                                                      >> $gSsdtPR
-    echo '    {'                                                                      >> $gSsdtPR
+    let maxCoresPerScope=($logicalCPUsPerScope*$scopeIndex)
+    #
+    # Do we have a device name?
+    #
+    if [[ $scope =~ ^"\_SB_." ]];
+      then
+        local scopeName=$(echo $scope | sed -e 's/^\\_SB_\.//')
+
+        echo '    Scope(\_SB_)'                                                       >> $gSsdtPR
+        echo '    {'                                                                  >> $gSsdtPR
+        echo '        Device ('$scopeName')'                                          >> $gSsdtPR
+        echo '        {'                                                              >> $gSsdtPR
+        echo '            Name (_HID, "ACPI0004")'                                    >> $gSsdtPR
+      else
+        echo '    {'                                                                  >> $gSsdtPR
+        echo '    Scope('$scope')'                                                    >> $gSsdtPR
+    fi
     #
     # Inject Processor () object for each logical processor in this processor scope.
     #
-    while [ $index -lt $logicalCPUsPerScope ];
+    while [ $index -lt $maxCoresPerScope ];
     do
-      echo '        Processor ('${gProcessorNames[$index]}', '$index', '$pBlockAddress', 0x06) {}' >> $gSsdtPR
+      if [[ $scope =~ ^"\_SB_." ]];
+        then
+          echo ''                                                                     >> $gSsdtPR
+          echo '            Processor ('${gProcessorNames[$index]}', '$index', '$pBlockAddress', Zero)' >> $gSsdtPR
+          echo '            {'                                                        >> $gSsdtPR
+          echo '                Name (_HID, "ACPI0007")'                              >> $gSsdtPR
+          echo '                Name (_STA, 0x0F)'                                    >> $gSsdtPR
+          echo '            }'                                                        >> $gSsdtPR
+        else
+          echo '    Processor ('${gProcessorNames[$index]}', '$index', '$pBlockAddress', 0x06) {}' >> $gSsdtPR
+      fi
       #
       # Next logical processor.
       #
       let index+=1
     done
 
+    if [[ $scope =~ ^"\_SB_." ]];
+      then
+        echo '        }'                                                              >> $gSsdtPR
+    fi
+
     echo '    }'                                                                      >> $gSsdtPR
+    #
+    # 
+    #
+    if [[ $scopeIndex -lt ${#gScope[@]} ]];
+      then
+        echo ''                                                                       >> $gSsdtPR
+    fi
+    #
+    # Next processor scope.
+    #
+    let scopeIndex+=1
   done
-  #
-  # Inject an empty line for readability.
-  #
-  echo ''                                                                             >> $gSsdtPR
   #
   # Done.
   #
@@ -1076,14 +1116,18 @@ function _printScopeStart()
   #
   # Local variable initialisation.
   #
-  let turboStates=$1
-  let packageLength=$2
-  let maxTurboFrequency=$3
+  let scopeIndex=$1
+  let turboStates=$2
+  let packageLength=$3
+  let maxTurboFrequency=$4
   let useWorkArounds=0
+
+  let logicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
+  let index=($logicalCPUsPerScope*$scopeIndex)
   #
   # Have we injected External () objects?
   #
-  if [ $gInjectExternalObjects -ne 1 ];
+  if [[ $scopeIndex -eq 0 && $gInjectExternalObjects -ne 1 ]];
     then
       #
       # No. Inject ACPI Processor (...) {} declarations.
@@ -1091,14 +1135,14 @@ function _printScopeStart()
       _printProcessorDefinitions
   fi
 
-  echo '    Scope ('${gScope}'.'${gProcessorNames[0]}')'                              >> $gSsdtPR
+  echo ''                                                                             >> $gSsdtPR
+  echo '    Scope ('${gScope[${scopeIndex}]}'.'${gProcessorNames[$index]}')'          >> $gSsdtPR
   echo '    {'                                                                        >> $gSsdtPR
 
-  if (( $gDebug & 1 ));
+  if (( $scopeIndex == 0 && $gDebug & 1 ))
     then
       _injectDebugInfo $turboStates $maxTurboFrequency $packageLength
   fi
-
   #
   # Do we need to create additional (Low Frequency) P-States?
   #
@@ -1113,7 +1157,7 @@ function _printScopeStart()
           let lowFrequencyPStates=($gBaseFrequency/100)-8
       fi
 
-      let packageLength=($2+$lowFrequencyPStates)
+      let packageLength=($packageLength+$lowFrequencyPStates)
 
       if [[ $lowFrequencyPStates -gt 0 ]];
         then
@@ -1129,7 +1173,6 @@ function _printScopeStart()
           let useWorkArounds=1
       fi
   fi
-
   #
   # Check number of Turbo states (for IASL optimization).
   #
@@ -1630,6 +1673,8 @@ function _printScopeACST()
   if [[ $gBridgeType -eq $SANDY_BRIDGE && $gXcpm -ne 1 ]];
     then
       echo '    }'                                                                      >> $gSsdtPR
+#   else
+#     echo ''                                                                           >> $gSsdtPR
   fi
 }
 
@@ -1643,49 +1688,73 @@ function _printScopeCPUn()
   #
   # Local variable definition.
   #
-  local currentCPU
+  local index
+  local scopeIndex
+  local logicalCPUsPerScope
+  local bspIndex
+  local apIndex
   #
   # Local variable initialisation.
   #
-  let currentCPU=1;
+  let index=1
+  let scopeIndex=$1
+  let logicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
+  let bspIndex=$logicalCPUsPerScope*$scopeIndex
+  let apIndex=$bspIndex+1
 
-  while [ $currentCPU -lt $gLogicalCPUs ];
+  local scope=${gScope[$scopeIndex]}
+
+  while [ $index -lt $logicalCPUsPerScope ];
   do
-    echo ''                                                                         >> $gSsdtPR
-    echo '    Scope ('${gScope}'.'${gProcessorNames[$currentCPU]}')'                >> $gSsdtPR
-    echo '    {'                                                                    >> $gSsdtPR
-    echo '        Method (APSS, 0, NotSerialized)'                                  >> $gSsdtPR
-    echo '        {'                                                                >> $gSsdtPR
+    echo ''                                                                             >> $gSsdtPR
+    echo '    Scope ('${scope}'.'${gProcessorNames[${apIndex}]}')'                      >> $gSsdtPR
+    echo '    {'                                                                        >> $gSsdtPR
+    echo '        Method (APSS, 0, NotSerialized)'                                      >> $gSsdtPR
+    echo '        {'                                                                    >> $gSsdtPR
 
     if (( $gDebug ));
       then
-        echo '            Store ("Method '${gProcessorNames[$currentCPU]}'.APSS Called", Debug)'  >> $gSsdtPR
-        echo ''                                                                     >> $gSsdtPR
+        local debugScopeName=$(echo $scope | sed -e 's/^\\//')
+
+        echo '            Store ("Method '$debugScopeName'.'${gProcessorNames[${apIndex}]}'.APSS Called", Debug)'  >> $gSsdtPR
+        echo ''                                                                         >> $gSsdtPR
     fi
 
-    echo '            Return ('${gScope}'.'${gProcessorNames[0]}'.APSS)'            >> $gSsdtPR
-    echo '        }'                                                                >> $gSsdtPR
+    echo '            Return ('${scope}'.'${gProcessorNames[${bspIndex}]}'.APSS)'       >> $gSsdtPR
+    echo '        }'                                                                    >> $gSsdtPR
     #
     # IB CPUPM tries to parse/execute CPUn.ACST (see debug data) and thus we add
     # this method, conditionally, since SB CPUPM doesn't seem to care about it.
     #
     if [ $gBridgeType -ge $IVY_BRIDGE ];
       then
-        if [ $currentCPU -eq 1 ];
+        if [ $index -eq 1 ];
           then
             _printScopeACST 1
           else
-            echo ''                                                                 >> $gSsdtPR
-            echo '        Method (ACST, 0, NotSerialized) { Return ('${gScope}'.'${gProcessorNames[1]}'.ACST ()) }' >> $gSsdtPR
+            echo ''                                                                     >> $gSsdtPR
+            local processorName=${gProcessorNames[$bspIndex+1]}
+            echo '        Method (ACST, 0, NotSerialized) { Return ('$scope'.'$processorName'.ACST ()) }' >> $gSsdtPR
         fi
     fi
 
-    echo '    }'                                                                    >> $gSsdtPR
+    echo '    }'                                                                        >> $gSsdtPR
 
-    let currentCPU+=1
+    let index+=1
+    let apIndex+=1
   done
+  #
+  # Next processor scope.
+  #
+  let scopeIndex+=1
 
- echo '}'                                                                           >> $gSsdtPR
+  if [[ $scopeIndex -eq ${#gScope[@]} ]];
+    then
+      echo '}'                                                                          >> $gSsdtPR
+  fi
+  #
+  # Done.
+  #
 }
 
 
@@ -1728,7 +1797,13 @@ function _getProcessorNames()
   #
   # Global variable initialisation.
   #
+  # Note: COmment this out for dry runs.
+  #
   gProcessorNames=($acpiNames)
+  #
+  # Uncomment/change this for dry runs.
+  #
+  # gProcessorNames=("C000" "C001" "C002" "C003" "C100" "C101" "C102" "C103")
   #
   # Do we have two logical processor cores?
   #
@@ -1926,7 +2001,7 @@ function _checkProcessorDeclarationsforAP()
   #
   # Do we have all ACPI processor declarations?
   #
-  if [[ $index -eq ${#gProcessorNames[0]} ]];
+  if [[ $index -eq ${#gProcessorNames[@]} ]];
     then
       #
       # Yes. Return SUCCESS.
@@ -1946,10 +2021,13 @@ function _checkProcessorDeclarationsforAP()
           #
           # Yes. Display the deviceName in the warning.
           #
-          local deviceText=" in device ${$deviceName}"
+          local deviceText=" in device ${deviceName}"
       fi
 
-      _PRINT_MSG "Warning: only ${index} of ${#gProcessorNames[0]} processor declarations found${deviceText}!"
+      if [[ $index -lt ${#gProcessorNames[@]} ]];
+        then
+          _PRINT_MSG "Warning: only ${index} of ${#gProcessorNames[@]} processor declarations found${deviceText}!"
+      fi
   fi
   #
   # Return number of ACPI processor declarations that we found (so far).
@@ -2013,7 +2091,7 @@ function _checkForProcessorDeclarations()
       # The ACPI processor declaration for the first logical core (bootstrap processor / BSP) is found,
       # now check the targetData for processor declaration for the application processors (AP).
       #
-      _checkProcessorDeclarationsforAP "$targetData" "" $AML_SINGLE_BYTE_ENCODING
+      _checkProcessorDeclarationsforAP "$targetData" $deviceName $AML_SINGLE_BYTE_ENCODING
       #
       # Return number of ACPI processor declarations that we found (so far).
       #
@@ -2035,7 +2113,7 @@ function _checkForProcessorDeclarations()
           # The ACPI processor declaration for the first logical core (bootstrap processor / BSP) is found,
           # now check the targetData for processor declaration for the application processors (AP).
           #
-          _checkProcessorDeclarationsforAP "$targetData" "" $AML_DUAL_BYTE_ENCODING
+          _checkProcessorDeclarationsforAP "$targetData" $deviceName $AML_DUAL_BYTE_ENCODING
           #
           # Return number of ACPI processor declarations that we found (so far).
           #
@@ -2072,10 +2150,12 @@ function _getACPIProcessorScope()
   local checkGlobalProcessorScope
   local scopeLength
   local index
+  local scopeIndex
   #
   # Local variable initialisation.
   #
   let index=0
+  let scopeIndex=0
   #
   # Convert (example) 'C000' to '43303030'
   #
@@ -2122,7 +2202,7 @@ function _getACPIProcessorScope()
         if [ $objectCount -gt 0 ];
           then
             _debugPrint "${objectCount} Name (_HID, \"ACPI0004\") object(s) found in the DSDT\n"
-            echo "matchingData: $matchingData\n"
+            _debugPrint "matchingData: $matchingData\n"
         fi
         #
         # Loop through all Name (_HID, ACPI0004) objects.
@@ -2186,7 +2266,7 @@ function _getACPIProcessorScope()
           #          5b823053434b30085f4849440d4143504930303034005b831a43303030001004000006085f4849440d414350493030303700
           #          0123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789
           #
-          # Check for Processor declarations.
+          # Check for ACPI Processor () {} declarations.
           #
           let checkGlobalProcessorScope=0
           #
@@ -2206,6 +2286,22 @@ function _getACPIProcessorScope()
               # Done.
               #
               return
+            else
+              #
+              #
+              #
+              if [ $? -lt ${#gProcessorNames[@]} ];
+                then
+                  #
+                  # Update the global processor scope.
+                  #
+                  gScope[$scopeIndex]="\_SB_.${deviceName}"
+                  #
+                  #
+                  #
+                  let scopeIndex+=1
+                  _debugPrint "Searching for additional Processor declaration ...\n"
+              fi
           fi
         done
     fi
@@ -3484,10 +3580,10 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}a${STYLE_RESET}cpi Processor name (example: CPU0, C000)\n"
           printf "       -${STYLE_BOLD}b${STYLE_RESET}oard-id (example: Mac-F60DEB81FF30ACF6)\n"
           printf "       -${STYLE_BOLD}c${STYLE_RESET}pu type [0/1/2/3]\n"
-          printf "          1 = Sandy Bridge\n"
-          printf "          2 = Ivy Bridge\n"
-          printf "          3 = Haswell\n"
-          printf "          4 = Broadwell\n"
+          printf "          0 = Sandy Bridge\n"
+          printf "          1 = Ivy Bridge\n"
+          printf "          2 = Haswell\n"
+          printf "          3 = Broadwell\n"
           printf "       -${STYLE_BOLD}d${STYLE_RESET}ebug output [0/1/3]\n"
           printf "          0 = no debug injection/debug output\n"
           printf "          1 = inject debug statements in: ${gSsdtID}.dsl\n"
@@ -4155,35 +4251,46 @@ function main()
   fi
 
   _checkForXCPM
-  _printScopeStart $turboStates $packageLength $maxTurboFrequency
-  _printPackages $frequency $turboStates $maxTurboFrequency
 
   case "$gBridgeType" in
-      $SANDY_BRIDGE) local cpuTypeString="06"
-                     _initSandyBridgeSetup
-                     _printScopeACST 0
-                     _printMethodDSM
-                     _printScopeCPUn
-                     ;;
-        $IVY_BRIDGE) local cpuTypeString="07"
-                     _initIvyBridgeSetup
-                     _printScopeACST 0
-                     _printMethodDSM
-                     _printScopeCPUn
-                     ;;
-        $HASWELL)    local cpuTypeString="08"
-                     _initHaswellSetup
-                     _printScopeACST 0
-                     _printMethodDSM
-                     _printScopeCPUn
-                     ;;
-        $BROADWELL)  local cpuTypeString="09"
-                     _initBroadwellSetup
-                     _printScopeACST 0
-                     _printMethodDSM
-                     _printScopeCPUn
-                     ;;
+    $SANDY_BRIDGE) local cpuTypeString="06"
+                   _initSandyBridgeSetup
+                   ;;
+      $IVY_BRIDGE) local cpuTypeString="07"
+                   _initIvyBridgeSetup
+                   ;;
+         $HASWELL) local cpuTypeString="08"
+                   _initHaswellSetup
+                   ;;
+       $BROADWELL) local cpuTypeString="09"
+                   _initBroadwellSetup
+                   ;;
   esac
+
+  let scopeIndex=0
+  #
+  # Loop through all processor scopes.
+  #
+  for scope in "${gScope[@]}"
+  do
+    _printScopeStart $scopeIndex $turboStates $packageLength $maxTurboFrequency
+    _printPackages $frequency $turboStates $maxTurboFrequency
+    _printScopeACST 0
+
+    if [ $scopeIndex -eq 0 ];
+      then
+        _printMethodDSM
+      else
+        if [ $gBridgeType -ge $IVY_BRIDGE ];
+          then
+            echo '    }' >> $gSsdtPR
+        fi
+    fi
+
+    _printScopeCPUn $scopeIndex
+
+    let scopeIndex+=1
+  done
 
   #
   # Is this a MacPro6,1 model?
