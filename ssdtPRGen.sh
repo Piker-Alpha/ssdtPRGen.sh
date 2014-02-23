@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 12.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 12.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -132,6 +132,7 @@
 #			- fixed a couple of typos (Pike, Februari 2014)
 #			- show less/ignore some debug warnings (Pike, Februari 2014)
 #			- multi-processor support added (Pike, Februari 2014)
+#			- fixed an issue when argument -p was used (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -167,7 +168,7 @@
 #
 # Script version info.
 #
-gScriptVersion=12.0
+gScriptVersion=12.1
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -3968,8 +3969,17 @@ function main()
       #
       _getModelID
   fi
+  #
+  # Argument -p used?
+  #
+  if [ $modelSpecified -eq 0 ];
+    then
+      #
+      # No. Get processor model from brandstring.
+      #
+      _getCPUNumberFromBrandString
+  fi
 
-  _getCPUNumberFromBrandString
   _getCPUDataByProcessorNumber
 
   #
