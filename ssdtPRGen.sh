@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 12.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 12.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -133,6 +133,9 @@
 #			- show less/ignore some debug warnings (Pike, Februari 2014)
 #			- multi-processor support added (Pike, Februari 2014)
 #			- fixed an issue when argument -p was used (Pike, Februari 2014)
+#			- inconsistency in argument -a fixed (Pike, Februari 2014)
+#			- mixup of $data / $matchingData fixed (Pike, Februari 2014)
+#			- better deviceName check/stop warning with wrong values (Pike, Februari 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -168,7 +171,7 @@
 #
 # Script version info.
 #
-gScriptVersion=12.1
+gScriptVersion=12.2
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -1992,7 +1995,7 @@ function _checkProcessorDeclarationsforAP()
     #
     if [[ $processorObjectData ]];
       then
-        _debugPrint "logicalCore: ${index} ${gProcessorNames[$index]}"
+        _debugPrint "logicalCore: ${index} ${gProcessorNames[$index]}\n"
         #
         # Up
         #
@@ -2074,8 +2077,10 @@ function _checkForProcessorDeclarations()
       # Yes. Print the result.
       #
       _debugPrint "Processor declaration (${gProcessorNames[0]}) {0x${processorObjectData:4:2} bytes} found in "
-
-      if [[ $deviceName ]];
+      #
+      # Do we have a device name?
+      #
+      if [[ ${#deviceName} -gt 1 ]];
         then
           _debugPrint "Device (%s) (non ACPI 1.0 compliant)\n" $deviceName
         else
@@ -2092,7 +2097,7 @@ function _checkForProcessorDeclarations()
       # The ACPI processor declaration for the first logical core (bootstrap processor / BSP) is found,
       # now check the targetData for processor declaration for the application processors (AP).
       #
-      _checkProcessorDeclarationsforAP "$targetData" $deviceName $AML_SINGLE_BYTE_ENCODING
+      _checkProcessorDeclarationsforAP $targetData "$deviceName" $AML_SINGLE_BYTE_ENCODING
       #
       # Return number of ACPI processor declarations that we found (so far).
       #
@@ -2114,7 +2119,7 @@ function _checkForProcessorDeclarations()
           # The ACPI processor declaration for the first logical core (bootstrap processor / BSP) is found,
           # now check the targetData for processor declaration for the application processors (AP).
           #
-          _checkProcessorDeclarationsforAP "$targetData" $deviceName $AML_DUAL_BYTE_ENCODING
+          _checkProcessorDeclarationsforAP $targetData "$deviceName" $AML_DUAL_BYTE_ENCODING
           #
           # Return number of ACPI processor declarations that we found (so far).
           #
@@ -2195,7 +2200,7 @@ function _getACPIProcessorScope()
     #          5b824d9553434b30085f4849440d414350493030303400 (N times)
     #          0123456789 123456789 123456789 123456789 12345
     #
-    if [[ $data ]];
+    if [[ $matchingData ]];
       then
         local hidObjectList=($matchingData)
         local let objectCount=${#hidObjectList[@]}
@@ -2203,7 +2208,7 @@ function _getACPIProcessorScope()
         if [ $objectCount -gt 0 ];
           then
             _debugPrint "${objectCount} Name (_HID, \"ACPI0004\") object(s) found in the DSDT\n"
-            _debugPrint "matchingData: $matchingData\n"
+            _debugPrint "matchingData:\n$matchingData\n"
         fi
         #
         # Loop through all Name (_HID, ACPI0004) objects.
@@ -3642,7 +3647,7 @@ function _getScriptArguments()
                           if [ ${#1} -eq 3 ];
                             then
                               gProcLabel=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-                              echo "Override value: (-l) label for ACPI Processors, now using '${gProcLabel}'!"
+                              _PRINT_MSG "Override value: (-a) label for ACPI Processors, now using '${gProcLabel}'!"
                               _updateProcessorNames ${#gProcessorNames[@]}
                             else
                               _exitWithError $PROCESSOR_LABEL_LENGTH_ERROR
