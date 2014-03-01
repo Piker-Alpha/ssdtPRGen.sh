@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 12.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 12.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -136,6 +136,7 @@
 #			- inconsistency in argument -a fixed (Pike, Februari 2014)
 #			- mixup of $data / $matchingData fixed (Pike, Februari 2014)
 #			- better deviceName check/stop warning with wrong values (Pike, Februari 2014)
+#			- skip inactive cores with -k clock-frequency in function _getProcessorNames (Pike, March 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -171,7 +172,7 @@
 #
 # Script version info.
 #
-gScriptVersion=12.2
+gScriptVersion=12.3
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -1797,7 +1798,9 @@ function _getProcessorNames()
   #
   # Local variable definition/initialisation.
   #
-  local acpiNames=$(ioreg -p IODeviceTree -c IOACPIPlatformDevice -k cpu-type | egrep name  | sed -e 's/ *[-|="<a-z>]//g')
+  # Note: -k clock-frequency filters out the inactive cores.
+  #
+  local acpiNames=$(ioreg -p IODeviceTree -c IOACPIPlatformDevice -k cpu-type -k clock-frequency| egrep name  | sed -e 's/ *[-|="<a-z>]//g')
   #
   # Global variable initialisation.
   #
@@ -1808,6 +1811,7 @@ function _getProcessorNames()
   # Uncomment/change this for dry runs.
   #
   # gProcessorNames=("C000" "C001" "C002" "C003" "C100" "C101" "C102" "C103")
+  # gProcessorNames=("C000" "C001" "C002" "C003" "C004" "C005" "C006" "C007" "C008" "C009" "C00A" "C00B")
   #
   # Do we have two logical processor cores?
   #
@@ -2030,7 +2034,7 @@ function _checkProcessorDeclarationsforAP()
 
       if [[ $index -lt ${#gProcessorNames[@]} ]];
         then
-          _PRINT_MSG "Warning: only ${index} of ${#gProcessorNames[@]} processor declarations found${deviceText}!"
+          _PRINT_MSG "Warning: only ${index} of ${#gProcessorNames[@]} ACPI Processor declarations found${deviceText}!"
       fi
   fi
   #
@@ -2114,7 +2118,7 @@ function _checkForProcessorDeclarations()
 
       if [[ $processorObjectData ]];
         then
-          _debugPrint "Processor declaration (${gProcessorNames[0]}) found in Device (%s) {...} (non ACPI 1.0 compliant)\n" $deviceName
+          _debugPrint "ACPI Processor declaration (${gProcessorNames[0]}) found in Device (%s) {...} (non ACPI 1.0 compliant)\n" $deviceName
           #
           # The ACPI processor declaration for the first logical core (bootstrap processor / BSP) is found,
           # now check the targetData for processor declaration for the application processors (AP).
@@ -2443,7 +2447,7 @@ function _getProcessorScope()
                 #
                 if [[ $? -eq 0 ]];
                   then
-                    printf 'Scope ('$scopeName') {'$scopeLength' bytes} with Processor declarations found in the DSDT (ACPI 1.0 compliant)\n'
+                    printf 'Scope ('$scopeName') {'$scopeLength' bytes} with ACPI Processor declarations found in the DSDT (ACPI 1.0 compliant)\n'
                     #
                     # Construct processor scope name.
                     #
@@ -2455,7 +2459,7 @@ function _getProcessorScope()
                     gScope='\'$scopeName
                     return
                   else
-                    _debugPrint 'Scope ('$scopeName') {'$scopeLength' bytes} without Processor declarations ...\n'
+                    _debugPrint 'Scope ('$scopeName') {'$scopeLength' bytes} without ACPI Processor declarations ...\n'
                 fi
             fi
           done
@@ -2527,7 +2531,7 @@ function _initProcessorScope()
       #
       if [[ $(egrep -o '5b83[0-9a-f]{2}04' "$filename") ]];
         then
-          printf 'Processor {.} Declaration(s) found in DSDT\n'
+          printf 'ACPI Processor {.} Declaration(s) found in DSDT\n'
           let processorDeclarationsFound=1
         else
           #
@@ -2535,11 +2539,10 @@ function _initProcessorScope()
           #
           if [[ $(egrep -o '5b830b' "$filename") ]];
             then
-              printf 'Processor {} Declaration(s) found in DSDT\n'
+              printf 'ACPI Processor {} Declaration(s) found in DSDT\n'
               let processorDeclarationsFound=1
           fi
       fi
-
       #
       # Check for processor declarations with RootChar in DSDT.
       #
@@ -2547,7 +2550,7 @@ function _initProcessorScope()
 
       if [[ $data ]];
         then
-          printf "Processor {...} Declaration(s) with RootChar ('\\\') found in DSDT"
+          printf "ACPI Processor {...} Declaration(s) with RootChar ('\\\') found in DSDT"
           gScope="\\"$(echo ${data:10:8} | xxd -r -p)
 
           if [[ $gScope == "\_PR_" ]];
@@ -2562,7 +2565,6 @@ function _initProcessorScope()
 
          return
       fi
-
       #
       # Check for processor declarations with DualNamePrefix in the DSDT.
       #
@@ -2570,7 +2572,7 @@ function _initProcessorScope()
 
       if [[ $data ]];
         then
-          printf "Processor {...} Declaration(s) with DualNamePrefix ('.') found in DSDT"
+          printf "ACPI Processor {...} Declaration(s) with DualNamePrefix ('.') found in DSDT"
           gScope="\\"$(echo ${data:8:8} | xxd -r -p)
 
           if [[ $gScope == "\_PR_" ]];
@@ -2585,7 +2587,6 @@ function _initProcessorScope()
 
          return
       fi
-
       #
       # Check for processor declarations with MultiNamePrefix (without leading backslash) in the DSDT.
       #
@@ -2593,7 +2594,7 @@ function _initProcessorScope()
 
       if [[ $data ]];
         then
-          printf "Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
+          printf "ACPI Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
 
           let scopeLength=("0x"${data:8:2})*4*2
           local data=$(egrep -o '5b83[0-9a-f]{2}2f[0-9a-f]{'$scopeLength'}' "$filename")
@@ -2613,7 +2614,6 @@ function _initProcessorScope()
 
           return
       fi
-
       #
       # Check for processor declarations with MultiNamePrefix (with leading backslash) in the DSDT.
       #
@@ -2621,7 +2621,7 @@ function _initProcessorScope()
 
       if [[ $data ]];
         then
-          printf "Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
+          printf "ACPI Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
 
           let scopeLength=("0x"${data:10:2})*4*2
           local data=$(egrep -o '5b83[0-9a-f]{2}5c2f[0-9a-f]{'$scopeLength'}' "$filename")
@@ -2641,7 +2641,6 @@ function _initProcessorScope()
 
           return
       fi
-
       #
       # Check for processor declarations with ParentPrefixChar in the DSDT.
       #
@@ -2649,7 +2648,7 @@ function _initProcessorScope()
 
       if [[ $data ]];
         then
-          printf "Processor {...} Declaration(s) with ParentPrefixChar ('^') found in DSDT\n"
+          printf "ACPI Processor {...} Declaration(s) with ParentPrefixChar ('^') found in DSDT\n"
           gScope=$(echo ${data:6:2} | xxd -r -p)
 
           # ioreg -w0 -p IOACPIPlane -c IOACPIPlatformDevice -n _SB -r > /tmp/dsdt2.txt
@@ -2676,7 +2675,7 @@ function _initProcessorScope()
       gScope="\_SB"
   fi
 
-  _PRINT_MSG '\nWarning: No Processor declarations found in the DSDT!\n\t Using assumed Scope ('$gScope') {}\n'
+  _PRINT_MSG '\nWarning: No ACPI Processor declarations found in the DSDT!\n\t Using assumed Scope ('$gScope') {}\n'
 }
 
 
@@ -4328,17 +4327,19 @@ function main()
       if [[ ${cpu_type:0:2} != $cpuTypeString ]];
         then
           _PRINT_MSG "Warning: 'cpu-type' may be set improperly (0x${cpu_type} instead of 0x${cpuTypeString}${cpu_type:2:2})"
-        elif [[ $gSystemType -eq 0 ]];
-          then
-            _PRINT_MSG "Warning: 'board-id' [${gBoardID}] is not supported by ${bridgeTypeString} power management"
-          else
-            if [ "${gTargetMacModel}" == "" ];
+      fi
+
+      if [[ $gSystemType -eq 0 ]];
+        then
+          _PRINT_MSG "Warning: 'board-id' [${gBoardID}] is not supported by ${bridgeTypeString} power management"
+        else
+          if [ "${gTargetMacModel}" == "" ];
+            then
+             _confirmUnsupported "\nError: board-id [${gBoardID}] not supported by ${bridgeTypeString} – check SMBIOS data / use the -c option\n"
+            elif [ "$gTargetMacModel" != "$gModelID" ];
               then
-                _confirmUnsupported "\nError: model (${gModelID}) doesn\'t match with [${gBoardID}] – check SMBIOS data\n"
-              elif [ "$gTargetMacModel" != "$gModelID" ];
-                then
-                  _confirmUnsupported 'Warning: board-id ['$gBoardID'] and model ['$gModelID'] mismatch – check SMBIOS data\n'
-            fi
+                _confirmUnsupported 'Warning: board-id ['$gBoardID'] and model ['$gModelID'] mismatch – check SMBIOS data\n'
+          fi
       fi
   fi
 
