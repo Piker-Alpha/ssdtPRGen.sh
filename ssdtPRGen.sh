@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 12.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 12.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -137,6 +137,7 @@
 #			- mixup of $data / $matchingData fixed (Pike, Februari 2014)
 #			- better deviceName check/stop warning with wrong values (Pike, Februari 2014)
 #			- skip inactive cores with -k clock-frequency in function _getProcessorNames (Pike, March 2014)
+#			- processor data for the Intel E5-2620 added (Pike, March 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -154,6 +155,7 @@
 #			- Thanks to 'Hackmodford ' on Github issues for testing/confirming that PM in Mavericks was changed.
 #			- Thanks to 'Rals2007' for reporting the double "${${" error on line 1640.
 #			- Thanks to 'MMMProd' for reporting the -eg instead of -eq error on line 3567.
+#			- Thanks to 'DKMN' for reporting the ommision of the Intel E5-2620. 
 #
 # Bugs:
 #			- Bug reports can be filed at https://github.com/Piker-Alpha/RevoBoot/issues
@@ -172,7 +174,7 @@
 #
 # Script version info.
 #
-gScriptVersion=12.3
+gScriptVersion=12.4
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -449,6 +451,7 @@ gBroadwellModelData=(
 gServerSandyBridgeCPUList=(
 # E5-2600 Xeon Processor Series
 E5-2687W,150,0,3100,3800,8,16
+E5-2620,95,1200,2000,2500,6,12
 # E5-1600 Xeon Processor Series
 E5-1660,130,0,3300,3900,6,12
 E5-1650,130,0,3200,3800,6,12
