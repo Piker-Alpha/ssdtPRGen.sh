@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 12.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 12.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -138,6 +138,8 @@
 #			- better deviceName check/stop warning with wrong values (Pike, Februari 2014)
 #			- skip inactive cores with -k clock-frequency in function _getProcessorNames (Pike, March 2014)
 #			- processor data for the Intel E5-2620 added (Pike, March 2014)
+#			- processor data for the Intel i3-3250T and i3-3245 added (Pike, March 2014)
+#			- processor data for the Intel E5-1600 v2 product family added (Pike, March 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -155,7 +157,9 @@
 #			- Thanks to 'Hackmodford ' on Github issues for testing/confirming that PM in Mavericks was changed.
 #			- Thanks to 'Rals2007' for reporting the double "${${" error on line 1640.
 #			- Thanks to 'MMMProd' for reporting the -eg instead of -eq error on line 3567.
-#			- Thanks to 'DKMN' for reporting the ommision of the Intel E5-2620. 
+#			- Thanks to 'DKMN' for reporting the ommision of the Intel E5-2620.
+#			- Thanks to 'nijntje' (blog) for reporting the ommision of the Intel i3-3245.
+#			- Thanks to 't2m' for (blog) for reporting the ommision of the Intel E5-1600 product family.
 #
 # Bugs:
 #			- Bug reports can be filed at https://github.com/Piker-Alpha/RevoBoot/issues
@@ -174,7 +178,7 @@
 #
 # Script version info.
 #
-gScriptVersion=12.4
+gScriptVersion=12.5
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -582,6 +586,10 @@ gServerIvyBridgeCPUList=(
 'E3-1225 v2',77,1200,3200,3600,4,4
 'E3-1220 v2',69,1200,3100,3500,4,4
 'E3-1220L v2',17,1200,2300,3500,2,4
+# E5-1600 Xeon Processor Series
+'E5-1620 v2',130,1200,3700,3900,4,8
+'E5-1660 v2',130,1200,3500,3900,6,12
+'E5-1660 v2',130,1200,3700,4000,6,12
 # E5-2600 Xeon Processor Series
 'E5-2687W v2',150,1200,3400,4000,8,16
 'E5-2658 v2 ',95,1200,2400,3000,10,20
@@ -639,6 +647,8 @@ i5-3330S,65,1600,3700,3200,4,4
 i5-3330,77,1600,3000,3200,4,4
 # i3-3200 Desktop Processor Series
 i3-3250,55,1600,3500,0,2,4
+i3-3250T,25,1600,3000,0,2,4
+i3-3245,55,1600,3400,0,2,4
 i3-3240,55,1600,3400,0,2,4
 i3-3240T,35,1600,2900,0,2,4
 i3-3225,55,1600,3300,0,2,4
@@ -1803,7 +1813,7 @@ function _getProcessorNames()
   #
   # Note: -k clock-frequency filters out the inactive cores.
   #
-  local acpiNames=$(ioreg -p IODeviceTree -c IOACPIPlatformDevice -k cpu-type -k clock-frequency| egrep name  | sed -e 's/ *[-|="<a-z>]//g')
+  local acpiNames=$(ioreg -p IODeviceTree -c IOACPIPlatformDevice -k cpu-type -k clock-frequency | egrep name  | sed -e 's/ *[-|="<a-z>]//g')
   #
   # Global variable initialisation.
   #
@@ -2334,7 +2344,7 @@ function _getProcessorScope()
   local index=0
   local filename=$1
   #
-  # Target Scopes ('\_PR_', '\_PR', '_PR_', '_PR', '\_SB_', '\_SB', , '_SB_', '_SB')
+  # Target Scopes ('\_PR_', '\_PR', '_PR_', '_PR', '\_SB_', '\_SB', '_SB_', '_SB')
   #
   local grepPatternList=('5c5f50525f' '5c5f5052' '5f50525f' '5f5052' '5c5f53425f' '5c5f5342' '5f53425f' '5f5342')
   #
@@ -2354,7 +2364,8 @@ function _getProcessorScope()
     for typeEncoding in "${byteEncodingList[@]}"
     do
       #
-      #
+      # 10[0-9a-f]2${grepPattern}
+      # 10[0-9a-f]4${grepPattern}
       #
       local data=$(egrep -o "${AML_SCOPE_OPCODE}[0-9a-f]{${typeEncoding}}${grepPattern}" "$filename")
 
