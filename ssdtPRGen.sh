@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 12.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 12.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -178,7 +178,7 @@
 #
 # Script version info.
 #
-gScriptVersion=12.5
+gScriptVersion=12.6
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -2465,12 +2465,19 @@ function _getProcessorScope()
                     #
                     # Construct processor scope name.
                     #
-                    # Note: Without the leading '\' the IASL compiler fails with:
-                    #
-                    #       Error 4085 - Object not found or not accessible from scope ^  (_PR_.CPU0.APSS)
-                    #       Error 4085 - Object not found or not accessible from scope ^  (_PR_.CPU1.ACST)
-                    #
-                    gScope='\'$scopeName
+                    if [[ $scopeName =~ ^[\\] ]];
+                      then
+                        gScope=$scopeName
+                      else
+                        #
+                        # Without the leading '\' the IASL compiler fails with:
+                        #
+                        # Error 4085 - Object not found or not accessible from scope ^ (_PR_.CPU0.APSS)
+                        # Error 4085 - Object not found or not accessible from scope ^ (_PR_.CPU1.ACST)
+                        #
+                        gScope='\'$scopeName
+                    fi
+
                     return
                   else
                     _debugPrint 'Scope ('$scopeName') {'$scopeLength' bytes} without ACPI Processor declarations ...\n'
