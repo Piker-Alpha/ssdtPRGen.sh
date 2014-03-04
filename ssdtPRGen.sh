@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 12.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 12.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -140,6 +140,7 @@
 #			- processor data for the Intel E5-2620 added (Pike, March 2014)
 #			- processor data for the Intel i3-3250T and i3-3245 added (Pike, March 2014)
 #			- processor data for the Intel E5-1600 v2 product family added (Pike, March 2014)
+#			- processor data for the Intel E5-1650 v2 fixed (Pike, March 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -178,7 +179,7 @@
 #
 # Script version info.
 #
-gScriptVersion=12.6
+gScriptVersion=12.7
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -588,7 +589,7 @@ gServerIvyBridgeCPUList=(
 'E3-1220L v2',17,1200,2300,3500,2,4
 # E5-1600 Xeon Processor Series
 'E5-1620 v2',130,1200,3700,3900,4,8
-'E5-1660 v2',130,1200,3500,3900,6,12
+'E5-1650 v2',130,1200,3500,3900,6,12
 'E5-1660 v2',130,1200,3700,4000,6,12
 # E5-2600 Xeon Processor Series
 'E5-2687W v2',150,1200,3400,4000,8,16
