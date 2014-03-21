@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 12.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 12.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -141,6 +141,7 @@
 #			- processor data for the Intel i3-3250T and i3-3245 added (Pike, March 2014)
 #			- processor data for the Intel E5-1600 v2 product family added (Pike, March 2014)
 #			- processor data for the Intel E5-1650 v2 fixed (Pike, March 2014)
+#			- processor data for the Intel i5-4300 mobile processor series added (Pike, March 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -179,7 +180,7 @@
 #
 # Script version info.
 #
-gScriptVersion=12.7
+gScriptVersion=12.8
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -795,13 +796,22 @@ i7-4600U,15,800,2100,3300,2,4
 i7-4558U,28,800,2800,3300,2,4
 i7-4550U,15,800,1500,3000,2,4
 i7-4500U,15,800,1800,3000,2,4
+i5-4360U,15,800,1500,3000,2,4
 i5-4350U,15,800,1400,2900,2,4
+i5-4310U,15,800,2000,3000,2,4
+i5-4300U,15,800,1900,2900,2,4
+i5-4302Y,11.5,800,1600,2300,2,4
+i5-4300Y,11.5,800,1600,2300,2,4
 i5-4288U,28,800,2600,3100,2,4
 i5-4258U,28,800,2400,2900,2,4
 i5-4250U,15,800,1300,2600,2,4
 i5-4200U,15,800,1600,2600,2,4
 i5-4200Y,12,800,1400,1900,2,4
 # Socket FCPGA946
+i5-4340M,37,800,2900,3600,2,4
+i5-4330M,37,800,2800,3500,2,4
+i5-4310M,37,800,2700,3400,2,4
+i5-4300M,37,800,2600,3300,2,4
 i3-4000M,37,800,2400,2400,2,4
 i3-4100M,37,800,2500,2500,2,4
 # Socket FCLGA1150
