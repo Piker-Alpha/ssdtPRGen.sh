@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 12.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 12.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -142,6 +142,7 @@
 #			- processor data for the Intel E5-1600 v2 product family added (Pike, March 2014)
 #			- processor data for the Intel E5-1650 v2 fixed (Pike, March 2014)
 #			- processor data for the Intel i5-4300 mobile processor series added (Pike, March 2014)
+#			- processor data for the Intel E5-2600 and E5-4600 processor series added (Pike, March 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -162,6 +163,7 @@
 #			- Thanks to 'DKMN' for reporting the ommision of the Intel E5-2620.
 #			- Thanks to 'nijntje' (blog) for reporting the ommision of the Intel i3-3245.
 #			- Thanks to 't2m' for (blog) for reporting the ommision of the Intel E5-1600 product family.
+#			- Thanks to 'arkanisman' for reporting the missing data of the Intel E5-2650.
 #
 # Bugs:
 #			- Bug reports can be filed at https://github.com/Piker-Alpha/RevoBoot/issues
@@ -180,7 +182,7 @@
 #
 # Script version info.
 #
-gScriptVersion=12.8
+gScriptVersion=12.9
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -456,8 +458,34 @@ gBroadwellModelData=(
 
 gServerSandyBridgeCPUList=(
 # E5-2600 Xeon Processor Series
-E5-2687W,150,0,3100,3800,8,16
+E5-2648L,70,1200,1800,2100,8,16
+E5-2658,95,1200,2100,2400,8,16
+E5-2687W,150,1200,3100,3800,8,16
+E5-2680,130,1200,2700,3500,8,16
+E5-2660,95,1200,2200,3000,8,16
+E5-2650L,70,1200,1800,2300,8,16
+E5-2630L,60,1200,2000,2500,6,12
+E5-2643,130,1200,3300,3500,4,8
+E5-2609,80,1200,2400,2400,4,4
+E5-2667,130,1200,2900,3500,6,12
+E5-2650,95,1200,2000,2800,8,16
+E5-2640,95,1200,2500,3000,6,12
+E5-2603,80,1200,1900,1800,4,4
+E5-2630,95,1200,2300,2800,6,12
 E5-2620,95,1200,2000,2500,6,12
+E5-2670,115,1200,2600,3300,8,16
+E5-2690,135,1200,2900,3800,8,16
+E5-2665,115,1200,2400,3100,8,16
+E5-2637,80,1200,3000,3500,2,2
+# E5-4600 Xeon Processor Series
+E5-4610,95,1200,2400,2900,6,12
+E5-4640,95,1200,2400,2800,8,16
+E5-4607,95,1200,2200,2200,6,12
+E5-4650L,115,1200,2600,3100,8,16
+E5-4620,95,1200,2200,2600,8,16
+E5-4617,130,1200,2900,3400,6,6
+E5-4603,95,1200,2000,2000,4,8
+E5-4650,130,1200,2700,3300,8,16
 # E5-1600 Xeon Processor Series
 E5-1660,130,0,3300,3900,6,12
 E5-1650,130,0,3200,3800,6,12
