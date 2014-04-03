@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 12.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 13.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -143,6 +143,14 @@
 #			- processor data for the Intel E5-1650 v2 fixed (Pike, March 2014)
 #			- processor data for the Intel i5-4300 mobile processor series added (Pike, March 2014)
 #			- processor data for the Intel E5-2600 and E5-4600 processor series added (Pike, March 2014)
+#			- removed unused variable 'checkGlobalProcessorScope' (Pike, April 2014)
+#			- missing deviceName in two calls to _debugPrint fixed (Pike, April 2014)
+#			- fixed a typo in help text for -d and now -d 2 also works again (Pike, April 2014)
+#			- made -help work (Pike, April 2014)
+#			- stop overwriting the ACPI processor scope name with the last one, by using $scopeIndex (Pike, April 2014)
+#			- debug data fixed/running processor was missing when the -p argument was used (Pike, April 2014)
+#			- more text hidden/only shown when -d [2/3] argument is used (Pike, April 2014)
+#			- improved multi-processor support (Pike, April 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -182,7 +190,7 @@
 #
 # Script version info.
 #
-gScriptVersion=12.9
+gScriptVersion=13.0
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -349,6 +357,7 @@ let BROADWELL=16
 let gBridgeType=-1
 
 let gTypeCPU=0
+let gProcessorStartIndex=0
 gProcessorData="Unknown CPU"
 gProcessorNumber=""
 gBusFrequency=100
@@ -1864,6 +1873,8 @@ function _getProcessorNames()
   #
   # gProcessorNames=("C000" "C001" "C002" "C003" "C100" "C101" "C102" "C103")
   # gProcessorNames=("C000" "C001" "C002" "C003" "C004" "C005" "C006" "C007" "C008" "C009" "C00A" "C00B")
+  # gProcessorNames=("C000" "C001" "C002" "C003" "C004" "C005" "C006" "C007" "C008" "C009" "C00A" "C00B" "C00C" "C00D" "C00E" "C00F" \
+  #                  "C100" "C101" "C102" "C103" "C104" "C105" "C106" "C107" "C108" "C109" "C10A" "C10B" "C10C" "C10D" "C10E" "C10F")
   #
   # Do we have two logical processor cores?
   #
@@ -1873,6 +1884,16 @@ function _getProcessorNames()
       # No. Bail out with error.
       #
       _exitWithError $PROCESSOR_NAMES_ERROR
+  fi
+  #
+  # Is the -l argument, to specify the number of logical cores, used?
+  #
+  if [ $gLogicalCPUs -eq 0 ];
+    then
+      #
+      # No. Use number of processor names.
+      #
+      let gLogicalCPUs=${#gProcessorNames[@]}
   fi
 }
 
@@ -2025,7 +2046,6 @@ function _checkProcessorDeclarationsforAP()
   local targetData="$1"
   local deviceName=$2
   local typeEncoding=$3
-  local index=0
   #
   # Loop through all ACPI processor names extracted from the ioreg.
   #
@@ -2034,7 +2054,7 @@ function _checkProcessorDeclarationsforAP()
     #
     # Convert (example) 'C000' to '43303030'
     #
-    local processorNameBytes=$(echo -n ${gProcessorNames[$index]} | xxd -ps)
+    local processorNameBytes=$(echo -n ${gProcessorNames[$gProcessorStartIndex]} | xxd -ps)
     #
     # Search for a Processor {} declaration in targetData for the application processor.
     #
@@ -2049,19 +2069,28 @@ function _checkProcessorDeclarationsforAP()
     #
     # ACPI processor declaration name found?
     #
-    if [[ $processorObjectData ]];
+    if [[ ${#processorObjectData} -gt 8 ]];
       then
-        _debugPrint "logicalCore: ${index} ${gProcessorNames[$index]}\n"
+        _debugPrint "logicalCore: ${gProcessorStartIndex} ${gProcessorNames[$gProcessorStartIndex]}\n"
         #
         # Up
         #
-        let index+=1
+        let gProcessorStartIndex+=1
+    fi
+
+#   printf "gLogicalCPUs: $gLogicalCPUs\n"
+
+#   if [[ $gProcessorStartIndex -eq $gLogicalCPUs ]];
+    if [[ $gProcessorStartIndex -eq ${#gProcessorNames[@]} ]];
+      then
+#       break
+        return 0
     fi
   done
   #
   # Do we have all ACPI processor declarations?
   #
-  if [[ $index -eq ${#gProcessorNames[@]} ]];
+  if [[ $gProcessorStartIndex -eq ${#gProcessorNames[@]} ]];
     then
       #
       # Yes. Return SUCCESS.
@@ -2081,12 +2110,12 @@ function _checkProcessorDeclarationsforAP()
           #
           # Yes. Display the deviceName in the warning.
           #
-          local deviceText=" in device ${deviceName}"
+          local deviceText=" in Device(${deviceName}) {}"
       fi
 
-      if [[ $index -lt ${#gProcessorNames[@]} ]];
+      if [[ $gProcessorStartIndex -lt ${#gProcessorNames[@]} ]];
         then
-          _PRINT_MSG "Warning: only ${index} of ${#gProcessorNames[@]} ACPI Processor declarations found${deviceText}!"
+          _debugPrint "Warning: only ${gProcessorStartIndex} of ${#gProcessorNames[@]} ACPI Processor declarations found${deviceText}"
       fi
   fi
   #
@@ -2095,7 +2124,7 @@ function _checkProcessorDeclarationsforAP()
   # Note: This number should match the number of logical cores (single processor setups) but can
   #       be lower when a deviceName was given (multi-processor setups may use multiple devices).
   #
-  return $index
+  return $gProcessorStartIndex
 }
 
 
@@ -2110,12 +2139,13 @@ function _checkForProcessorDeclarations()
   #
   local targetData=$1
   local deviceName=$2
+
   local isACPI10Compliant=$3
   local status=0
   #
   # Convert (example) 'C000' to '43303030'
   #
-  local processorNameBytes=$(echo -n ${gProcessorNames[0]} | xxd -ps)
+  local processorNameBytes=$(echo -n ${gProcessorNames[$gProcessorStartIndex]} | xxd -ps)
   #
   # Search for the first ACPI Processor {} declaration in $objectData.
   #
@@ -2138,7 +2168,7 @@ function _checkForProcessorDeclarations()
       #
       if [[ ${#deviceName} -gt 1 ]];
         then
-          _debugPrint "Device (%s) (non ACPI 1.0 compliant)\n" $deviceName
+          _debugPrint "Device (${deviceName}) (non ACPI 1.0 compliant)\n"
         else
           _debugPrint 'the DSDT '
 
@@ -2170,7 +2200,7 @@ function _checkForProcessorDeclarations()
 
       if [[ $processorObjectData ]];
         then
-          _debugPrint "ACPI Processor declaration (${gProcessorNames[0]}) found in Device (%s) {...} (non ACPI 1.0 compliant)\n" $deviceName
+          _debugPrint "ACPI Processor declaration (${gProcessorNames[$gProcessorStartIndex]}) found in Device (${deviceName}) {...} (non ACPI 1.0 compliant)\n"
           #
           # The ACPI processor declaration for the first logical core (bootstrap processor / BSP) is found,
           # now check the targetData for processor declaration for the application processors (AP).
@@ -2209,7 +2239,6 @@ function _getACPIProcessorScope()
   local filename=$1
   local variableList=(10,6,4,40 12,8,6,42)
   local varList
-  local checkGlobalProcessorScope
   local scopeLength
   local index
   local scopeIndex
@@ -2275,7 +2304,7 @@ function _getACPIProcessorScope()
           # Get the name of the device.
           #
           local deviceName=$(echo ${hidObjectData:${vars[1]}:8} | xxd -r -p)
-          # echo $deviceName
+          _debugPrint "Searching for ACPI Processor declarations in Device($deviceName) {}\n"
           #
           # Get the length of the device scope.
           #
@@ -2330,10 +2359,6 @@ function _getACPIProcessorScope()
           #
           # Check for ACPI Processor () {} declarations.
           #
-          let checkGlobalProcessorScope=0
-          #
-          #
-          #
           _checkForProcessorDeclarations $deviceObjectData $deviceName 0
           #
           # Check return status (0 is SUCCESS).
@@ -2343,7 +2368,11 @@ function _getACPIProcessorScope()
               #
               # Update the global processor scope.
               #
-              gScope="\_SB_.${deviceName}"
+              gScope[$scopeIndex]="\_SB_.${deviceName}"
+              #
+              # Next scope.
+              #
+              let scopeIndex+=1
               #
               # Done.
               #
@@ -2359,10 +2388,16 @@ function _getACPIProcessorScope()
                   #
                   gScope[$scopeIndex]="\_SB_.${deviceName}"
                   #
-                  #
+                  # Next scope.
                   #
                   let scopeIndex+=1
-                  _debugPrint "Searching for additional Processor declaration ...\n"
+
+                  _debugPrint "gProcessorStartIndex: $gProcessorStartIndex\n"
+                  _debugPrint "gLogicalCPUs        : $gLogicalCPUs\n"
+                  _debugPrint "gProcessorNames     : ${#gProcessorNames[@]}\n"
+
+                  let nextTargetCores=${#gProcessorNames[@]}-$gProcessorStartIndex
+                  _debugPrint "Searching for ${nextTargetCores} additional Processor declaration ...\n"
               fi
           fi
         done
@@ -2946,6 +2981,7 @@ function _setDestinationPath
 
 function _getCPUNumberFromBrandString
 {
+  local modelSpecified=$1
   #
   # Get CPU brandstring
   #
@@ -2954,85 +2990,88 @@ function _getCPUNumberFromBrandString
   # Show brandstring (this helps me to debug stuff).
   #
   printf "Brandstring '${gBrandString}'\n\n"
-  #
-  # Save default (0) delimiter
-  #
-  local ifs=$IFS
-  #
-  # Change delimiter to a space character
-  #
-  IFS=" "
-  #
-  # Split brandstring into array (data)
-  #
-  local data=($gBrandString)
-  #
-  # Teststrings
-  #
-  # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "@" "2.5GHz")
-  # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "v2" "@" "2.5GHz")
-  # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "v3" "@" "2.5GHz")
-  # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "0" "@" "2.5GHz")
-  # local data=("Intel(R)" "Core(TM)" "i5-4670K" "CPU" "@" "3.40GHz")
 
-  #
-  # Example from a MacBookPro10,2
-  #
-  # echo "${data[0]}" # Intel(R)
-  # echo "${data[1]}" # Core(TM)
-  # echo "${data[2]}" # i5-3210M
-  # echo "${data[3]}" # CPU
-  # echo "${data[4]}" # @
-  # echo "${data[5]}" # 2.50GHz
-  #
-  # or: "Intel(R) Xeon(R) CPU E3-1230 V2 @ 3.30GHz"
-  #
-  # echo "${data[0]}" # Intel(R)
-  # echo "${data[1]}" # Xeon(R)
-  # echo "${data[2]}" # CPU
-  # echo "${data[3]}" # E3-12XX
-  # echo "${data[4]}" # V2
-  # echo "${data[5]}" # @
-  # echo "${data[6]}" # 3.30GHz
-  #
-  # Restore the default delimiter
-  #
-  IFS=$ifs
-
-  let length=${#data[@]}
-
-  if (( length > 7 ));
-    then
-      echo 'Warning: The brandstring has an unexpected length!'
-  fi
-
-  #
-  # Is this a Xeon processor model?
-  #
-  if [[ "${data[1]}" == "Xeon(R)" ]];
+  if [[ $modelSpecified -eq 0 ]];
     then
       #
-      # Yes. Check for lower/upper case 'v' or '0' for OEM processors.
+      # Save default (0) delimiter
       #
-      if [[ "${data[4]}" =~ "v" || "${data[4]}" =~ "V" ]];
+      local ifs=$IFS
+      #
+      # Change delimiter to a space character
+      #
+      IFS=" "
+      #
+      # Split brandstring into array (data)
+      #
+      local data=($gBrandString)
+      #
+      # Teststrings
+      #
+      # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "@" "2.5GHz")
+      # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "v2" "@" "2.5GHz")
+      # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "v3" "@" "2.5GHz")
+      # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "0" "@" "2.5GHz")
+      # local data=("Intel(R)" "Core(TM)" "i5-4670K" "CPU" "@" "3.40GHz")
+
+      #
+      # Example from a MacBookPro10,2
+      #
+      # echo "${data[0]}" # Intel(R)
+      # echo "${data[1]}" # Core(TM)
+      # echo "${data[2]}" # i5-3210M
+      # echo "${data[3]}" # CPU
+      # echo "${data[4]}" # @
+      # echo "${data[5]}" # 2.50GHz
+      #
+      # or: "Intel(R) Xeon(R) CPU E3-1230 V2 @ 3.30GHz"
+      #
+      # echo "${data[0]}" # Intel(R)
+      # echo "${data[1]}" # Xeon(R)
+      # echo "${data[2]}" # CPU
+      # echo "${data[3]}" # E3-12XX
+      # echo "${data[4]}" # V2
+      # echo "${data[5]}" # @
+      # echo "${data[6]}" # 3.30GHz
+      #
+      # Restore the default delimiter
+      #
+      IFS=$ifs
+
+      let length=${#data[@]}
+
+      if (( length > 7 ));
         then
-            #
-            # Use a lowercase 'v' because that is what we use in our data.
-            #
-            gProcessorNumber="${data[3]} v${data[4]:1:1}"
-        elif [[ "${data[4]}" == "0" ]];
-          then
-            #
-            # OEM CPU's have been reported to use a "0" instead of "v2"
-            # and thus let's use that to make our data match the CPU.
-            #
-            gProcessorNumber="${data[3]} v2"
+          echo 'Warning: The brandstring has an unexpected length!'
       fi
-    else
       #
-      # All other non-Xeon processor models.
+      # Is this a Xeon processor model?
       #
-      gProcessorNumber="${data[2]}"
+      if [[ "${data[1]}" == "Xeon(R)" ]];
+        then
+          #
+          # Yes. Check for lower/upper case 'v' or '0' for OEM processors.
+          #
+          if [[ "${data[4]}" =~ "v" || "${data[4]}" =~ "V" ]];
+            then
+                #
+                # Use a lowercase 'v' because that is what we use in our data.
+                #
+                gProcessorNumber="${data[3]} v${data[4]:1:1}"
+            elif [[ "${data[4]}" == "0" ]];
+              then
+                #
+                # OEM CPU's have been reported to use a "0" instead of "v2"
+                # and thus let's use that to make our data match the CPU.
+                #
+                gProcessorNumber="${data[3]} v2"
+          fi
+        else
+          #
+          # All other non-Xeon processor models.
+          #
+          gProcessorNumber="${data[2]}"
+      fi
   fi
 }
 
@@ -3639,7 +3678,9 @@ function _getScriptArguments()
       #
       # Yes. Do we have a single (-help) argument?
       #
-      if [[ $# -eq 1 && "$1" =~ ^[-hH]+$ ]];
+      local argument=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+
+      if [[ $# -eq 1 && "$argument" == "-h" || "$argument" == "-help" ]];
         then
           printf "${STYLE_BOLD}Usage:${STYLE_RESET} ./ssdtPRGen.sh [-abcdfhlmptwx]\n"
           printf "       -${STYLE_BOLD}a${STYLE_RESET}cpi Processor name (example: CPU0, C000)\n"
@@ -3652,7 +3693,7 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}d${STYLE_RESET}ebug output [0/1/3]\n"
           printf "          0 = no debug injection/debug output\n"
           printf "          1 = inject debug statements in: ${gSsdtID}.dsl\n"
-          printf "          1 = show debug output\n"
+          printf "          2 = show debug output\n"
           printf "          3 = both\n"
           printf "       -${STYLE_BOLD}f${STYLE_RESET}requency (clock frequency)\n"
           printf "       -${STYLE_BOLD}h${STYLE_RESET}elp info (this)\n"
@@ -3763,7 +3804,7 @@ function _getScriptArguments()
 
                   -d) shift
 
-                      if [[ "$1" =~ ^[013]+$ ]];
+                      if [[ "$1" =~ ^[0123]+$ ]];
                         then
                           if [[ $gDebug -ne $1 ]];
                             then
@@ -4033,17 +4074,8 @@ function main()
       #
       _getModelID
   fi
-  #
-  # Argument -p used?
-  #
-  if [ $modelSpecified -eq 0 ];
-    then
-      #
-      # No. Get processor model from brandstring.
-      #
-      _getCPUNumberFromBrandString
-  fi
 
+  _getCPUNumberFromBrandString $modelSpecified
   _getCPUDataByProcessorNumber
 
   #
