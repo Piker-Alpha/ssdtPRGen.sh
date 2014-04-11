@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 13.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 13.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -151,6 +151,11 @@
 #			- debug data fixed/running processor was missing when the -p argument was used (Pike, April 2014)
 #			- more text hidden/only shown when -d [2/3] argument is used (Pike, April 2014)
 #			- improved multi-processor support (Pike, April 2014)
+#			- enhanced _debugPrint with argument support (Pike, April 2014)
+#			- Haswell refresh (desktop) processor data added (Pike, April 2014)
+#			- triple/quad byte package length support added (Pike, April 2014)
+#			- typo in help text (-turbo) fixed (Pike, April 2014)
+#			- opcode error ('Name' instead of 'Device') fixed (Pike, April 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -190,7 +195,7 @@
 #
 # Script version info.
 #
-gScriptVersion=13.0
+gScriptVersion=13.1
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -398,12 +403,14 @@ let LFM_REQUIRED_OS=1091
 #
 let AML_SINGLE_BYTE_ENCODING=2
 let AML_DUAL_BYTE_ENCODING=4
+let AML_TRIPLE_BYTE_ENCODING=6
+let AML_QUAD_BYTE_ENCODING=8
 
 #
 # Setup used AML encoding values.
 #
 AML_SCOPE_OPCODE=10
-AML_NAME_OPCODE=5b82
+AML_DEVICE_OPCODE=5b82
 AML_PROCESSOR_SCOPE_OPCODE=5b83
 
 #
@@ -776,9 +783,13 @@ gServerHaswellCPUList=(
 
 gDesktopHaswellCPUList=(
 # Socket 1150 (Standard Power)
+i7-4790K,84,800,3600,4000,4,8
+i7-4790,84,800,3600,4000,4,8
 i7-4770K,84,800,3500,3900,4,8
 i7-4771,84,800,3500,3900,4,8
 i7-4770,84,800,3400,3900,4,8
+i5-4590K,84,800,3300,3700,4,4
+i5-4590,84,800,3300,3700,4,4
 i5-4670K,84,800,3400,3800,4,4
 i5-4670,84,800,3400,3800,4,4
 i5-4570,84,800,3200,3600,4,4
@@ -788,11 +799,16 @@ i5-4430,84,800,3000,3200,4,4
 i7-4770S,65,800,3100,3900,4,8
 i7-4770T,45,800,2500,3700,4,8
 i7-4765T,35,800,2000,3000,4,8
+i5-4690K,65,800,3500,3900,4,4
+i5-4690,65,800,3300,3900,4,4
 i5-4670S,65,800,3100,3800,4,4
 i5-4670T,45,800,2300,3300,4,4
 i5-4570S,65,800,2900,3600,4,4
 i5-4570T,35,800,2900,3600,2,4
+i5-4460,65,800,3200,3700,2,4
 i5-4430S,65,800,2700,3200,4,4
+i5-4360,65,800,3300,3700,2,4
+i5-4350,65,800,3200,3600,2,4
 # BGA
 i7-4770R,65,800,3200,3900,4,8
 i5-4670R,65,800,3000,3700,4,4
@@ -805,6 +821,7 @@ i5-4200U,15,800,1600,2600,2,4
 #
 i3-4130T,35,800,2900,2900,2,4
 i3-4330T,35,800,3000,3000,2,4
+i3-4150,54,800,3500,3500,2,4
 i3-4130,54,800,3400,3400,2,4
 i3-4330,54,800,3500,3500,2,4
 i3-4340,54,800,3600,3600,2,4
@@ -1457,7 +1474,7 @@ function _debugPrint()
 {
   if (( $gDebug & 2 ));
     then
-      printf "$1"
+      printf "$@"
   fi
 }
 
@@ -1971,7 +1988,6 @@ function _getPackageLength()
   local data=$1
   local pkgLengthByte=0
   local start=0
-  local end=0
   local packageLength=0
   #
   # Called with a AML Scope object?
@@ -1985,10 +2001,6 @@ function _getPackageLength()
       let start=$AML_DUAL_BYTE_ENCODING
   fi
   #
-  # Get package length from given data.
-  #
-  let pkgLengthByte="0x"${1:${start}:2}
-  #
   # The package length is encoded as a series of 1 to 4 bytes with the most significant
   # two bits of byte zero indicating how many following bytes are in the encoding.
   # The next two bits are only used in one-byte encodings, which allows for one-byte
@@ -1999,39 +2011,37 @@ function _getPackageLength()
   # 0x0FFFFF for three-byte encodings.
   # 0x0FFFFFFFFF for four-byte encodings.
   #
+
+  #
+  # Get package length from given data.
+  #
+  let pkgLengthByte="0x"${1:${start}:2}
+  #
+  # Mask the first byte – the one after the opcode byte(s) – with 0x3f.
+  #
+  let maskedByte=$((0x${data:${start}:2} & 0x3f))
+
   if [[ $pkgLengthByte -gt 192 ]];
     then
       _debugPrint 'Four-byte encoding detected (maximum length 0x0FFFFFFFFF/68719476735)\n'
-      let end=8
-      let mask=0x3ffffffff
+      printf -v packageLength '0x%2%2s%2s%x' "${data:${start}+6:2}" "${data:${start}+4:2}" "${data:${start}+2:2}" $maskedByte
     elif [[ $pkgLengthByte -gt 128 ]];
       then
         _debugPrint 'Three-byte encoding detected (maximum length 0x0FFFFF/1048575)\n'
-        let end=6
-        let mask=0x3fffff
+        printf -v packageLength '0x%2s%2s%x' "${data:${start}+4:2}" "${data:${start}+2:2}" $maskedByte
     elif [[ $pkgLengthByte -gt 64 ]];
       then
         _debugPrint 'Two-byte encoding detected (maximum length 0x0FFF/4095)\n'
-        let end=4
-        let mask=0x3fff
+        printf -v packageLength '0x%2s%x' "${data:${start}+2:2}" $maskedByte
     else
       _debugPrint 'One-byte encoding detected (maximum length 0x3F/77)\n'
-      let end=2
-      let mask=0x3f
+      packageLength=$maskedByte
   fi
-  #
-  # Get package length from data.
-  #
-  # Example: 10395f50525f
-  #            ^^
-  #
-  let packageLength=("0x"${data:${start}:${end}})
-  #
-  # Ready return value (logical AND of packageLength with mask).
-  #
-  # Example: 0x39/57
-  #
-  let gFunctionReturn=$(($packageLength & $mask))
+
+  _debugPrint "pkgLengthByte: 0x%x/${pkgLengthByte}\n" $pkgLengthByte
+  _debugPrint "packageLength: ${packageLength}/%d\n" $packageLength
+
+  let gFunctionReturn=$packageLength
 }
 
 
@@ -2078,12 +2088,8 @@ function _checkProcessorDeclarationsforAP()
         let gProcessorStartIndex+=1
     fi
 
-#   printf "gLogicalCPUs: $gLogicalCPUs\n"
-
-#   if [[ $gProcessorStartIndex -eq $gLogicalCPUs ]];
     if [[ $gProcessorStartIndex -eq ${#gProcessorNames[@]} ]];
       then
-#       break
         return 0
     fi
   done
@@ -2162,7 +2168,7 @@ function _checkForProcessorDeclarations()
       #
       # Yes. Print the result.
       #
-      _debugPrint "Processor declaration (${gProcessorNames[0]}) {0x${processorObjectData:4:2} bytes} found in "
+      _debugPrint "ACPI Processor declaration (${gProcessorNames[0]}) {0x${processorObjectData:4:2} bytes} found in "
       #
       # Do we have a device name?
       #
@@ -2279,7 +2285,7 @@ function _getACPIProcessorScope()
     #
     # Check for (a) Device(s) with a _HID object value of 'ACPI0004' in the DSDT.
     #
-    local matchingData=$(egrep -o "${AML_NAME_OPCODE}[0-9a-f]{${vars[0]}}085f4849440d414350493030303400" "$filename")
+    local matchingData=$(egrep -o "${AML_DEVICE_OPCODE}[0-9a-f]{${vars[0]}}085f4849440d414350493030303400" "$filename")
     #
     # Example:
     #          5b824d9553434b30085f4849440d414350493030303400 (N times)
@@ -2417,10 +2423,12 @@ function _getProcessorScope()
   #
   local index=0
   local filename=$1
+  local scopeLength=0
   #
   # Target Scopes ('\_PR_', '\_PR', '_PR_', '_PR', '\_SB_', '\_SB', '_SB_', '_SB')
   #
   local grepPatternList=('5c5f50525f' '5c5f5052' '5f50525f' '5f5052' '5c5f53425f' '5c5f5342' '5f53425f' '5f5342')
+
   #
   # Loop through the target pattern list.
   #
@@ -2433,13 +2441,15 @@ function _getProcessorScope()
     #
     # Setup array with supported type of byte encodings.
     #
-    local byteEncodingList=($AML_SINGLE_BYTE_ENCODING $AML_DUAL_BYTE_ENCODING)
+    local byteEncodingList=($AML_SINGLE_BYTE_ENCODING $AML_DUAL_BYTE_ENCODING $AML_TRIPLE_BYTE_ENCODING $AML_QUAD_BYTE_ENCODING)
 
     for typeEncoding in "${byteEncodingList[@]}"
     do
       #
-      # 10[0-9a-f]2${grepPattern}
-      # 10[0-9a-f]4${grepPattern}
+      # "10[0-9a-f]{2}${grepPattern}"
+      # "10[0-9a-f]{4}${grepPattern}"
+      # "10[0-9a-f]{6}${grepPattern}"
+      # "10[0-9a-f]{8}${grepPattern}"
       #
       local data=$(egrep -o "${AML_SCOPE_OPCODE}[0-9a-f]{${typeEncoding}}${grepPattern}" "$filename")
 
@@ -2497,7 +2507,7 @@ function _getProcessorScope()
             # Lower scopeLength with the number of characters that we used for the match.
             #
             let scopeLength-=$grepPatternLength
-            # echo $scopeLength
+            _debugPrint "scopeLength: $scopeLength (egrep pattern length)\n"
             #
             # Initialise string.
             #
@@ -2520,8 +2530,8 @@ function _getProcessorScope()
             # Extract the whole Scope() {}.
             #
             local scopeObjectData=$(egrep -o "${scopeObjectData}${repetitionString}" "$filename" | tr -d '\n')
-            # echo "$scopeObjectData"
-            _debugPrint "scopeObjectData length ${#scopeObjectData}\n"
+            # echo "scopeObjectData: $scopeObjectData"
+            _debugPrint "scopeObjectData length ${#scopeObjectData} (includes egrep pattern)\n"
 
             if [[ $scopeObjectData ]];
               then
@@ -2535,6 +2545,11 @@ function _getProcessorScope()
                 #
                 if [[ $? -eq 0 ]];
                   then
+                    #
+                    # Reinitialise scopeLength (lowered for the repetitionString).
+                    #
+                    let scopeLength="${#scopeObjectData}"
+
                     printf 'Scope ('$scopeName') {'$scopeLength' bytes} with ACPI Processor declarations found in the DSDT (ACPI 1.0 compliant)\n'
                     #
                     # Construct processor scope name.
@@ -2554,7 +2569,7 @@ function _getProcessorScope()
 
                     return
                   else
-                    _debugPrint 'Scope ('$scopeName') {'$scopeLength' bytes} without ACPI Processor declarations ...\n'
+                    _debugPrint 'Scope ('$scopeName') {'$scopeLength' bytes} without ACPI Processor declarations ...\n\n'
                 fi
             fi
           done
@@ -3712,7 +3727,7 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}t${STYLE_RESET}dp [11.5 - 150]\n"
           printf "       -${STYLE_BOLD}w${STYLE_RESET}orkarounds for Ivy Bridge [0/1/2/3]\n"
           printf "          0 = no workarounds\n"
-          printf "          1 = inject extra (turbo) P-State at he top with maximum (turbo) frequency + 1 MHz\n"
+          printf "          1 = inject extra (turbo) P-State at the top with maximum (turbo) frequency + 1 MHz\n"
           printf "          2 = inject extra P-States at the bottom\n"
           printf "          3 = both\n"
           printf "       -${STYLE_BOLD}x${STYLE_RESET}cpm mode [0/1]\n"
