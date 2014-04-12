@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 13.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 13.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -156,6 +156,7 @@
 #			- triple/quad byte package length support added (Pike, April 2014)
 #			- typo in help text (-turbo) fixed (Pike, April 2014)
 #			- opcode error ('Name' instead of 'Device') fixed (Pike, April 2014)
+#			- fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/21 (Pike, April 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -195,7 +196,7 @@
 #
 # Script version info.
 #
-gScriptVersion=13.1
+gScriptVersion=13.2
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -3079,7 +3080,30 @@ function _getCPUNumberFromBrandString
                 # OEM CPU's have been reported to use a "0" instead of "v2"
                 # and thus let's use that to make our data match the CPU.
                 #
-                gProcessorNumber="${data[3]} v2"
+                # -c argument used?
+                #
+                if [[ $gBridgeType -gt 0 ]];
+                  then
+                    #
+                    # Yes. Check target CPU model (represented here as 'gBridgeType').
+                    #
+                    case "$gBridgeType" in
+                      $SANDY_BRIDGE) gProcessorNumber="${data[3]}"
+                                     ;;
+                      $IVY_BRIDGE)   gProcessorNumber="${data[3]} v2"
+                                     ;;
+                    esac
+                  else
+                    #
+                    # No. Check CPU model.
+                    #
+                    case $(_getCPUModel) in
+                      0x2A|0x2C|0x2D) gProcessorNumber="${data[3]}"
+                                      ;;
+                      0x3A|0x3B|0x3E) gProcessorNumber="${data[3]} v2"
+                                      ;;
+                    esac
+                fi
           fi
         else
           #
