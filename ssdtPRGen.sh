@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 13.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 13.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -98,7 +98,7 @@
 #			- Fixed a typo in processor data (i7-4960K should be i7-4960X) (Pike, January 2014)
 #			- Missing Haswell i3 processor data added (Pike, Februari 2014)
 #			- TDP can now also be a floating-point number (Pike, Februari 2014)
-#			- New Brodwell processor preps (Pike, Februari 2014)
+#			- New Broadwell processor preps (Pike, Februari 2014)
 #			- Reformatted code layout (Pike, Februari 2014)
 #			- Changed a bunch of misnamed (local) variables (Pike, Februari 2014)
 #			- Fixed a couple of let/local mixups (Pike, Februari 2014)
@@ -157,6 +157,9 @@
 #			- typo in help text (-turbo) fixed (Pike, April 2014)
 #			- opcode error ('Name' instead of 'Device') fixed (Pike, April 2014)
 #			- fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/21 (Pike, April 2014)
+#			- additional Haswell refresh (desktop/mobile) processor data added (Pike, April 2014)
+#			- fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/25 (Pike, April 2014)
+#			- TDP value for the i5-4200Y and i3-4010Y fixed (Pike, April 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -196,7 +199,7 @@
 #
 # Script version info.
 #
-gScriptVersion=13.2
+gScriptVersion=13.3
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -797,16 +800,26 @@ i5-4570,84,800,3200,3600,4,4
 i5-4440,84,800,3100,3300,4,4
 i5-4430,84,800,3000,3200,4,4
 # Socket 1150 (Low Power)
+i7-4790S,65,800,3200,4000,4,8
+i7-4790T,45,800,2700,3900,4,8
+i7-4785T,35,800,2200,3200,4,8
 i7-4770S,65,800,3100,3900,4,8
 i7-4770T,45,800,2500,3700,4,8
 i7-4765T,35,800,2000,3000,4,8
 i5-4690K,65,800,3500,3900,4,4
 i5-4690,65,800,3300,3900,4,4
+i5-4690S,65,800,3200,3900,4,4
+i5-4690T,45,800,2500,3500,4,4
 i5-4670S,65,800,3100,3800,4,4
 i5-4670T,45,800,2300,3300,4,4
+i5-4590,84,800,3300,3700,4,4
+i5-4590S,65,800,3000,3700,4,4
+i5-4590T,35,800,3000,3700,4,4
 i5-4570S,65,800,2900,3600,4,4
-i5-4570T,35,800,2900,3600,2,4
-i5-4460,65,800,3200,3700,2,4
+i5-4570T,35,800,2900,3600,4,4
+i5-4460,84,800,3200,3400,4,4
+i5-4460T,35,800,1900,2700,4,4
+i5-4460S,65,800,2900,3600,4,4
 i5-4430S,65,800,2700,3200,4,4
 i5-4360,65,800,3300,3700,2,4
 i5-4350,65,800,3200,3600,2,4
@@ -817,7 +830,6 @@ i5-4670R,65,800,3000,3700,4,4
 i5-4288U,28,800,2600,3100,2,4
 i5-4258U,28,800,2400,2900,2,4
 i5-4250U,15,800,1300,2600,2,4
-i5-4200Y,12,800,1400,1900,2,4
 i5-4200U,15,800,1600,2600,2,4
 #
 i3-4130T,35,800,2900,2900,2,4
@@ -833,9 +845,14 @@ gMobileHaswellCPUList=(
 i7-4960HQ,47,800,2600,3800,4,8
 i7-4950HQ,47,800,2400,3600,4,8
 i7-4850HQ,47,800,2300,3500,4,8
+i7-4760HQ,47,800,2100,3300,4,8
 i7-4750HQ,47,800,2000,3200,4,8
 i7-4702HQ,37,800,2200,3200,4,8
 i7-4700HQ,47,800,2400,3600,4,8
+i7-4710HQ,47,800,2500,3500,4,8
+i7-4712HQ,37,800,2300,3300,4,8
+i7-4700EC,43,800,2700,2700,4,8
+i7-4702EC,27,800,2000,2000,4,8
 # Extreme Edition Series - socket FCPGA946
 i7-4930MX,57,800,3000,3900,4,8
 # Socket FCPGA946
@@ -843,14 +860,18 @@ i7-4900MQ,47,800,2800,3800,4,8
 i7-4800MQ,47,800,2700,3700,4,8
 i7-4702MQ,37,800,2200,3200,4,8
 i7-4700MQ,47,800,2400,3400,4,8
+i7-4710MQ,47,800,2500,3500,4,8
+i7-4712MQ,37,800,2300,3300,4,8
 i5-4200M,37,800,2500,3100,2,4
 # Socket FCBGA1168
 i7-4650U,15,800,1700,3300,2,4
 i7-4650U,15,800,1700,3300,2,4
 i7-4600U,15,800,2100,3300,2,4
+i7-4610Y,11.5,800,1700,2900,2,4
 i7-4558U,28,800,2800,3300,2,4
 i7-4550U,15,800,1500,3000,2,4
 i7-4500U,15,800,1800,3000,2,4
+i7-4510U,15,800,2000,3100,2,4
 i5-4360U,15,800,1500,3000,2,4
 i5-4350U,15,800,1400,2900,2,4
 i5-4310U,15,800,2000,3000,2,4
@@ -861,14 +882,21 @@ i5-4288U,28,800,2600,3100,2,4
 i5-4258U,28,800,2400,2900,2,4
 i5-4250U,15,800,1300,2600,2,4
 i5-4200U,15,800,1600,2600,2,4
-i5-4200Y,12,800,1400,1900,2,4
+i5-4200Y,11.5,800,1400,1900,2,4
+i5-4202Y,11.5,800,1600,2000,2,4
+i5-4210Y,11.5,800,1500,1900,2,4
+i5-4210U,15,800,1700,2700,2,4
+i5-4220Y,11.5,800,1600,2000,2,4
+i5-4260U,15,800,1400,2700,2,4
 # Socket FCPGA946
 i5-4340M,37,800,2900,3600,2,4
 i5-4330M,37,800,2800,3500,2,4
 i5-4310M,37,800,2700,3400,2,4
 i5-4300M,37,800,2600,3300,2,4
+i5-4210M,37,800,2600,3200,2,4
 i3-4000M,37,800,2400,2400,2,4
 i3-4100M,37,800,2500,2500,2,4
+i3-4110M,37,800,2600,2600,2,4
 # Socket FCLGA1150
 i3-4130,54,800,3400,3400,2,4
 i3-4130T,35,800,3000,3000,2,4
@@ -878,15 +906,24 @@ i3-4340,54,800,3600,3600,2,4
 i3-4330TE,35,800,2400,2400,2,4
 # Socket FCBGA1364
 i3-4100E,37,800,2400,2400,2,4
+i3-4110E,37,800,2600,2600,2,4
 i3-4102E,25,800,1600,1600,2,4
+i3-4112E,25,800,1800,1800,2,4
+i5-4410E,37,800,2900,2900,2,4
+i5-4422E,25,800,1800,2900,2,4
+i5-4402EC,27,800,2500,2500,2,4
 # Socket FCBGA1168
 i3-4005U,15,800,1700,1700,2,4
 i3-4010U,15,800,1700,1700,2,4
 i3-4100U,15,800,1800,1800,2,4
-i3-4010Y,12,800,1300,1300,2,4
+i3-4010Y,11.5,800,1300,1300,2,4
 i3-4158U,28,800,2000,2000,2,4
 i3-4012Y,11.5,800,1500,1500,2,4
 i3-4020Y,11.5,800,1500,1500,2,4
+i3-4120U,15,800,2000,2000,2,4
+i3-4030U,15,800,1900,1900,2,4
+i3-4025U,15,800,1900,1900,2,4
+i3-4030Y,11.5,800,1600,1600,2,4
 )
 
 #
@@ -2877,8 +2914,7 @@ function _findIasl()
           fi
 
           printf "Downloading iasl...\n"
-          sudo curl -o /usr/local/bin/iasl https://raw.github.com/Piker-Alpha/RevoBoot/clang/i386/libsaio/acpi/Tools/iasl
-#         sudo curl https://raw.github.com/Piker-Alpha/RevoBoot/clang/i386/libsaio/acpi/Tools/iasl -o /usr/local/bin/iasl --create-dirs
+          sudo curl -o /usr/local/bin/iasl https://raw.githubusercontent.com/Piker-Alpha/RevoBoot/clang/i386/libsaio/acpi/Tools/iasl
           sudo chmod +x /usr/local/bin/iasl
           echo 'Done.'
       fi
