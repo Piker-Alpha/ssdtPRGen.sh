@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 13.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 13.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -160,6 +160,7 @@
 #			- additional Haswell refresh (desktop/mobile) processor data added (Pike, April 2014)
 #			- fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/25 (Pike, April 2014)
 #			- TDP value for the i5-4200Y and i3-4010Y fixed (Pike, April 2014)
+#			- processor data for upcomming Xeon E3-12nn v3 models added (Pike, April 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -199,7 +200,7 @@
 #
 # Script version info.
 #
-gScriptVersion=13.3
+gScriptVersion=13.4
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -770,17 +771,26 @@ i3-3110M,35,0,2400,0,2,4
 gServerHaswellCPUList=(
 # E3-1200 v3 Xeon Processor Series
 'E3-1285L v3',65,800,3100,3900,4,8
+'E3-1286L v3',65,800,3200,4000,4,8
 'E3-1285 v3',84,800,3600,4000,4,8
+'E3-1286 v3',84,800,3700,4100,4,8
 'E3-1280 v3',82,800,3600,4000,4,8
+'E3-1281 v3',82,800,3700,4100,4,8
 'E3-1275 v3',84,800,3500,3900,4,8
+'E3-1276 v3',84,800,3600,4000,4,8
 'E3-1270 v3',80,800,3500,3900,4,8
+'E3-1271 v3',80,800,3600,4000,4,8
 'E3-1268L v3',45,800,2300,3300,4,8
 'E3-1265L v3',45,800,2500,3700,4,8
 'E3-1245 v3',84,800,3400,3800,4,8
+'E3-1246 v3',84,800,3500,3900,4,8
 'E3-1240 v3',80,800,3400,3800,4,8
+'E3-1241 v3',80,800,3500,3900,4,8
 'E3-1230L v3',25,800,1800,2800,4,8
 'E3-1230 v3',80,800,3300,3700,4,8
+'E3-1231 v3',80,800,3400,3800,4,8
 'E3-1225 v3',80,800,3200,3600,4,4
+'E3-1226 v3',80,800,3300,3700,4,4
 'E3-1220 v3',80,800,3100,3500,4,4
 'E3-1220L v3',13,800,1100,1500,2,4
 )
