@@ -1,16 +1,16 @@
 You can download the latest revision of ssdtPRGen.sh by entering the following command in a terminal window:
 
-``curl -o ~/ssdtPRGen.sh https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/ssdtPRGen.sh``
+curl -o ~/ssdtPRGen.sh https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/ssdtPRGen.sh
 
 That will download the file to you user directory. The next step is to change the file mode (+x) with: 
  
-``chmod +x ~/ssdtPRGen.sh``
+chmod +x ~/ssdtPRGen.sh
 
 Help Information
 
 ~/ssdtPRGen.sh -h
 
-**Usage:** ./ssdtPRGen.sh [-abcdfhlmptwx]
+Usage: ./ssdtPRGen.sh [-abcdfhlmptwx]
        -acpi Processor name (example: CPU0, C000)
        -board-id (example: Mac-F60DEB81FF30ACF6)
        -cpu type [0/1/2/3]
@@ -47,7 +47,7 @@ Help Information
           0 = XCPM mode disabled
           1 = XCPM mode enabled
 
-**Bugs**
+Bugs
 
 All possible bugs (so called 'issues') should be filed at:
 
