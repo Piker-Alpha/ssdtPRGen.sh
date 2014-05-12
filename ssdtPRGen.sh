@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 13.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 13.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -161,6 +161,7 @@
 #			- fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/25 (Pike, April 2014)
 #			- TDP value for the i5-4200Y and i3-4010Y fixed (Pike, April 2014)
 #			- processor data for upcomming Xeon E3-12nn v3 models added (Pike, April 2014)
+#			- processor data for i5-4440S,i5-4570TE,i5-4400E,i5-4402E and i5-4200H added (Pike, May 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -178,10 +179,11 @@
 #			- Thanks to 'Hackmodford ' on Github issues for testing/confirming that PM in Mavericks was changed.
 #			- Thanks to 'Rals2007' for reporting the double "${${" error on line 1640.
 #			- Thanks to 'MMMProd' for reporting the -eg instead of -eq error on line 3567.
-#			- Thanks to 'DKMN' for reporting the ommision of the Intel E5-2620.
-#			- Thanks to 'nijntje' (blog) for reporting the ommision of the Intel i3-3245.
-#			- Thanks to 't2m' for (blog) for reporting the ommision of the Intel E5-1600 product family.
+#			- Thanks to 'DKMN' for reporting the omision of the Intel E5-2620.
+#			- Thanks to 'nijntje' (blog) for reporting the omision of the Intel i3-3245.
+#			- Thanks to 't2m' for (blog) for reporting the omision of the Intel E5-1600 product family.
 #			- Thanks to 'arkanisman' for reporting the missing data of the Intel E5-2650.
+#			- Thanks to 'dsaltos' on Github issues for reporting the omision of the Intel i5-4400S.
 #
 # Bugs:
 #			- Bug reports can be filed at https://github.com/Piker-Alpha/RevoBoot/issues
@@ -200,7 +202,7 @@
 #
 # Script version info.
 #
-gScriptVersion=13.4
+gScriptVersion=13.5
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -808,6 +810,7 @@ i5-4670K,84,800,3400,3800,4,4
 i5-4670,84,800,3400,3800,4,4
 i5-4570,84,800,3200,3600,4,4
 i5-4440,84,800,3100,3300,4,4
+i5-4440S,65,800,2800,3300,4,4
 i5-4430,84,800,3000,3200,4,4
 # Socket 1150 (Low Power)
 i7-4790S,65,800,3200,4000,4,8
@@ -827,6 +830,7 @@ i5-4590S,65,800,3000,3700,4,4
 i5-4590T,35,800,3000,3700,4,4
 i5-4570S,65,800,2900,3600,4,4
 i5-4570T,35,800,2900,3600,4,4
+i5-4570TE,35,800,2700,3300,2,4
 i5-4460,84,800,3200,3400,4,4
 i5-4460T,35,800,1900,2700,4,4
 i5-4460S,65,800,2900,3600,4,4
@@ -836,11 +840,6 @@ i5-4350,65,800,3200,3600,2,4
 # BGA
 i7-4770R,65,800,3200,3900,4,8
 i5-4670R,65,800,3000,3700,4,4
-# Haswell ULT
-i5-4288U,28,800,2600,3100,2,4
-i5-4258U,28,800,2400,2900,2,4
-i5-4250U,15,800,1300,2600,2,4
-i5-4200U,15,800,1600,2600,2,4
 #
 i3-4130T,35,800,2900,2900,2,4
 i3-4330T,35,800,3000,3000,2,4
@@ -920,9 +919,12 @@ i3-4100E,37,800,2400,2400,2,4
 i3-4110E,37,800,2600,2600,2,4
 i3-4102E,25,800,1600,1600,2,4
 i3-4112E,25,800,1800,1800,2,4
+i5-4400E,37,800,2700,3300,2,4
 i5-4410E,37,800,2900,2900,2,4
 i5-4422E,25,800,1800,2900,2,4
+i5-4402E,25,800,1600,2700,2,4
 i5-4402EC,27,800,2500,2500,2,4
+i5-4200H,47,800,2800,3400,2,4
 # Socket FCBGA1168
 i3-4005U,15,800,1700,1700,2,4
 i3-4010U,15,800,1700,1700,2,4
