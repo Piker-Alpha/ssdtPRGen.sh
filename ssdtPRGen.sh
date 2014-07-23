@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 13.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 13.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -162,6 +162,7 @@
 #			- TDP value for the i5-4200Y and i3-4010Y fixed (Pike, April 2014)
 #			- processor data for upcomming Xeon E3-12nn v3 models added (Pike, April 2014)
 #			- processor data for i5-4440S,i5-4570TE,i5-4400E,i5-4402E and i5-4200H added (Pike, May 2014)
+#			- processor data update for mobile i5/i7 and future Haswell-E processors (Pike, July 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -202,7 +203,7 @@
 #
 # Script version info.
 #
-gScriptVersion=13.5
+gScriptVersion=13.6
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -798,8 +799,13 @@ gServerHaswellCPUList=(
 )
 
 gDesktopHaswellCPUList=(
+# Haswell-E Processor Series (socket 2011-3)
+i7-5960X,140,1200,3000,3400,8,16
+i7-5930K,140,1200,3500,3900,6,12
+i7-5820K,140,1200,3300,3700,6,12
 # Socket 1150 (Standard Power)
 i7-4790K,88,800,4000,4400,4,8
+i5-4690K,88,800,3500,3900,4,4
 i7-4790,84,800,3600,4000,4,8
 i7-4770K,84,800,3500,3900,4,8
 i7-4771,84,800,3500,3900,4,8
@@ -819,7 +825,6 @@ i7-4785T,35,800,2200,3200,4,8
 i7-4770S,65,800,3100,3900,4,8
 i7-4770T,45,800,2500,3700,4,8
 i7-4765T,35,800,2000,3000,4,8
-i5-4690K,88,800,3500,3900,4,4
 i5-4690,65,800,3300,3900,4,4
 i5-4690S,65,800,3200,3900,4,4
 i5-4690T,45,800,2500,3500,4,4
@@ -851,13 +856,17 @@ i3-4340,54,800,3600,3600,2,4
 
 gMobileHaswellCPUList=(
 # Socket FCBGA1364
+i7-4980HQ,47,800,2800,4000,4,8
 i7-4960HQ,47,800,2600,3800,4,8
 i7-4950HQ,47,800,2400,3600,4,8
+i7-4870HQ,47,800,2500,3700,4,8
+i7-4860HQ,47,800,2400,3600,4,8
 i7-4850HQ,47,800,2300,3500,4,8
+i7-4770HQ,47,800,2200,3400,4,8
 i7-4760HQ,47,800,2100,3300,4,8
 i7-4750HQ,47,800,2000,3200,4,8
 i7-4702HQ,37,800,2200,3200,4,8
-i7-4700HQ,47,800,2400,3600,4,8
+i7-4700HQ,47,800,2400,3400,4,8
 i7-4710HQ,47,800,2500,3500,4,8
 i7-4712HQ,37,800,2300,3300,4,8
 i7-4700EC,43,800,2700,2700,4,8
@@ -865,18 +874,23 @@ i7-4702EC,27,800,2000,2000,4,8
 # Extreme Edition Series - socket FCPGA946
 i7-4930MX,57,800,3000,3900,4,8
 # Socket FCPGA946
+i7-4910MQ,47,800,2900,3900,4,8
 i7-4900MQ,47,800,2800,3800,4,8
+i7-4810MQ,47,800,2800,3800,4,8
 i7-4800MQ,47,800,2700,3700,4,8
 i7-4702MQ,37,800,2200,3200,4,8
 i7-4700MQ,47,800,2400,3400,4,8
 i7-4710MQ,47,800,2500,3500,4,8
 i7-4712MQ,37,800,2300,3300,4,8
+i7-4610M,37,800,3000,3700,4,8
+i7-4600M,37,800,2900,3300,4,8
 i5-4200M,37,800,2500,3100,2,4
 # Socket FCBGA1168
 i7-4650U,15,800,1700,3300,2,4
 i7-4650U,15,800,1700,3300,2,4
 i7-4600U,15,800,2100,3300,2,4
 i7-4610Y,11.5,800,1700,2900,2,4
+i7-4578U,28,800,3000,3500,2,4
 i7-4558U,28,800,2800,3300,2,4
 i7-4550U,15,800,1500,3000,2,4
 i7-4500U,15,800,1800,3000,2,4
@@ -884,10 +898,12 @@ i7-4510U,15,800,2000,3100,2,4
 i5-4360U,15,800,1500,3000,2,4
 i5-4350U,15,800,1400,2900,2,4
 i5-4310U,15,800,2000,3000,2,4
+i5-4308U,28,800,2800,3300,2,4
 i5-4300U,15,800,1900,2900,2,4
 i5-4302Y,11.5,800,1600,2300,2,4
 i5-4300Y,11.5,800,1600,2300,2,4
 i5-4288U,28,800,2600,3100,2,4
+i5-4278U,28,800,2600,3100,2,4
 i5-4258U,28,800,2400,2900,2,4
 i5-4250U,15,800,1300,2600,2,4
 i5-4200U,15,800,1600,2600,2,4
@@ -925,6 +941,7 @@ i5-4422E,25,800,1800,2900,2,4
 i5-4402E,25,800,1600,2700,2,4
 i5-4402EC,27,800,2500,2500,2,4
 i5-4200H,47,800,2800,3400,2,4
+i5-4210H,47,800,2900,3500,2,4
 # Socket FCBGA1168
 i3-4005U,15,800,1700,1700,2,4
 i3-4010U,15,800,1700,1700,2,4
@@ -3051,6 +3068,7 @@ function _getCPUNumberFromBrandString
   # Get CPU brandstring
   #
   gBrandString=$(echo `sysctl machdep.cpu.brand_string` | sed -e 's/machdep.cpu.brand_string: //')
+
   #
   # Show brandstring (this helps me to debug stuff).
   #
@@ -3976,9 +3994,9 @@ function _getScriptArguments()
                                   let gFunctionReturn=1
                               fi
                               #
-                              # Haswell checks.
+                              # Haswell/Haswell-E checks.
                               #
-                              if [[ ${1:0:4} == "i3-4" || ${1:0:4} == "i5-4" || ${1:0:4} == "i7-4" ]];
+                              if [[ ${1:0:4} == "i3-4" || ${1:0:4} == "i5-4" || ${1:0:4} == "i7-4" || ${1:0:4} == "i7-5" ]];
                                 then
                                   let gFunctionReturn=1
                               fi
