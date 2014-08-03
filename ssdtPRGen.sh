@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 13.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 13.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -163,6 +163,9 @@
 #			- processor data for upcomming Xeon E3-12nn v3 models added (Pike, April 2014)
 #			- processor data for i5-4440S,i5-4570TE,i5-4400E,i5-4402E and i5-4200H added (Pike, May 2014)
 #			- processor data update for mobile i5/i7 and future Haswell-E processors (Pike, July 2014)
+#			- moved some processor data from mobile to desktop definitions (Pike, August 2014)
+#			- fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/47 (Pike, August 2014)
+#			- processor data for missing i3 Haswell processors added (Pike, August 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -203,7 +206,7 @@
 #
 # Script version info.
 #
-gScriptVersion=13.6
+gScriptVersion=13.7
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -840,18 +843,26 @@ i5-4460,84,800,3200,3400,4,4
 i5-4460T,35,800,1900,2700,4,4
 i5-4460S,65,800,2900,3600,4,4
 i5-4430S,65,800,2700,3200,4,4
-i5-4360,65,800,3300,3700,2,4
-i5-4350,65,800,3200,3600,2,4
 # BGA
 i7-4770R,65,800,3200,3900,4,8
 i5-4670R,65,800,3000,3700,4,4
-#
-i3-4130T,35,800,2900,2900,2,4
-i3-4330T,35,800,3000,3000,2,4
-i3-4150,54,800,3500,3500,2,4
+#FCLGA1150
 i3-4130,54,800,3400,3400,2,4
+i3-4130T,35,800,2900,2900,2,4
+i3-4150,54,800,3500,3500,2,4
+i3-4150T,35,800,3000,3000,2,4
+i3-4160,54,800,3600,3600,2,4
+i3-4160T,35,800,3100,3100,2,4
 i3-4330,54,800,3500,3500,2,4
+i3-4330T,35,800,3000,3000,2,4
+i3-4330TE,35,800,2400,2400,2,4
 i3-4340,54,800,3600,3600,2,4
+i3-4340TE,35,800,2600,2600,2,4
+i3-4350,54,800,3600,3600,2,4
+i3-4350T,35,800,3100,3100,2,4
+i3-4360,54,800,3700,3700,2,4
+i3-4360T,35,800,3200,3200,2,4
+i3-4370,54,800,3800,3800,2,4
 )
 
 gMobileHaswellCPUList=(
@@ -922,14 +933,6 @@ i5-4210M,37,800,2600,3200,2,4
 i3-4000M,37,800,2400,2400,2,4
 i3-4100M,37,800,2500,2500,2,4
 i3-4110M,37,800,2600,2600,2,4
-# Socket FCLGA1150
-i3-4130,54,800,3400,3400,2,4
-i3-4130T,35,800,3000,3000,2,4
-i3-4330,54,800,3500,3500,2,4
-i3-4330T,35,800,3000,3000,2,4
-i3-4340,54,800,3600,3600,2,4
-i3-4330TE,35,800,2400,2400,2,4
-i3-4340TE,35,800,2600,2600,2,4
 # Socket FCBGA1364
 i3-4100E,37,800,2400,2400,2,4
 i3-4110E,37,800,2600,2600,2,4
