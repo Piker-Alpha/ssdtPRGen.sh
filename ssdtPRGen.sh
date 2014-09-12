@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 13.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 13.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -166,6 +166,7 @@
 #			- moved some processor data from mobile to desktop definitions (Pike, August 2014)
 #			- fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/47 (Pike, August 2014)
 #			- processor data for missing i3 Haswell processors added (Pike, August 2014)
+#			- processor data for i7-3900 Mobile Processor Extreme Edition added (Pike, September 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -206,7 +207,7 @@
 #
 # Script version info.
 #
-gScriptVersion=13.7
+gScriptVersion=13.8
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -715,6 +716,9 @@ i3-3210,55,1600,3200,0,2,4
 )
 
 gMobileIvyBridgeCPUList=(
+# i7-3900 Mobile Processor Extreme Edition
+i7-3940XM,55,1200,3000,3900,4,8
+i7-3920XM,55,1200,2900,3800,4,8
 # i7-3800 Mobile Processor Series
 i7-3840QM,45,1200,2800,3800,4,8
 i7-3820QM,45,1200,2700,3700,4,8
