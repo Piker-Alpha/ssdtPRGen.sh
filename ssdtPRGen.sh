@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 13.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 13.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- Added support for Ivy Bridge (Pike, January 2013)
@@ -167,6 +167,7 @@
 #			- fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/47 (Pike, August 2014)
 #			- processor data for missing i3 Haswell processors added (Pike, August 2014)
 #			- processor data for i7-3900 Mobile Processor Extreme Edition added (Pike, September 2014)
+#			- processor data for Xeon E5-16NN v3 and E5-26NN v3 Processor Series added (Pike, September 2014)
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -207,7 +208,7 @@
 #
 # Script version info.
 #
-gScriptVersion=13.8
+gScriptVersion=13.9
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -803,6 +804,40 @@ gServerHaswellCPUList=(
 'E3-1226 v3',80,800,3300,3700,4,4
 'E3-1220 v3',80,800,3100,3500,4,4
 'E3-1220L v3',13,800,1100,1500,2,4
+# E5-1600 v3 Xeon Processor Series (AVX2 Turbo Frequency)
+'E5-1620 v3',140,1200,3500,3600,4,8
+'E5-1630 v3',140,1200,3700,3800,4,8
+'E5-1650 v3',140,1200,3500,3800,6,12
+'E5-1660 v3',140,1200,3000,3500,8,16
+'E5-1680 v3',140,1200,3200,3800,8,16
+# E5-2600 v3 Xeon Processor Series (AVX2 Turbo Frequency)
+'E5-2683 v3',120,1200,2000,3000,14,28
+'E5-2695 v3',120,1200,2300,3300,14,28
+'E5-2697 v3',145,1200,2600,3600,14,28
+'E5-2698 v3',135,1200,2300,3600,16,32
+'E5-2699 v3',145,1200,2300,3600,18,36
+'E5-2628L v3',75,1200,2000,2500,10,20
+'E5-2650 v3',105,1200,2300,3000,10,20
+'E5-2660 v3',105,1200,2600,3300,10,20
+'E5-2670 v3',120,1200,2300,3100,12,24
+'E5-2690 v3',135,1200,2600,3500,12,24
+'E5-2609 v3',85,1200,1900,1900,6,6
+'E5-2643 v3',135,1200,3400,3700,6,12
+'E5-2648L v3',75,1200,1900,2500,12,24
+'E5-2650L v3',65,1200,1800,2500,12,24
+'E5-2658 v3',105,1200,2200,2900,12,24
+'E5-2680 v3',120,1200,2500,3300,12,24
+'E5-2687W v3',160,1200,3100,3500,10,20
+'E5-2603 v3',85,1200,1600,1600,6,6
+'E5-2608L v3',52,1200,2000,2000,6,12
+'E5-2618L v3',75,1200,2300,3400,6,12
+'E5-2620 v3',85,1200,2400,3200,6,12
+'E5-2623 v3',105,1200,3000,3500,4,8
+'E5-2630 v3',85,1200,2400,3200,8,16
+'E5-2630L v3',55,1200,1800,2900,8,16
+'E5-2637 v3',135,1200,3500,3700,4,8
+'E5-2640 v3',90,1200,2600,2400,8,16
+'E5-2667 v3',135,1200,3200,3600,8,16
 )
 
 gDesktopHaswellCPUList=(
@@ -2665,7 +2700,7 @@ function _initProcessorScope()
   #
   local filename="/tmp/dsdt.txt"
   #
-  # Note: Dry runs can be done with help of; xxd -c 256 -ps [path]dsdt.aml | tr -d '\n'
+  # Note: Dry runs can be done with help of; xxd -c 256 -ps [path]dsdt.aml | tr -d '\n' > /tmp/dsdt.txt
   #       You may also need to change the CPU ID to get a match.
   #
   # gProcessorNames[0]="C000"
