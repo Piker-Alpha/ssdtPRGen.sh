@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 14.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 14.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- 		Added support for Ivy Bridge (Pike, January 2013)
@@ -171,6 +171,7 @@
 #			- v14.0	zipped up data of acpiTableExtract tool added (Pike, October 2014)
 #			-		Support for Yosemite added (no longer using ioreg to get ACPI table data).
 #			-		Commit text/version information copied from Github (partly/too much work).
+#			- v14.1	low frequency mode fixed for the Intel i5-3317U (Pike, October 2014).
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -211,7 +212,7 @@
 #
 # Script version info.
 #
-gScriptVersion=14.0
+gScriptVersion=14.1
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -763,7 +764,7 @@ i5-3340M,35,1200,2700,3400,2,4
 i5-3339Y,13,0,1500,2000,2,4
 i5-3337U,17,0,1800,2700,2,4
 i5-3320M,35,1200,2600,3300,2,4
-i5-3317U,17,0,1700,2600,2,4
+i5-3317U,17,800,1700,2600,2,4
 # i5-3200 Mobile Processor Series
 i5-3230M,35,1200,2600,3200,2,4
 i5-3210M,35,1200,2500,3100,2,4
