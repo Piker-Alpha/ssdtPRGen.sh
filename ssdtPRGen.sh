@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 14.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 14.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- 		Added support for Ivy Bridge (Pike, January 2013)
@@ -177,6 +177,7 @@
 #			-		Typo fixed (tr -d -> tr -D).
 #			- v14.3	Error fixed, thanks to 'ginsbu' for reporting it on Github issues (Pike, November 2014).
 #			-		Ivy Bridge workaround detection scheme changed.
+#			- v14.4	Errors in processor data for the Intel i5-4690 fixed (Pike, November 2014).
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -200,6 +201,7 @@
 #			- Thanks to 'arkanisman' for reporting the missing data of the Intel E5-2650.
 #			- Thanks to 'dsaltos' on Github issues for reporting the omision of the Intel i5-4400S.
 #			- Thanks to 'open1010' on Github issues for reporting the Ivy Bridge LFM frequency errors.
+#			- Thanks to 'ginsbu' on Github issues for reporting the Intel i5-4690 problems.
 #
 # Bugs:
 #			- Bug reports can be filed at https://github.com/Piker-Alpha/RevoBoot/issues
@@ -218,7 +220,7 @@
 #
 # Script version info.
 #
-gScriptVersion=14.3
+gScriptVersion=14.4
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -877,7 +879,7 @@ i7-4785T,35,800,2200,3200,4,8
 i7-4770S,65,800,3100,3900,4,8
 i7-4770T,45,800,2500,3700,4,8
 i7-4765T,35,800,2000,3000,4,8
-i5-4690,65,800,3300,3900,4,4
+i5-4690,84,800,3500,3900,4,4
 i5-4690S,65,800,3200,3900,4,4
 i5-4690T,45,800,2500,3500,4,4
 i5-4670S,65,800,3100,3800,4,4
