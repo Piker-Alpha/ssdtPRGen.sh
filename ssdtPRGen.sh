@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 14.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 14.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- 		Added support for Ivy Bridge (Pike, January 2013)
@@ -175,6 +175,8 @@
 #			- v14.2 low frequency mode changed for some of the Intel E3-1200 series (Pike, November 2014).
 #			-		Ivy Bridge workarounds (default value) now set based on the version of OS X.
 #			-		Typo fixed (tr -d -> tr -D).
+#			- v14.3	Error fixed, thanks to 'ginsbu' for reporting it on Github issues (Pike, November 2014).
+#			-		Ivy Bridge workaround detection scheme changed.
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -216,7 +218,7 @@
 #
 # Script version info.
 #
-gScriptVersion=14.2
+gScriptVersion=14.3
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -395,7 +397,7 @@ let gUnmountEFIPartition=0
 gProductName=$(sw_vers -productName)
 gProductVersion="$(sw_vers -productVersion)"
 gBuildVersion=$(sw_vers -buildVersion)
-let gOSVersion=$(echo $gProductVersion | tr -D '.')
+let gOSVersion=$(echo $gProductVersion | tr -d '.')
 
 #
 # Maximum Turbo Clock Speed (user configurable)
@@ -3544,7 +3546,7 @@ function _checkForXCPM()
       #
       # Check OS version (the 'machdep.xcpm' class is introduced in 10.8.5)
       #
-      if [[ $gOSVersion > 1084 ]];
+      if [[ $gOSVersion -gt 1084 ]];
         then
           #
           # Yes. Update global variable.
@@ -4522,9 +4524,9 @@ function main()
       #
       # Check Ivy Bridge, XCPM mode and if -w argument is used.
       #
-      if [[ $gBridgeType -eq $IVY_BRIDGE && $gXcpm -eq 0 && $gIvyWorkAround -eq 0 ]];
+      if [[ $gBridgeType -eq $IVY_BRIDGE && $gXcpm -eq -1 && $gIvyWorkAround -eq 0 ]];
         then
-          if [[ $gOSVersion > 10100 ]];
+          if [[ $gOSVersion -gt 10100 ]];
             then
               let gIvyWorkAround=3;
             else
