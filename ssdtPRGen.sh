@@ -3,7 +3,7 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 14.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 14.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Updates:
 #			- 		Added support for Ivy Bridge (Pike, January 2013)
@@ -178,6 +178,9 @@
 #			- v14.3	Error fixed, thanks to 'ginsbu' for reporting it on Github issues (Pike, November 2014).
 #			-		Ivy Bridge workaround detection scheme changed.
 #			- v14.4	Errors in processor data for the Intel i5-4690 fixed (Pike, November 2014).
+#			- v14.5	Argument -bclk allows you to specify a custom BCLK frequency (Pike, November 2014).
+#			-		Help text for -bclk option added.
+#			-		Basic support for pre-Jaketown/Sandy Bridge models added (power/control/status fields).
 #
 # Contributors:
 #			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
@@ -220,7 +223,7 @@
 #
 # Script version info.
 #
-gScriptVersion=14.4
+gScriptVersion=14.5
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -1598,8 +1601,15 @@ function _printPackages()
 
     if [ $frequency -lt $maxNonTurboFrequency ];
       then
-        power=$(echo "scale=6;m=((1.1-(($p0Ratio-$powerRatio)*0.00625))/1.1);(($powerRatio/$p0Ratio)*(m*m)*$maxTDP);" | bc | sed -e 's/.[0-9A-F]*$//')
-        let powerRatio-=1
+        if [ $gBusFrequency -eq 100 ];
+          then
+            power=$(echo "scale=6;m=((1.1-(($p0Ratio-$powerRatio)*0.00625))/1.1);(($powerRatio/$p0Ratio)*(m*m)*$maxTDP);" | bc | sed -e 's/.[0-9A-F]*$//')
+            let powerRatio-=1
+          else
+            let ratioFactor=($ratio*30)/$p0Ratio;
+            power=$(echo "scale=6;(($ratioFactor*$ratioFactor*$ratioFactor*$maxTDP)/27000);" | bc | sed -e 's/.[0-9A-F]*$//')
+            let powerRatio-=1
+        fi
       else
         power=$maxTDP
     fi
@@ -1611,7 +1621,12 @@ function _printPackages()
         printf '    Zero, '                                                           >> $gSsdtPR
     fi
 
-    printf "0x0A, 0x0A, 0x%02X00, 0x%02X00 }" $ratio $ratio                           >> $gSsdtPR
+    if [ $gBusFrequency -eq 100 ];
+      then
+        printf "0x0A, 0x0A, 0x%02X00, 0x%02X00 }" $ratio $ratio                       >> $gSsdtPR
+      else
+        printf "0x0A, 0x0A, 0x00%02X, 0x00%02X }" $ratio $ratio                       >> $gSsdtPR
+    fi
 
     let ratio-=1
     let frequency-=$gBusFrequency
@@ -3931,6 +3946,7 @@ function _getScriptArguments()
         then
           printf "${STYLE_BOLD}Usage:${STYLE_RESET} ./ssdtPRGen.sh [-abcdfhlmptwx]\n"
           printf "       -${STYLE_BOLD}a${STYLE_RESET}cpi Processor name (example: CPU0, C000)\n"
+          printf "       -${STYLE_BOLD}bclk${STYLE_RESET} frequency (base clock frequency)\n"
           printf "       -${STYLE_BOLD}b${STYLE_RESET}oard-id (example: Mac-F60DEB81FF30ACF6)\n"
           printf "       -${STYLE_BOLD}c${STYLE_RESET}pu type [0/1/2/3]\n"
           printf "          0 = Sandy Bridge\n"
@@ -3981,7 +3997,7 @@ function _getScriptArguments()
             #
             # Note 'uro' was only added to support '-turbo'
             #
-            if [[ "${flag}" =~ ^[-abcdfhlmpsturowx]+$ ]];
+            if [[ "${flag}" =~ ^[-abcdfhklmpsturowx]+$ ]];
               then
                 #
                 # Yes. Figure out what flag it is.
@@ -4003,6 +4019,17 @@ function _getScriptArguments()
                           _invalidArgumentError "-a $1"
                       fi
                       ;;
+
+                  -bclk) shift
+
+                         if [[ "$1" =~ ^[0-9]+$ ]];
+                           then
+                             _PRINT_MSG "Override value: (-bclk) frequency, now using: ${1} MHz!"
+                             let gBusFrequency=$1
+                           else
+                             _invalidArgumentError "-bclk $1"
+                         fi
+                         ;;
 
                   -b) shift
 
