@@ -1,17 +1,27 @@
+ssdtPRGen.sh
+============
+
 You can download the latest revision of ssdtPRGen.sh by entering the following command in a terminal window:
 
+``` sh
 curl -o ~/ssdtPRGen.sh https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/ssdtPRGen.sh
+```
 
-That will download the file to you user directory. The next step is to change the file mode (+x) with: 
+That will download the file to your user directory. The next step is to change the file mode (+x) with:
  
+``` sh
 chmod +x ~/ssdtPRGen.sh
+```
 
 Help Information
+----------------
 
-~/ssdtPRGen.sh -h
+``` sh
+$ ~/ssdtPRGen.sh -h
 
 Usage: ./ssdtPRGen.sh [-abcdfhlmptwx]
        -acpi Processor name (example: CPU0, C000)
+       -bclk frequency (base clock frequency)
        -board-id (example: Mac-F60DEB81FF30ACF6)
        -cpu type [0/1/2/3]
           0 = Sandy Bridge
@@ -20,7 +30,7 @@ Usage: ./ssdtPRGen.sh [-abcdfhlmptwx]
           3 = Broadwell
        -debug output [0/1/3]
           0 = no debug injection/debug output
-          1 = inject debug statements in: ssdt_pr.dsl
+          1 = inject debug statements in: ssdt.dsl
           2 = show debug output
           3 = both
        -frequency (clock frequency)
@@ -46,8 +56,10 @@ Usage: ./ssdtPRGen.sh [-abcdfhlmptwx]
        -xcpm mode [0/1]
           0 = XCPM mode disabled
           1 = XCPM mode enabled
+```
 
 Bugs
+----
 
 All possible bugs (so called 'issues') should be filed at:
 
