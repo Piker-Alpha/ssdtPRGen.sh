@@ -66,3 +66,9 @@ All possible bugs (so called 'issues') should be filed at:
 https://github.com/Piker-Alpha/ssdtPRGen.sh/issues
 
 Please do **not** use my blog for this. Thank you!
+
+
+Contributors
+------------
+
+Drew Hammond
