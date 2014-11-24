@@ -1,3 +1,5 @@
+Contributors
+
  - Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
  - Thanks to 'stinga11' for Sandy Bridge (E5) data and processor list errors.
  - Many thanks to Jeroen († 2013) for the CPU data, cleanups, renaming stuff and other improvements.
