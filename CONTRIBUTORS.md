@@ -1,0 +1,23 @@
+ - Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
+ - Thanks to 'stinga11' for Sandy Bridge (E5) data and processor list errors.
+ - Many thanks to Jeroen († 2013) for the CPU data, cleanups, renaming stuff and other improvements.
+ - Thanks to 'philip_petev' for his help with Snow Leopard/egrep incompatibility.
+ - Thanks to 'RehabMan' for his help with Snow Leopard/egrep incompatibility.
+ - Thanks to 'BigDonkey' for his help with LFM (800 MHz) for Sandy Bridge mobility models.
+ - Thanks to 'rtcl777' on Github issues for the tip about a typo in the iMac12 board-id's.
+ - Thanks to 'xpamamadeus' for the Clover boot.log tip.
+ - Thanks to 'rileyfreeman' for the Intel i7-3930K LFM value.
+ - Thanks to 'Klonkrieger2' aka Mark for the tip about the sed RegEx error in _getCPUtype.
+ - Thanks to 'dhnguyen92' on Github issues for the tip about a typo in the i7-2640M model data.
+ - Thanks to 'fabiosun' on Github issues for the tip about a typo in the cpu-type check.
+ - Thanks to 'Hackmodford ' on Github issues for testing/confirming that PM in Mavericks was changed.
+ - Thanks to 'Rals2007' for reporting the double "${${" error on line 1640.
+ - Thanks to 'MMMProd' for reporting the -eg instead of -eq error on line 3567.
+ - Thanks to 'DKMN' for reporting the omision of the Intel E5-2620.
+ - Thanks to 'nijntje' (blog) for reporting the omision of the Intel i3-3245.
+ - Thanks to 't2m' for (blog) for reporting the omision of the Intel E5-1600 product family.
+ - Thanks to 'arkanisman' for reporting the missing data of the Intel E5-2650.
+ - Thanks to 'dsaltos' on Github issues for reporting the omision of the Intel i5-4400S.
+ - Thanks to 'open1010' on Github issues for reporting the Ivy Bridge LFM frequency errors.
+ - Thanks to 'ginsbu' on Github issues for reporting the Intel i5-4690 problems.
+ - Thanks to Drew Hammond for the README.md formatting.
