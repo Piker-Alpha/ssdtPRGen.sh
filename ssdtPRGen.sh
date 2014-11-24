@@ -3,217 +3,19 @@
 # Script (ssdtPRGen.sh) to create ssdt-pr.dsl for Apple Power Management Support.
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
-# Version 14.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
-# Updates:
-#			- 		Added support for Ivy Bridge (Pike, January 2013)
-#			- 		Filename error fixed (Pike, January 2013)
-#			- 		Namespace error fixed in _printScopeStart (Pike, January 2013)
-#			- 		Model and board-id checks added (Pike, January 2013)
-#			- 		SMBIOS cpu-type check added (Pike, January 2013)
-#			- 		Copy/paste error fixed (Pike, January 2013)
-#			- 		Method ACST added to CPU scopes for IB CPUPM (Pike, January 2013)
-#			- 		Method ACST corrected for latest version of iasl (Dave, January 2013)
-#			- 		Changed path/filename to ~/Desktop/SSDT_PR.dsl (Dave, January 2013)
-#			- 		P-States are now one-liners instead of blocks (Pike, January 2013)
-#			- 		Support for flexible ProcessorNames added (Pike, Februari 2013)
-#			- 		Better feedback and Debug() injection added (Pike, Februari 2013)
-#			- 		Automatic processor type detection (Pike, Februari 2013)
-#			- 		TDP and processor type are now optional arguments (Pike, Februari 2013)
-#			- 		system-type check (used by X86PlatformPlugin) added (Pike, Februari 2013)
-#			- 		ACST injection for all logical processors (Pike, Februari 2013)
-#			- 		Introducing a stand-alone version of method _DSM (Pike, Februari 2013)
-#			- 		Fix incorrect turbo range (Pike, Februari 2013)
-#			- 		Restore IFS before return (Pike, Februari 2013)
-#			- 		Better/more complete feedback added (Jeroen, Februari 2013)
-#			- 		Processor data for desktop/mobile and server CPU's added (Jeroen, Februari 2013)
-#			- 		Improved power calculation, matching Apple's new algorithm (Pike, Februari 2013)
-#			- 		Fix iMac13,N latency and power values for C3 (Jeroen/Pike, Februari 2013)
-#			- 		IASL failed to launch when path included spaces (Pike, Februari 2013)
-#			- 		Typo in cpu-type check fixed (Jeroen, Februari 2013)
-#			- 		Error in CPU data (i5-3317U) fixed (Pike, Februari 2013)
-#			- 		Setting added for the target path/filename (Jeroen, Februari 2013)
-#			- 		Initial implementation of auto-copy (Jeroen, Februari 2013)
-#			- 		Additional checks added for cpu data/turbo modes (Jeroen, Februari 2013)
-#			- 		Undo filename change done by Jeroen (Pike, Februari 2013)
-#			- 		Improved/faster search algorithm to locate iasl (Jeroen, Februari 2013)
-#			- 		Bug fix, automatic revision update and better feedback (Pike, Februari 2013)
-#			- 		Turned auto copy on (Jeroen, Februari 2013)
-#			- 		Download IASL if it isn't there where we expect it (Pike, Februari 2013)
-#			- 		A sweet dreams update for Pike who wants better feedback (Jeroen, Februari 2013)
-#			- 		First set of Haswell processors added (Pike/Jeroen, Februari 2013)
-#			- 		More rigid testing for user errors (Pike/Jeroen, Februari 2013)
-#			- 		Getting ready for new Haswell setups (Pike/Jeroen, Februari 2013)
-#			- 		Typo and ssdtPRGen.command breakage fixed (Jeroen, Februari 2013)
-#			- 		Target folder check added for _findIASL (Pike, Februari 2013)
-#			- 		Set $baseFreqyency to $lfm when the latter isn't zero (Pike, Februari 2013)
-#			- 		Check PlatformSupport.plist for supported model/board-id added (Jeroen, Februari 2013)
-#			- 		New/expanded Sandy Bridge CPU lists, thanks to Francis (Jeroen, Februari 2013)
-#			- 		More preparations for the official Haswell launch (Pike, Februari 2013)
-#			- 		Fix for home directory with space characters (Pike, Februari 2013)
-#			- 		Sandy Bridge CPU lists rearranged/extended, thanks to 'stinga11' (Jeroen, Februari 2013)
-#			- 		Now supporting up to 16 logical cores (Jeroen, Februari 2013)
-#			- 		Improved argument checking, now supporting a fourth argument (Jeroen/Pike, Februari 2013)
-#			- 		Suppress override output when possible (Jeroen, Februari 2013)
-#			- 		Get processor label from ioreg (Jeroen/Pike, Februari 2013)
-#			- 		Create /usr/local/bin when missing (Jeroen, Februari 2013)
-#			- 		Changed warnings to make them pop out in the on-screen log (Pike, March 2013)
-#			- 		Now using the ACPI processor names of the running system (Pike, March 2013)
-#			- 		Now supporting up to 256/0xff logical processors (Pike, March 2013)
-#			- 		Command line argument for processor labels added (Pike, March 2013)
-#			- 		Bug fix, overriding the cpu type displayed the wrong name (Jeroen, March 2013)
-#			- 		Automatic detection of CPU scopes added (Pike, March 2013)
-#			- 		Show warnings for Sandy Bridge systems as well (Jeroen, March 2013)
-#			- 		New Intel Haswell processors added (Jeroen, April 2013)
-#			- 		Improved Processor declaration detection (Jeroen/Pike, April 2013)
-#			- 		New path for Clover revision 1277 (Jeroen, April 2013)
-#			- 		Haswell's minimum core frequency is 800 MHz (Jeroen, April 2013)
-#			- 		CPU signature output added (Jeroen/Pike, April 2013)
-#			- 		Updating to v6.4 after Jeroen's accidental RM of my local RevoBoot directory (Pike, May 2013)
-#			- v6.5	Updating to v6.5 with bugs fixes and EFI partition checking for Clover compatibility (Pike, May 2013)
-#			- 		Output of Clover ACPI directory detection fixed (Pike, June 2013)
-#			- 		Haswell CPUs added (Jeroen, June 2013)
-#			- 		board-id's for new MacBookAir6,[1/2] added (Pike, June 2013)
-#			- 		board-id's for new iMac14,[1/2/3] added (Pike, October 2013)
-#			- 		board-id's for new MacBookPro11,[1/2/3] added (Pike, October 2013)
-#			- 		Cleanups and board-id for new MacPro6,1 added (Pike, October 2013)
-#			– 		Frequency error in i7-4700MQ data fixed, thanks to RehabMan (Pike, November 2013)
-#			- 		Intel i5-4200M added (Pike, December 2013)
-#			- 		LFM fixed in the Intel i7-3930K data (Pike, December 2013)
-#			- 		Intel E5-2695 V2 added (Pike, December 2013)
-#			- 		Intel i3-3250 added (Pike, December 2013)
-#			- 		Sed RegEx error fixed in _getCPUtype (Pike, January 2014)
-#			- 		Fixed a typo 's/i7-2640M/i7-2674M/' (Pike, January 2014)
-#			- 		Fixed a typo 's/gHaswellCPUList/gServerHaswellCPUList/' (Pike, January 2014)
-#			- 		Intel E5-26nn v2 Xeon Processors added (Pike, January 2014)
-#			- v8.0	Show the CPU brandstring at all times (Pike, January 2014)
-#			- 		Fixed cpu-type suggestion for MacPro6,1 (Pike, January 2014)
-#			- 		Intel i7-4771 added (Pike, January 2014)
-#			- 		A couple Intel Haswell/Crystal Well processor models added (Pike, January 2014)
-#			- 		Moved a couple of Ivy Bridge desktop model processors to the right spot (Pike, January 2014)
-#			- 		Experimental code added for Gringo Vermelho (Pike, January 2014)
-#			- 		Fixed a typo so that checking gIvyWorkAround really works (Pike, January 2014)
-#			- 		Added extra OS checks (as a test) to filter out possibly unwanted LFM P-States (Pike, January 2014)
-#			- 		Let gIvyWorkAround control the additional LFM P-States (Pike, January 2014)
-#			- 		Fixed a typo in processor data (i7-4960K should be i7-4960X) (Pike, January 2014)
-#			- v9.5	Missing Haswell i3 processor data added (Pike, Februari 2014)
-#			- 		TDP can now also be a floating-point number (Pike, Februari 2014)
-#			- 		New Broadwell processor preps (Pike, Februari 2014)
-#			- 		Reformatted code layout (Pike, Februari 2014)
-#			- 		Changed a bunch of misnamed (local) variables (Pike, Februari 2014)
-#			- 		Fixed a couple of let/local mixups (Pike, Februari 2014)
-#			- 		Destination path/filename no longer defauls to RevoBoot (Pike, Februari 2014)
-#			- 		Support for RevoEFI added (Pike, Februari 2014)
-#			- 		Changed SSDT.dsl open behaviour/ask for confirmation (Pike, Februari 2014)
-#			- 		Additional processor scope check to get \_SB_ (Pike, Februari 2014)
-#			- 		Set gIvyWorkAround=0 when XCPM is being used (Pike, Februari 2014)
-#			- 		Added a lost return (Pike, Februari 2014)
-#			- 		Fixed some layout issues (Pike, Februari 2014)
-#			- 		Removed a misleading piece of text (Pike, Februari 2014)
-#			- v10.0	Search for Scope (\_PR_) instead of just "_PR_" (Pike, Februari 2014)
-#			- 		Major rewrite/new routines added to search for the processor scope (Pike, Februari 2014)
-#			- 		New error message/added text about SMBIOS (Pike, Februari 2014)
-#			- 		Ask for confirmation when the script may break/produce errors (Pike, Februari 2014)
-#			- 		Double "${" error on line 1640 fixed (Pike, Februari 2014)
-#			- v11.0	gSystemType for Ivy Bridge desktop models fixed (Pike, Februari 2014)
-#			- 		major rewrite to support more flexible script arguments (Pike, Februari 2014)
-#			- 		lists with supported board-id/model combinations added (Pike, Februari 2014)
-#			- 		renamed argument -l to -s (Pike, Februari 2014)
-#			- 		argument -l is now used to override the number of logical processors (Pike, Februari 2014)
-#			- 		fixed cpu/bridge type override logic (Pike, Februari 2014)
-#			- 		more comments added (Pike, Februari 2014)
-#			- 		change bridge type from Sandy Bridge to Ivy Bridge when -w argument is used (Pike, Februari 2014)
-#			- 		Use Scope (_PR) {} if found for DSDT's without Processor declarations (Pike, Februari 2014)
-#			- 		less cluttered output (Pike, Februari 2014)
-#			- 		check all processor declarations instead of just the first one (Pike, Februari 2014)
-#			- 		show warning if not all processor declarations are found in the DSDT (Pike, Februari 2014)
-#			- 		first set of changes for multi-processor support (Pike, Februari 2014)
-#			- v12.0	inconsistency in argument -c values fixed (Pike, Februari 2014)
-#			- 		fixed a couple of typos (Pike, Februari 2014)
-#			- 		show less/ignore some debug warnings (Pike, Februari 2014)
-#			- 		multi-processor support added (Pike, Februari 2014)
-#			- 		fixed an issue when argument -p was used (Pike, Februari 2014)
-#			-		inconsistency in argument -a fixed (Pike, Februari 2014)
-#			- 		mixup of $data / $matchingData fixed (Pike, Februari 2014)
-#			- 		better deviceName check/stop warning with wrong values (Pike, Februari 2014)
-#			- 		skip inactive cores with -k clock-frequency in function _getProcessorNames (Pike, March 2014)
-#			- 		processor data for the Intel E5-2620 added (Pike, March 2014)
-#			- v12.5	processor data for the Intel i3-3250T and i3-3245 added (Pike, March 2014)
-#			- 		processor data for the Intel E5-1600 v2 product family added (Pike, March 2014)
-#			- v12.7	processor data for the Intel E5-1650 v2 fixed (Pike, March 2014)
-#			- v12.8	processor data for the Intel i5-4300 mobile processor series added (Pike, March 2014)
-#			- v12.9	processor data for the Intel E5-2600 and E5-4600 processor series added (Pike, March 2014)
-#			- v13.0	removed unused variable 'checkGlobalProcessorScope' (Pike, April 2014)
-#			- 		missing deviceName in two calls to _debugPrint fixed (Pike, April 2014)
-#			- 		fixed a typo in help text for -d and now -d 2 also works again (Pike, April 2014)
-#			- 		made -help work (Pike, April 2014)
-#			- 		stop overwriting the ACPI processor scope name with the last one, by using $scopeIndex (Pike, April 2014)
-#			- 		debug data fixed/running processor was missing when the -p argument was used (Pike, April 2014)
-#			- 		more text hidden/only shown when -d [2/3] argument is used (Pike, April 2014)
-#			- 		improved multi-processor support (Pike, April 2014)
-#			- v13.1	enhanced _debugPrint with argument support (Pike, April 2014)
-#			- 		Haswell refresh (desktop) processor data added.
-#			- 		triple/quad byte package length support added .
-#			- 		typo in help text (-turbo) fixed.
-#			- 		opcode error ('Name' instead of 'Device') fixed.
-#			- v13.2	fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/21 (Pike, April 2014)
-#			- v13.3	additional Haswell refresh (desktop/mobile) processor data added (Pike, April 2014)
-#			- 		fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/25
-#			- 		TDP value for the i5-4200Y and i3-4010Y fixed.
-#			- v13.4	processor data for upcomming Xeon E3-12nn v3 models added (Pike, April 2014)
-#			- v13.5	processor data for i5-4440S,i5-4570TE,i5-4400E,i5-4402E and i5-4200H added (Pike, May 2014)
-#			- v13.6	processor data update for mobile i5/i7 and future Haswell-E processors (Pike, July 2014)
-#			- v13.7	moved some processor data from mobile to desktop definitions (Pike, August 2014)
-#			- 		fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/47
-#			- 		processor data for missing i3 Haswell processors added.
-#			- v13.8	processor data for i7-3900 Mobile Processor Extreme Edition added (Pike, September 2014)
-#			- v13.9	processor data for Xeon E5-16NN v3 and E5-26NN v3 Processor Series added (Pike, September 2014)
-#			- v14.0	zipped up data of acpiTableExtract tool added (Pike, October 2014)
-#			-		Support for Yosemite added (no longer using ioreg to get ACPI table data).
-#			-		Commit text/version information copied from Github (partly/too much work).
-#			- v14.1	low frequency mode fixed for the Intel i5-3317U (Pike, October 2014).
-#			- v14.2 low frequency mode changed for some of the Intel E3-1200 series (Pike, November 2014).
-#			-		Ivy Bridge workarounds (default value) now set based on the version of OS X.
-#			-		Typo fixed (tr -d -> tr -D).
-#			- v14.3	Error fixed, thanks to 'ginsbu' for reporting it on Github issues (Pike, November 2014).
-#			-		Ivy Bridge workaround detection scheme changed.
-#			- v14.4	Errors in processor data for the Intel i5-4690 fixed (Pike, November 2014).
-#			- v14.5	Argument -bclk allows you to specify a custom BCLK frequency (Pike, November 2014).
-#			-		Help text for -bclk option added.
-#			-		Basic support for pre-Jaketown/Sandy Bridge models added (power/control/status fields).
+# Version 15.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
-# Contributors:
-#			- Thanks to Dave, toleda and Francis for their help (bug fixes and other improvements).
-#			- Thanks to 'stinga11' for Sandy Bridge (E5) data and processor list errors.
-#			- Many thanks to Jeroen († 2013) for the CPU data, cleanups, renaming stuff and other improvements.
-#			- Thanks to 'philip_petev' for his help with Snow Leopard/egrep incompatibility.
-#			- Thanks to 'RehabMan' for his help with Snow Leopard/egrep incompatibility.
-#			- Thanks to 'BigDonkey' for his help with LFM (800 MHz) for Sandy Bridge mobility models.
-#			- Thanks to 'rtcl777' on Github issues for the tip about a typo in the iMac12 board-id's.
-#			- Thanks to 'xpamamadeus' for the Clover boot.log tip.
-#			- Thanks to 'rileyfreeman' for the Intel i7-3930K LFM value.
-#			- Thanks to 'Klonkrieger2' aka Mark for the tip about the sed RegEx error in _getCPUtype.
-#			- Thanks to 'dhnguyen92' on Github issues for the tip about a typo in the i7-2640M model data.
-#			- Thanks to 'fabiosun' on Github issues for the tip about a typo in the cpu-type check.
-#			- Thanks to 'Hackmodford ' on Github issues for testing/confirming that PM in Mavericks was changed.
-#			- Thanks to 'Rals2007' for reporting the double "${${" error on line 1640.
-#			- Thanks to 'MMMProd' for reporting the -eg instead of -eq error on line 3567.
-#			- Thanks to 'DKMN' for reporting the omision of the Intel E5-2620.
-#			- Thanks to 'nijntje' (blog) for reporting the omision of the Intel i3-3245.
-#			- Thanks to 't2m' for (blog) for reporting the omision of the Intel E5-1600 product family.
-#			- Thanks to 'arkanisman' for reporting the missing data of the Intel E5-2650.
-#			- Thanks to 'dsaltos' on Github issues for reporting the omision of the Intel i5-4400S.
-#			- Thanks to 'open1010' on Github issues for reporting the Ivy Bridge LFM frequency errors.
-#			- Thanks to 'ginsbu' on Github issues for reporting the Intel i5-4690 problems.
+# Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
-# Bugs:
-#			- Bug reports can be filed at https://github.com/Piker-Alpha/RevoBoot/issues
-#			  Please provide clear steps to reproduce the bug, the output of the
-#			  script and the resulting SSDT.dsl Thank you!
+# Change log..: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/CHANGELOG.md
 #
-# Usage (v11.0 and greater):
+# Contributors: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/CONTRIBUTORS.md
 #
-#           - ./ssdtPRGen.sh -h[elp]
+# Bug reports.: https://github.com/Piker-Alpha/RevoBoot/issues
+#
+#			    Please provide clear steps to reproduce the bug, the terminal output
+#			    of the script (the log data) and the resulting SSDT.dsl Thank you!
 #
 
 # set -x # Used for tracing errors (can be used anywhere in the script).
@@ -223,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=14.5
+gScriptVersion=15.0
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -364,7 +166,8 @@ gRevision='0x000'${gScriptVersion:0:2}${gScriptVersion:3:1}'00'
 # Path and filename setup.
 #
 
-gPath=~/Desktop
+gHome=$(echo $HOME)
+gPath="${gHome}/Library/ssdtPRGen"
 gSsdtID="ssdt"
 gSsdtPR="${gPath}/${gSsdtID}.dsl"
 
@@ -482,6 +285,10 @@ gHaswellModelData=(
 Mac-031B6874CF7F642A:iMac14,1
 Mac-27ADBB7B4CEE8E61:iMac14,2
 Mac-77EB7D7DAF985301:iMac14,3
+# Intel Core i5-4690 @ 3.50 GHz
+Mac-42FD25EABCABB274:iMac15,1
+# Intel Core i7-4790K @ 4.0 GHz
+Mac-FA842E06C61E91C5:iMac15,1
 Mac-189A3D4F975D5FFC:MacBookPro11,1
 Mac-3CBD00234E554E41:MacBookPro11,2
 Mac-2BD1B31983FE1663:MacBookPro11,3
@@ -1020,92 +827,6 @@ gServerBroadwellCPUList=()
 gDesktopBroadwellCPUList=()
 gMobileBroadwellCPUList=()
 
-#
-#--------------------------------------------------------------------------------
-# https://github.com/Piker-Alpha/RevoBoot/blob/clang/i386/libsaio/acpi/Tools/extractACPITables.c
-#
-
-acpiTableExtract="
-\x50\x4B\x03\x04\x14\x00\x08\x00\x08\x00\x80\xB9\x53\x45\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x10\x00\x61\x63
-\x70\x69\x54\x61\x62\x6C\x65\x45\x78\x74\x72\x61\x63\x74\x55\x58\x0C\x00\x34\x29\x44\x54\x20\x29\x44\x54\xF5\x01\x14\x00\xED\x5A
-\x7F\x6C\x1B\xD5\x1D\x7F\x76\xD2\x24\x6B\xD3\xDA\x21\x6C\x6B\x35\xD8\x4C\xD7\x40\xCA\x50\x9C\x6E\x54\x2A\x1A\xDB\x72\x75\x1C\xEC
-\x36\x21\x21\x49\xBB\xA8\x1A\xBA\x9E\x9D\xE7\xDA\xE4\x7C\x8E\xEE\x9E\xD7\x18\xA9\x53\x46\x1A\x94\x93\x1B\x66\x4D\x0C\xF5\x8F\x49
-\x14\x6D\x42\x1A\x02\x29\x7F\x20\x0D\x3A\xA9\x44\x5B\x7F\x21\x26\xD8\xF8\x6B\x12\x08\xD0\x04\xE8\x82\xBA\xA9\x9A\xA6\x52\x55\x10
-\xEF\xFB\x7D\xF7\x1C\x9F\xCF\x8E\xAB\x69\x7F\xEE\xBE\xD2\x7B\xDF\x1F\xEF\x7D\x3F\xF7\xBD\x7B\x3F\xEE\xDD\x7B\xF7\xCE\xAD\x7F\xAC
-\xB7\x13\xE2\x6B\x21\x64\xDE\x4F\x08\xB9\x03\xD2\x6C\x1B\x21\x8B\x24\x44\x90\x76\x41\x8A\x41\x92\xE5\x31\xE9\x91\xE8\xB1\xE8\xF8
-\x28\xA9\x23\x5F\xBD\xA9\x8E\x10\xA7\xD7\x8F\x38\x93\xD1\xA9\xC9\x06\xFE\x41\x97\x83\xD0\x21\x36\xB2\x05\x52\x9B\x30\xCB\x32\xA3
-\x73\xAC\x5A\xCD\x8D\xB7\xD2\x69\xE3\xFD\xDC\x57\xD5\x5B\x9D\xB8\xAD\x64\xDE\xA9\xCA\xB2\xC1\xF2\x09\x63\x53\xBC\xEF\xEE\xB0\xF1
-\x8E\xB9\xF4\x0A\x75\x08\xBC\x6A\x7C\x88\x27\xA7\xA9\x3A\x4B\xF5\x06\x78\x67\x84\xFF\x8B\x0E\xDD\xDF\x34\xBE\xA4\xC1\xF4\x8C\x76
-\x62\xB3\xF8\x02\x36\x5E\xBF\x43\x77\x92\xBF\x56\x05\xFF\xBC\x76\x32\xA3\x4D\xCB\x19\x2D\x95\x6B\x80\x97\x10\x78\x31\x87\xDE\x8C
-\x64\x99\xA6\xE5\x94\xAE\x64\x69\xE3\xF8\x56\x5C\x78\xA8\xB7\x34\xC1\xC3\x7E\xB2\xE4\x43\x9C\x41\x69\x52\x72\x14\x04\x5D\xFD\xC4
-\xC5\xB1\x9F\x20\x6E\xA5\xAD\x65\x59\x53\x65\xA3\x90\x4D\xE4\x54\x79\x96\xE9\x9B\xE2\x05\x1D\xBA\x33\x2E\x6C\x4F\xE7\xAD\xCB\xF2
-\x89\x1C\xAB\xD1\x6B\xF1\x82\x2E\xBC\x60\x03\xBC\xAE\x1A\x7F\x55\x69\x16\x5F\x48\xE0\xCD\x39\x74\x27\x1E\xDE\x6F\x77\x0D\x5E\x32
-\xE5\xEC\x28\x6E\xBC\xB3\x02\x2F\xE4\xD0\x6F\xD7\x0E\xF6\xB8\x1F\x8E\x3F\x7A\x38\x3A\x18\xAF\xB4\x69\xC8\xD5\x0E\x02\x70\xA0\xAD
-\x1A\x97\x73\x7C\xEC\x86\x79\xA5\x5F\xD4\xEB\x00\xD6\x01\x7C\xC9\x51\x5E\x02\x3D\x0D\x0E\x37\xEF\xB1\xFB\x30\xF6\xD7\x9D\x90\x2C
-\x70\xFC\x2A\xF0\xD5\x3D\x00\x00\xE5\xDB\x40\x1E\x73\xC5\xE8\x17\xA9\x9B\x6C\x4E\x07\xF6\xF0\x18\xEA\x68\x87\x08\x1D\xA6\x07\x12
-\xCE\x1B\x7A\x58\xCD\x24\xC2\xD3\x05\x75\x5A\x94\x7F\x43\xC4\xD1\xC9\x9E\xFA\xF3\xF7\xDA\xBF\x1F\xF9\xFD\xD3\x6F\x3E\x3C\x73\xF3
-\xBE\xCB\x7B\x2A\xB7\xDE\xB1\x95\xA7\xFB\x49\xED\xD4\xD5\x0B\xE1\xA2\x1F\xCE\x3B\x4E\x42\x75\x4A\x60\xDA\x63\xB2\xDB\x87\x4F\x2A
-\x3C\x51\x30\x18\xCD\x86\x87\x33\x09\x5D\xD1\x0B\xE1\x21\x1C\x4A\x27\x73\xFA\x8C\x11\x8E\x8F\x1E\xCE\xB0\xBE\x54\xC5\x10\x3E\x4A
-\x75\x23\x93\xD3\x8C\xB0\x64\x17\x6D\xE0\xA6\x9D\xB8\xDD\x16\xB0\xE7\x9A\xE1\x46\x72\x3A\x1D\xCA\xE5\xB5\x69\x85\x01\x5C\xE3\x0B
-\xD4\xD6\x11\xD7\x39\xE0\xBC\x4E\xCB\xEF\x08\x8F\xBF\xF2\xEC\x20\xD9\x97\xEC\x3B\xD8\x07\xCF\x31\x93\xB0\xEF\xFB\x5E\xF1\x7C\x7A
-\x77\xDB\xED\xBF\x57\xE8\xFD\xA2\x51\xBE\xE3\xD0\x5F\x6B\xD2\x8E\x1E\x79\xE4\x91\x47\x1E\xFD\x7F\xD3\x91\x98\xF9\x89\xF4\x63\xE9
-\xA8\x74\x44\x9A\x9C\x88\x2D\x5C\x9B\x8A\x2D\xFF\xE0\x09\x78\x21\x59\x27\xE1\x75\x1A\x2B\x6E\x1F\x84\x45\x4D\xF1\xA1\x98\x79\xD9
-\x3A\x0E\x86\xC5\xD5\xC0\x69\xC9\x2E\xF8\x76\x0B\xB2\xAE\xD8\xF2\xFE\x17\x40\x32\xAF\x98\xA7\x9E\xDD\xF7\xA6\xB5\x1F\x0B\xCD\x3F
-\x49\x17\xD6\xCB\xE5\x72\x6C\xF1\xBD\xC0\x69\x3F\xB7\x7C\x68\x3D\x04\x3C\x6E\x5E\x89\x99\x74\xFE\xD0\x72\xEB\x97\xB8\x16\x8C\x2D
-\x7C\x74\x3D\x6E\x7E\x1C\xDF\x7B\x71\x18\x72\xF3\x93\xF8\xDE\x4B\xC3\xE6\x35\xA8\x1C\x33\x1F\x5F\x1A\x36\x3F\x1D\x36\x3F\xB3\x3A
-\xC0\x6D\x64\xB1\xFC\x3A\xC6\x1A\x78\xE6\x37\x90\xEF\x5B\x8D\x2D\x3F\xBE\x12\xF8\xD6\x69\x1E\xBF\x19\x7D\x39\x5E\x3C\x45\xAC\xB7
-\x11\xCF\x8C\x9E\xE3\xCA\x15\x5B\x39\x1B\x2F\x3E\xBC\x67\xDF\x0D\xEB\x2F\x5C\xFD\x70\xDF\x8D\xF3\x21\x94\x96\xB7\xBF\xC2\x63\x59
-\xED\x5F\xB5\xFE\x60\x17\x5D\xF0\xC1\x72\xEB\xFC\x6F\xC1\x0C\x36\xBC\x96\x64\x5E\x7E\xFD\x4B\xB8\x05\x69\x61\xBD\xCC\xEE\x8E\x15
-\xA3\x67\xCD\x3F\x0E\x9A\x9F\xC7\x8A\xF9\x73\xD6\xF3\x50\x0E\xB2\xB5\x08\xBC\x38\xF2\x72\x7C\xE1\x62\x47\x7C\xE1\x52\x47\xBC\xFC
-\x8E\x79\x35\xB0\x38\x83\x37\x5E\x3C\xB5\x64\xBE\x65\x8D\x23\x78\x91\xCE\x4B\xE6\x07\xC5\x53\xCF\x5A\xDD\xC2\x6F\x02\xF8\x1B\x50
-\xAB\x6C\xC5\x41\x2A\x95\x7B\x2C\xB8\x6E\xB9\xE7\x33\x9E\x5F\xE3\xF9\x3F\x79\x7E\x9D\xE7\xFF\xE2\xF9\xBF\x79\x7E\x83\xE7\x37\x79
-\x7E\x8B\xE7\x5F\xF0\x7C\x9D\xE7\xB8\x90\x28\xF7\xF8\x79\xDE\x0A\xF9\xF0\xF2\xDD\x79\x28\x90\x26\xCA\x3D\x14\x78\x09\xD7\x35\x64
-\xED\x53\xB8\x72\xFA\xEB\x28\xBD\x8F\xD2\x0F\x51\x7A\x17\x25\x05\xA5\xAB\x28\x3D\x89\xD2\x05\x94\x7E\x89\xD2\xAB\x28\xE1\xF2\x64
-\xED\x25\x94\x2E\xA1\x74\x0E\xA5\x35\x94\x9E\x43\xE9\x16\x4A\x67\x38\x32\x5C\x69\xED\x29\x94\x1E\x40\x69\x0E\x25\x6C\xFB\x35\x0D
-\xA5\x21\x94\xA6\x51\x9A\x40\xE9\x18\x3E\xE2\xD9\x59\x95\x4A\x91\xB1\xF8\x98\xAA\xB0\x54\x4E\xCF\x46\xE7\xE0\x53\x8F\x11\x34\x85
-\x26\x95\x84\x4A\x0D\x12\x66\xD9\xD9\x70\x8F\xD1\xA7\x64\x55\xBE\x1A\xBE\x4B\xF4\x5E\x27\xC7\x55\x14\xAE\x12\x1F\x24\x76\xC2\x2F
-\x4B\x22\x64\x5C\x99\x77\x82\x67\x50\xAC\xA5\xFF\x3A\xB5\x45\x2C\xAA\xEF\x14\x08\xBE\x27\xC7\x89\x6F\x2E\xE8\x0B\x76\xB6\x77\x94
-\xA0\xEC\x01\x81\xFA\xD1\x17\x65\x4E\x95\xEF\x5F\x22\xED\x08\x3E\xED\x8F\x6C\x6F\x1B\x59\x68\x3F\xD3\xB6\xBC\xE5\x99\xD6\x5F\x34
-\x5B\xF6\xD7\xD1\xAF\x2B\xDF\xAB\x82\xAF\x08\x7E\x5E\xF0\x8B\x82\xBF\x2D\xF8\xDF\x04\xFF\xBB\xE0\xD7\x04\xBF\x51\xF9\x6E\x16\xDF
-\x83\x5B\x05\xBF\x53\xF0\x6F\x0A\xDE\x1B\xA8\xFD\x7E\xB8\xDA\x6E\xF3\x43\xC2\xBE\xED\xBF\x09\xDE\x23\x8F\x3C\xF2\xC8\x23\x8F\x3C
-\xF2\xC8\x23\x8F\x3C\xF2\xC8\x23\x8F\x3C\xE2\xD4\xB5\x3B\x74\x3C\x70\xF0\x31\xD2\x35\x20\xCF\xC4\x47\x47\x14\x83\x51\x7D\x2C\xA7
-\xB3\x41\x9A\x52\xF2\x2A\x23\x8F\xE9\x3B\x4B\x77\x0C\xC8\xB2\x1C\x19\x8A\xE4\x34\x83\x29\x1A\x9B\xE0\xC7\x8C\x11\x55\x31\x8C\x71
-\x9A\xA2\x3A\xD5\x92\x94\xCC\xCF\x95\x00\x21\x32\x24\xA9\x6A\x2E\xA9\xB0\x9C\x5E\x01\x98\xBF\xBE\x6E\xEF\x48\x94\x7D\xA5\xEE\x01
-\x3C\x61\xB3\x4F\xC8\x13\x19\x6D\x9A\xEA\x64\xDE\x2A\x6F\x14\x63\x3C\x7A\x08\x22\x89\x8F\x8E\x26\x9E\xA0\x49\x36\x4E\x55\xAA\x18
-\x94\x94\x88\xDE\xCB\xCD\xE3\xF4\x44\xC6\x60\x7A\x21\xAA\x41\x16\xD1\xA9\xC2\x68\x64\x68\x4C\xCF\xE1\x06\x4C\x01\xAB\xF5\xF3\x6A
-\x13\x54\xFF\x69\x26\x49\x1F\xA1\x6C\x44\x61\xC9\x34\x44\x2B\x2C\x58\xE5\x80\xB3\x4A\xA5\x1C\x0B\x06\xE0\x3E\x23\x43\x83\x0A\x53
-\xC0\xF1\x60\x81\xD1\x31\xA6\xA3\x3D\xE6\xB4\x0F\x53\xED\x04\x4B\xA3\x79\xCC\x36\x67\x92\x78\x42\xA6\xE8\x05\x28\x8C\xE4\xF2\x1A
-\xC3\xB2\xA9\xFA\xB2\xC3\xB4\x60\x48\xDA\xF4\x51\x45\xCD\x53\x03\xEB\x1C\xE7\x75\x1C\xB7\x98\xE6\x06\xFB\xE9\x22\x98\x2D\x89\x20
-\x66\xBB\xB1\x11\x8C\x59\x30\xB1\x94\x9C\x4C\xCF\xA0\x71\x0E\x8C\x49\x35\x67\xBB\xCF\xFB\x40\xA3\x73\x19\x1E\xC0\x12\x2A\xF0\x58
-\x34\x54\x4A\xA8\x9C\xD4\x33\x0C\xEB\x55\xC8\x27\x93\x2D\xC4\x2F\x67\xD3\xE0\x43\x93\x79\x46\xE5\x34\x55\xB0\x45\xEE\xC9\x2A\x19
-\x8D\xF4\xE0\xF6\x54\x0B\x59\xD9\x25\xAA\x57\x84\x5B\x1F\x74\xE2\xEF\x18\xAF\x91\xEA\xF1\x31\x1E\x89\xE2\xD6\xCC\x4F\x88\xBD\xA9
-\x55\x82\x3A\x68\x3F\x20\xEC\x6D\xC2\xBE\x2B\x99\xCB\xF6\x29\xB8\x7B\x56\x3D\x73\xEC\xAB\x9E\x64\x92\x16\xE1\xF7\xA0\xCB\x6F\x67
-\xD5\xAF\xEE\x58\xB2\xE2\xD3\xEB\xF2\xD9\xE6\x38\x8E\xE4\xD8\x68\x0C\xF8\xEC\x93\x5A\xAC\xF8\x35\xAE\x57\xFF\x17\xB9\xCB\xB6\x6F
-\xFC\x2E\xD1\xE7\xD2\x7F\xE4\xD2\x8F\xB8\x74\xC3\xA5\xFF\xCC\xA5\xFF\xCA\xD6\x37\xB6\xB6\x5E\x74\xE9\x57\x5C\xFA\xC7\x2E\xFD\x73
-\x17\xDE\x2E\xBB\x70\x63\x2F\xAF\xD7\xA5\x87\x5D\xFA\x7E\x5F\xAD\xFF\x21\x5F\x2D\xFE\x71\x57\xFD\x94\x4B\xCF\xBA\x74\x3C\xCB\xFD
-\x0A\xA4\xAD\xC4\xDE\x93\xB3\xBB\x8B\xFD\xFF\x45\xE5\x7F\x1D\xDC\xBA\xDB\x4E\xEC\xB3\x76\xDC\x3F\xC7\x7F\x8B\x70\x53\x59\xEC\x61
-\x0E\x60\x6B\x74\xFD\x8F\x58\x21\x22\x37\xE8\xC3\x32\xEF\xC3\xF5\xA3\xB9\x6E\x1C\x37\x1E\xC1\xCD\xC7\xAE\x63\xD4\x6E\x32\x5E\xEB
-\x26\xB0\xDB\x4E\x5D\x4D\x27\xAD\x06\xD3\xD5\xED\x27\x64\xD7\x6C\x21\xE6\x09\x7B\x82\x68\x38\x51\x37\x9E\xFF\xED\x49\x44\xCC\x1E
-\x75\xB3\x37\x21\xFF\x01\x50\x4B\x07\x08\x28\x51\x4F\x88\x48\x07\x00\x00\x40\x26\x00\x00\x50\x4B\x01\x02\x15\x03\x14\x00\x08\x00
-\x08\x00\x80\xB9\x53\x45\x28\x51\x4F\x88\x48\x07\x00\x00\x40\x26\x00\x00\x10\x00\x0C\x00\x00\x00\x00\x00\x00\x00\x00\x40\xED\x81
-\x00\x00\x00\x00\x61\x63\x70\x69\x54\x61\x62\x6C\x65\x45\x78\x74\x72\x61\x63\x74\x55\x58\x08\x00\x34\x29\x44\x54\x20\x29\x44\x54
-\x50\x4B\x05\x06\x00\x00\x00\x00\x01\x00\x01\x00\x4A\x00\x00\x00\x96\x07\x00\x00\x00\x00"
-#
-# Removing newline characters.
-#
-strippedData=$(echo "$acpiTableExtract" | tr -d '\n')
-#
-# Writing data to zip file.
-#
-printf "$strippedData" > acpiTableExtract.zip
-#
-# Unzipping command line tool.
-#
-unzip -qu acpiTableExtract.zip -d /usr/local/bin/
-#
-# Extracting ACPI tables.
-#
-/usr/local/bin/acpiTableExtract
 
 #
 #--------------------------------------------------------------------------------
@@ -1113,7 +834,7 @@ unzip -qu acpiTableExtract.zip -d /usr/local/bin/
 
 function _PRINT_MSG()
 {
- local message=$1
+  local message=$1
 
   if [[ $gExtraStyling -eq 1 ]];
     then
@@ -1147,7 +868,7 @@ function _PRINT_MSG()
 
 function _ABORT()
 {
-  _PRINT_MSG "Aborting ...\nDone\n\n"
+  _PRINT_MSG "Aborting ...\nDone.\n\n"
 
   exit $1
 }
@@ -1232,21 +953,21 @@ function _printExternalObjects()
 function _getPBlockAddress()
 {
   #
-  # Local variable definition/initialisation.
+  # Get Processor Control Block (P_BLK) address from offset: 152/0x98 in facp.aml
   #
-  local filename="/tmp/facp.txt"
+  local data=$(xxd -s 152 -l 4 -ps "${gPath}/facp.aml")
   #
-  # Extract FACP from ioreg.
+  # Convert data to Little Endian
   #
-  local data=$(ioreg -c AppleACPIPlatformExpert -rd1 -w0 | egrep -o 'FACP"=<[0-9a-f]+')
+  local pblockAddress="0x${data:6:2}${data:4:2}${data:2:2}${data:0:2}"
   #
-  # The offset is (0x98/152 * 2) + 7 (for: FACP"=<)
+  # Increase P_BLK address with 16
   #
-  pblockAddress="0x${data:317:2}${data:315:2}${data:313:2}10"
+  let pblockAddress+=0x10
   #
-  # Return P_BLK address + 10
+  # Return P_BLK address + 16
   #
-  echo $pblockAddress
+  echo $(printf "0x%08x" $pblockAddress)
 }
 
 
@@ -1381,7 +1102,7 @@ function _injectDebugInfo()
   #
   # Do we have more than one ACPI processor scope?
   #
- if [[ "${#gScope[@]}" -gt 1 ]];
+  if [[ "${#gScope[@]}" -gt 1 ]];
    then
       echo '            Store ("number of ACPI scopes: '${#gScope[@]}'", Debug)'      >> $gSsdtPR
   fi
@@ -2812,9 +2533,13 @@ function _initProcessorScope()
   #
   # Local variable declarations.
   #
-  local filename="/tmp/dsdt.txt"
+  local filename="${gPath}/dsdt.dat"
   #
-  # Note: Dry runs can be done with help of; xxd -c 256 -ps [path]dsdt.aml | tr -d '\n' > /tmp/dsdt.txt
+  #
+  #
+  _extractAcpiTables
+  #
+  # Note: Dry runs can be done with help of; xxd -c 256 -ps [path]dsdt.aml | tr -d '\n' > ~/Library/ssdtPRGen/dsdt.dat
   #       You may also need to change the CPU ID to get a match.
   #
   # gProcessorNames[0]="C000"
@@ -2829,7 +2554,7 @@ function _initProcessorScope()
   #
   # Note: Comment this out for dry runs!
   #
-  xxd -ps /tmp/DSDT.aml | tr -d '\n' > "$filename"
+  xxd -ps "${gPath}/DSDT.aml" | tr -d '\n' > "$filename"
   #
   # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects.
   #
@@ -2985,7 +2710,7 @@ function _initProcessorScope()
           printf "ACPI Processor {...} Declaration(s) with ParentPrefixChar ('^') found in DSDT\n"
           gScope=$(echo ${data:6:2} | xxd -r -p)
 
-          # ioreg -w0 -p IOACPIPlane -c IOACPIPlatformDevice -n _SB -r > /tmp/dsdt2.txt
+          # ioreg -w0 -p IOACPIPlane -c IOACPIPlatformDevice -n _SB -r > ~/Library/ssdtPRGen/dsdt2.txt
 
           if [[ $gScope =~ "^" ]];
             then
@@ -3094,19 +2819,57 @@ function _findIasl()
           # XXX: Jeroen, try curl --create-dirs without the mkdir here ;)
           if [ ! -d /usr/local/bin ];
             then
-              printf "Creating target directory... "
+              printf "Creating target directory ... "
               sudo mkdir -p /usr/local/bin/
               sudo chown -R root:wheel /usr/local/bin/
           fi
 
-          printf "Downloading iasl...\n"
+          echo 'Downloading iasl ...'
           sudo curl -o /usr/local/bin/iasl https://raw.githubusercontent.com/Piker-Alpha/RevoBoot/clang/i386/libsaio/acpi/Tools/iasl
           sudo chmod +x /usr/local/bin/iasl
+          echo 'Revoking administrator privileges ...'
+          sudo -k
           echo 'Done.'
       fi
 
       iasl=/usr/local/bin/iasl
   fi
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
+
+function _extractAcpiTables()
+{
+  if [ ! -f "${gPath}/extractAcpiTables" ];
+    then
+      _debugPrint 'Downloading extractAcpiTables.zip ...'
+      curl -o "${gPath}/extractAcpiTables.zip" https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
+      #
+      # Unzip command line tool.
+      #
+      _debugPrint 'Unzipping extractAcpiTables.zip ...'
+      unzip -qu "${gPath}/extractAcpiTables.zip" -d "${gPath}/"
+      #
+      # Setting executing bit.
+      #
+      _debugPrint 'Setting executing bit ...'
+      chmod +x "${gPath}/extractAcpiTables"
+      #
+      #
+      #
+      _debugPrint 'Cleanups ...'
+      rm "${gPath}/extractAcpiTables.zip"
+  fi
+  #
+  # Extracting ACPI tables.
+  #
+  _debugPrint 'Extracting ACPI tables ...'
+  "${gPath}/extractAcpiTables"
+
+  _debugPrint 'Done.'
 }
 
 
@@ -3834,6 +3597,9 @@ function _exitWithError()
       8) _PRINT_MSG "\nError: Processor Declarations not found ..."
          _ABORT 8
          ;;
+      9) _PRINT_MSG "\nError: File not found ..."
+         _ABORT 9
+         ;;
       *) _ABORT 1
          ;;
   esac
@@ -3891,12 +3657,12 @@ function _showSupportedBoardIDsAndModels()
          Broadwell) local modelDataList="gBroadwellModelData[@]"
                     ;;
   esac
-
-  printf "\nSupported board-id / model combinations:\n\n"
   #
   # Split 'modelDataList' into array.
   #
   local targetList=("${!modelDataList}")
+
+  printf "$1\n"
   #
   # Change delimiter to a colon character.
   #
@@ -3920,10 +3686,24 @@ function _showSupportedBoardIDsAndModels()
   # Print extra newline for a cleaner layout.
   #
   printf "\n"
-  #
-  # Stop script (success).
-  #
-  exit 0
+}
+
+#
+#--------------------------------------------------------------------------------
+#
+
+function _checkLibraryDirectory()
+{
+  if [ -d "$HOME/Library/ssdtPRGen" ];
+    then
+      if [ ! -w "$HOME/Library/ssdtPRGen" ];
+        then
+          chmod -R 744 "$HOME/Library/ssdtPRGen"
+      fi
+    else
+      mkdir "$HOME/Library/ssdtPRGen"
+      chmod -R 744 "$HOME/Library/ssdtPRGen"
+  fi
 }
 
 #
@@ -3963,12 +3743,13 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}lfm${STYLE_RESET}ode, lowest idle frequency\n"
           printf "       -${STYLE_BOLD}l${STYLE_RESET}ogical processors [2-128]\n"
           printf "       -${STYLE_BOLD}m${STYLE_RESET}odel (example: MacPro6,1)\n"
+          printf "       -${STYLE_BOLD}o${STYLE_RESET}pen the previously generated SSDT\n"
           printf "       -${STYLE_BOLD}p${STYLE_RESET}rocessor model (example: 'E3-1285L v3')\n"
           printf "       -${STYLE_BOLD}s${STYLE_RESET}how supported board-id and model combinations:\n"
-          printf "          'Sandy Bridge'\n"
-          printf "          'Ivy Bridge'\n"
+#         printf "           Broadwell\n"
           printf "           Haswell\n"
-          printf "           Broadwell\n"
+          printf "           Ivy Bridge\n"
+          printf "           Sandy Bridge\n"
           printf "       -${STYLE_BOLD}turbo${STYLE_RESET} maximum (turbo) frequency:\n"
           printf "          6300 for Sandy Bridge and Ivy Bridge\n"
           printf "          8000 for Haswell and Broadwell\n"
@@ -3997,7 +3778,7 @@ function _getScriptArguments()
             #
             # Note 'uro' was only added to support '-turbo'
             #
-            if [[ "${flag}" =~ ^[-abcdfhklmpsturowx]+$ ]];
+            if [[ "${flag}" =~ ^[-abcdfhklmpensturowx]+$ ]];
               then
                 #
                 # Yes. Figure out what flag it is.
@@ -4140,6 +3921,17 @@ function _getScriptArguments()
                       fi
                       ;;
 
+                  -o|-open) shift
+
+                            if [ -e "$gSsdtPR" ];
+                              then
+                                open -e "$gSsdtPR"
+                              else
+                                _exitWithError 9
+                            fi
+                            exit 0
+                            ;;
+
                   -p) shift
 
                       if [[ "$1" =~ ^[a-zA-Z0-9\ \-]+$ ]];
@@ -4189,21 +3981,38 @@ function _getScriptArguments()
                       fi
                       ;;
 
-                  -s) shift
+                  -s|-show) shift
 
-                      case "$1" in
-                          'Sandy Bridge') _showSupportedBoardIDsAndModels "${1}"
-                                          ;;
-                            'Ivy Bridge') _showSupportedBoardIDsAndModels "${1}"
-                                          ;;
-                               'Haswell') _showSupportedBoardIDsAndModels "${1}"
-                                          ;;
-                             'Broadwell') _showSupportedBoardIDsAndModels "${1}"
-                                          ;;
-                                       *) _invalidArgumentError "-s $1"
-                                          ;;
-                      esac
-                      ;;
+                            printf "\nSupported board-id / model combinations for:\n\n"
+
+                            case "$(echo $1 | tr '[:lower:]' '[:upper:]')" in
+                              SANDY*   ) _showSupportedBoardIDsAndModels "Sandy Bridge"
+                                         ;;
+
+                              IVY*     ) _showSupportedBoardIDsAndModels "Ivy Bridge"
+                                         ;;
+
+                              HASWELL  ) _showSupportedBoardIDsAndModels "Haswell"
+                                         ;;
+
+                              BROADWELL) _showSupportedBoardIDsAndModels "Broadwell"
+                                         ;;
+
+                                      *) if [ "$1" == "" ];
+                                           then
+#                                            _showSupportedBoardIDsAndModels "Broadwell"
+                                             _showSupportedBoardIDsAndModels "Haswell"
+                                             _showSupportedBoardIDsAndModels "Ivy Bridge"
+                                             _showSupportedBoardIDsAndModels "Sandy Bridge"
+                                           else
+                                             _invalidArgumentError "-s(how) $1"
+                                         fi
+                            esac
+                            #
+                            # Stop script (success).
+                            #
+                            exit 0
+                            ;;
 
                   -turbo) shift
 
@@ -4330,6 +4139,7 @@ function main()
   echo   '-----------------------------------------------------------'
   printf "Bugs > https://github.com/Piker-Alpha/ssdtPRGen.sh/issues <\n\n"
 
+  _checkLibraryDirectory
   _checkSourceFilename
   _getScriptArguments "$@"
   #
@@ -4417,6 +4227,7 @@ function main()
 
   _getProcessorNames
   _initProcessorScope
+  _extractAcpiTables
 
   case $gBridgeType in
        2) local bridgeTypeString="Sandy Bridge"
@@ -4733,7 +4544,8 @@ function main()
       #
       # Compile ssdt.dsl
       #
-      sudo "$iasl" $gSsdtPR
+      # sudo "$iasl" $gSsdtPR
+      "$iasl" $gSsdtPR
 
       #
       # Copy ssdt_pr.aml to /Extra/ssdt.aml (example)
@@ -4818,19 +4630,7 @@ function main()
 
 clear
 
-if [[ $gID -ne 0 ]];
-  then
-    echo "This script ${STYLE_UNDERLINED}must${STYLE_RESET} be run as root!" 1>&2
-    #
-    # Re-run script with arguments.
-    #
-    sudo "$0" "$@"
-  else
-    #
-    # We are root. Call main with arguments.
-    #
-    main "$@"
-fi
+main "$@"
 
 exit 0
 
