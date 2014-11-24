@@ -7,6 +7,12 @@ Version 15.0
  - Option -h no longer requires administrator priviledges.
  - Revoke administrator privileges after installation of iasl and extractACPITables.
  - Option -s(how) is now case insensitive and now also supports sandy/ivy or all.
+ - Moved update info to CHANGELOG.md
+ - Moved contributors to CONTRIBUTORS.md
+ - Fixed errors in function _getPBlockAddress.
+ - New board-id/model combos added for the iMac15,N (Haswell).
+ - New function _checkLibraryDirectory added (check/setup directory structure).
+ - New function _extractAcpiTables added (checks/download tool, extracts ACPI tables).
 
 Version 14.5
 
