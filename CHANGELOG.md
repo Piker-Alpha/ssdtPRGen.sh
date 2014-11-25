@@ -1,6 +1,10 @@
 Version 15.1
 
- - Downloading and unzipping IASL should not require administrator privileges.
+ - Download/unzip of IASL should not require administrator privileges (Pike, November 2014).
+ - Typo in bug report link fixed.
+ - Help text/link for the 'Unknown processor model' error added.
+ - Minor cleanups.
+ - Separation of script and data, now using .cfg files for supported models/cpu data.
 
 Version 15.0
 
