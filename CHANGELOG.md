@@ -1,3 +1,7 @@
+Version 15.1
+
+ - Downloading and unzipping IASL should not require administrator privileges.
+
 Version 15.0
 
  - Option -o(pen) now opens the previously generated SSDT (Pike, November 2014).
@@ -5,7 +9,7 @@ Version 15.0
  - Output path changed from ~/Desktop/ and /tmp/ to ~/Library/ssdtPRGen/.
  - Command line tool extractACPITables will now be downloaded (removed from script).
  - Option -h no longer requires administrator priviledges.
- - Revoke administrator privileges after installation of iasl and extractACPITables.
+ - Revoke administrator privileges after installation of iasl.
  - Option -s(how) is now case insensitive and now also supports sandy/ivy or all.
  - Moved update info to CHANGELOG.md
  - Moved contributors to CONTRIBUTORS.md
