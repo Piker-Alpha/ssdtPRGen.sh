@@ -103,7 +103,7 @@ int main(int argc, char * argv[])
 		// -3 = tableDictionary is NULL.
 		// -4 = one or more writes failed.
 		exit(status);
-    }
+	}
 
 	exit(-1); // homeDirectory is NULL
 }
