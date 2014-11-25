@@ -38,12 +38,12 @@ Usage: ./ssdtPRGen.sh [-abcdfhlmptwx]
        -lfmode, lowest idle frequency
        -logical processors [2-128]
        -model (example: MacPro6,1)
+       -open the previously generated SSDT
        -processor model (example: 'E3-1285L v3')
        -show supported board-id and model combinations:
-          'Sandy Bridge'
-          'Ivy Bridge'
            Haswell
-           Broadwell
+           Ivy Bridge
+           Sandy Bridge
        -turbo maximum (turbo) frequency:
           6300 for Sandy Bridge and Ivy Bridge
           8000 for Haswell and Broadwell
@@ -67,8 +67,3 @@ https://github.com/Piker-Alpha/ssdtPRGen.sh/issues
 
 Please do **not** use my blog for this. Thank you!
 
-
-Contributors
-------------
-
-Drew Hammond
