@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 15.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 15.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -12,7 +12,7 @@
 #
 # Contributors: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/CONTRIBUTORS.md
 #
-# Bug reports.: https://github.com/Piker-Alpha/RevoBoot/issues
+# Bug reports.: https://github.com/Piker-Alpha/ssdtPRGen.sh/issues
 #
 #			    Please provide clear steps to reproduce the bug, the terminal output
 #			    of the script (the log data) and the resulting SSDT.dsl Thank you!
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=15.0
+gScriptVersion=15.1
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -168,6 +168,8 @@ gRevision='0x000'${gScriptVersion:0:2}${gScriptVersion:3:1}'00'
 
 gHome=$(echo $HOME)
 gPath="${gHome}/Library/ssdtPRGen"
+gDataPath="${gPath}/Data"
+gToolPath="${gPath}/Tools"
 gSsdtID="ssdt"
 gSsdtPR="${gPath}/${gSsdtID}.dsl"
 
@@ -219,6 +221,7 @@ let PROCESSOR_NUMBER_ERROR=5
 let PROCESSOR_LABEL_LENGTH_ERROR=6
 let PROCESSOR_NAMES_ERROR=7
 let PROCESSOR_DECLARATION_ERROR=8
+let FILE_NOT_FOUND_ERROR=9
 
 #
 # First OS version number that no longer requires extra Low Frequency Mode P-States.
@@ -243,590 +246,6 @@ let AML_QUAD_BYTE_ENCODING=8
 AML_SCOPE_OPCODE=10
 AML_DEVICE_OPCODE=5b82
 AML_PROCESSOR_SCOPE_OPCODE=5b83
-
-#
-# Global variable with supported board-id / model name for Sandy Bridge processors.
-#
-gSandyBridgeModelData=(
-Mac-942B5BF58194151B:iMac12,1
-Mac-942B59F58194171B:iMac12,2
-Mac-8ED6AF5B48C039E1:Macmini5,1
-Mac-4BC72D62AD45599E:Macmini5,2
-Mac-7BA5B2794B2CDB12:Macmini5,3
-Mac-94245B3640C91C81:MacBookPro8,1
-Mac-94245A3940C91C80:MacBookPro8,2
-Mac-942459F5819B171B:MacBookPro8,3
-Mac-C08A6BB70A942AC2:MacBookAir4,1
-Mac-742912EFDBEE19B3:MacBookAir4,2
-)
-
-
-#
-# Global variable with supported board-id / model name for Ivy Bridge processors.
-#
-gIvyBridgeModelData=(
-Mac-00BE6ED71E35EB86:iMac13,1
-Mac-FC02E91DDD3FA6A4:iMac13,2
-Mac-031AEE4D24BFF0B1:Macmini6,1
-Mac-F65AE981FFA204ED:Macmini6,2
-Mac-4B7AC7E43945597E:MacBookPro9,1
-Mac-6F01561E16C75D06:MacBookPro9,2
-Mac-C3EC7CD22292981F:MacBookPro10,1
-Mac-AFD8A9D944EA4843:MacBookPro10,2
-Mac-66F35F19FE2A0D05:MacBookAir5,1
-Mac-2E6FAB96566FE58C:MacBookAir5,2
-Mac-F60DEB81FF30ACF6:MacPro6,1
-)
-
-#
-# Global variable with supported board-id / model name for Haswell processors.
-#
-gHaswellModelData=(
-Mac-031B6874CF7F642A:iMac14,1
-Mac-27ADBB7B4CEE8E61:iMac14,2
-Mac-77EB7D7DAF985301:iMac14,3
-# Intel Core i5-4690 @ 3.50 GHz
-Mac-42FD25EABCABB274:iMac15,1
-# Intel Core i7-4790K @ 4.0 GHz
-Mac-FA842E06C61E91C5:iMac15,1
-Mac-189A3D4F975D5FFC:MacBookPro11,1
-Mac-3CBD00234E554E41:MacBookPro11,2
-Mac-2BD1B31983FE1663:MacBookPro11,3
-Mac-35C1E88140C3E6CF:MacBookAir6,1
-Mac-7DF21CB3ED6977E5:MacBookAir6,2
-Mac-F60DEB81FF30ACF6:MacPro6,1
-)
-
-#
-# Global variable with supported board-id / model name for Broadwell processors.
-#
-gBroadwellModelData=(
-)
-
-#
-# Processor Number, Max TDP, Low Frequency Mode, Clock Speed, Max Turbo Frequency, Cores, Threads
-#
-
-gServerSandyBridgeCPUList=(
-# E5-2600 Xeon Processor Series
-E5-2648L,70,1200,1800,2100,8,16
-E5-2658,95,1200,2100,2400,8,16
-E5-2687W,150,1200,3100,3800,8,16
-E5-2680,130,1200,2700,3500,8,16
-E5-2660,95,1200,2200,3000,8,16
-E5-2650L,70,1200,1800,2300,8,16
-E5-2630L,60,1200,2000,2500,6,12
-E5-2643,130,1200,3300,3500,4,8
-E5-2609,80,1200,2400,2400,4,4
-E5-2667,130,1200,2900,3500,6,12
-E5-2650,95,1200,2000,2800,8,16
-E5-2640,95,1200,2500,3000,6,12
-E5-2603,80,1200,1900,1800,4,4
-E5-2630,95,1200,2300,2800,6,12
-E5-2620,95,1200,2000,2500,6,12
-E5-2670,115,1200,2600,3300,8,16
-E5-2690,135,1200,2900,3800,8,16
-E5-2665,115,1200,2400,3100,8,16
-E5-2637,80,1200,3000,3500,2,2
-# E5-4600 Xeon Processor Series
-E5-4610,95,1200,2400,2900,6,12
-E5-4640,95,1200,2400,2800,8,16
-E5-4607,95,1200,2200,2200,6,12
-E5-4650L,115,1200,2600,3100,8,16
-E5-4620,95,1200,2200,2600,8,16
-E5-4617,130,1200,2900,3400,6,6
-E5-4603,95,1200,2000,2000,4,8
-E5-4650,130,1200,2700,3300,8,16
-# E5-1600 Xeon Processor Series
-E5-1660,130,0,3300,3900,6,12
-E5-1650,130,0,3200,3800,6,12
-E5-1620,130,0,3600,3800,4,8
-# E3-1200 Xeon Processor Series
-E3-1290,95,0,3600,4000,4,8
-E3-1280,95,0,3500,3900,4,8
-E3-1275,95,0,3400,3800,4,8
-E3-1270,80,0,3400,3800,4,8
-E3-1260L,45,0,2400,3300,4,8
-E3-1245,95,0,3300,3700,4,8
-E3-1240,80,0,3300,3700,4,8
-E3-1235,95,0,3200,3600,4,8
-E3-1230,80,0,3200,3600,4,8
-E3-1225,95,0,3100,3400,4,4
-E3-1220L,20,0,2200,3400,2,4
-E3-1220,80,0,3100,3400,4,4
-)
-
-gDesktopSandyBridgeCPUList=(
-i7-35355,120,1600,2666,2666,4,4
-# i7 Desktop Extreme Series
-i7-3970X,150,1200,3500,4000,6,12
-i7-3960X,130,1200,3300,3900,6,12
-i7-3930K,130,1200,3200,3800,6,12
-i7-3820,130,1200,3600,3800,4,8
-# i7 Desktop series
-i7-2600S,65,1600,2800,3800,4,8
-i7-2600,95,1600,3400,3800,4,8
-i7-2600K,95,1600,3400,3800,4,8
-i7-2700K,95,1600,3500,3900,4,8
-# i5 Desktop Series
-i5-2300,95,1600,2800,3100,4,4
-i5-2310,95,1600,2900,3200,4,4
-i5-2320,95,1600,3000,3300,4,4
-i5-2380P,95,1600,3100,3400,4,4
-i5-2390T,35,1600,2700,3500,2,4
-i5-2400S,65,1600,2500,3300,4,4
-i5-2405S,65,1600,2500,3300,4,4
-i5-2400,95,1600,3100,3400,4,4
-i5-2450P,95,1600,3200,3500,4,4
-i5-2500T,45,1600,2300,3300,4,4
-i5-2500S,65,1600,2700,3700,4,4
-i5-2500,95,1600,3300,3700,4,4
-i5-2500K,95,1600,3300,3700,4,4
-i5-2550K,95,1600,3400,3800,4,4
-# i3 1200 Desktop Series
-i3-2130,65,1600,3400,0,2,4
-i3-2125,65,1600,3300,0,2,4
-i3-2120T,35,1600,2600,0,2,4
-i3-2120,65,1600,3300,0,2,4
-i3-2115C,25,1600,2000,0,2,4
-i3-2105,65,1600,3100,0,2,4
-i3-2102,65,1600,3100,0,2,4
-i3-2100T,35,1600,2500,0,2,4
-i3-2100,65,1600,3100,0,2,4
-)
-
-gMobileSandyBridgeCPUList=(
-# i7 Mobile Extreme Series
-i7-2960XM,55,800,2700,3700,4,8
-i7-2920XM,55,800,2500,3500,4,8
-# i7 Mobile Series
-i7-2860QM,45,800,2500,3600,4,8
-i7-2820QM,45,800,2300,3400,4,8
-i7-2760QM,45,800,2400,3500,4,8
-i7-2720QM,45,800,2200,3300,4,8
-i7-2715QE,45,800,2100,3000,4,8
-i7-2710QE,45,800,2100,3000,4,8
-i7-2677M,17,800,1800,2900,2,4
-i7-2675QM,45,800,2200,3100,4,8
-i7-2670QM,45,800,2200,3100,4,8
-i7-2675M,17,800,1600,2700,2,4
-i7-2655LE,25,800,2200,2900,2,4
-i7-2649M,25,800,2300,3200,2,4
-i7-2640M,35,800,2800,3500,2,4
-i7-2637M,17,800,1700,2800,2,4
-i7-2635QM,45,800,2000,2900,4,8
-i7-2630QM,45,800,2000,2900,4,8
-i7-2629M,25,800,2100,3000,2,4
-i7-2620M,35,800,2700,3400,2,4
-i7-2617M,17,800,1500,2600,2,4
-i7-2610UE,17,800,1500,2400,2,4
-# i5 Mobile Series
-i5-2467M,17,800,1600,2300,2,4
-i5-2450M,35,800,2300,3100,2,4
-i5-2435M,35,800,2400,3000,2,4
-i5-2430M,35,800,2400,3000,2,4
-i5-2410M,35,800,2300,2900,2,4
-i5-2557M,17,800,1700,2700,2,4
-i5-2540M,35,800,2600,3300,2,4
-i5-2537M,17,800,1400,2300,2,4
-i5-2520M,35,800,2500,3200,2,4
-i5-2515E,35,800,2500,3100,2,4
-i5-2510E,35,800,2500,3100,2,4
-# i3 2300 Mobile Series
-i3-2377M,17,800,1500,0,2,4
-i3-2370M,35,800,2400,0,2,4
-i3-2367M,17,800,1400,0,2,4
-i3-2365M,17,800,1400,0,2,4
-i3-2357M,17,800,1300,0,2,4
-i3-2350M,35,800,2300,0,2,4
-i3-2348M,35,800,2300,0,2,4
-i3-2340UE,17,800,1300,0,2,4
-i3-2330M,35,800,2200,0,2,4
-i3-2330E,35,800,2200,0,2,4
-i3-2328M,35,800,2200,0,2,4
-i3-2312M,35,800,2100,0,2,4
-i3-2310M,35,800,2100,0,2,4
-i3-2310E,35,800,2100,0,2,4
-)
-
-
-#
-# Processor Number, Max TDP, Low Frequency Mode, Clock Speed, Max Turbo Frequency, Cores, Threads
-#
-
-gServerIvyBridgeCPUList=(
-# E3-1200 Xeon Processor Series
-'E3-1290 v2',87,1600,3700,4100,4,8
-'E3-1280 v2',69,1600,3600,4000,4,8
-'E3-1275 v2',77,1600,3500,3900,4,8
-'E3-1270 v2',69,1600,3500,3900,4,8
-'E3-1265L v2',45,1600,2500,3500,4,8
-'E3-1245 v2',77,1600,3400,3800,4,8
-'E3-1240 v2',69,1600,3400,3800,4,8
-'E3-1230 v2',69,1600,3300,3700,4,8
-'E3-1225 v2',77,1600,3200,3600,4,4
-'E3-1220 v2',69,1600,3100,3500,4,4
-'E3-1220L v2',17,1600,2300,3500,2,4
-# E5-1600 Xeon Processor Series
-'E5-1620 v2',130,1200,3700,3900,4,8
-'E5-1650 v2',130,1200,3500,3900,6,12
-'E5-1660 v2',130,1200,3700,4000,6,12
-# E5-2600 Xeon Processor Series
-'E5-2687W v2',150,1200,3400,4000,8,16
-'E5-2658 v2 ',95,1200,2400,3000,10,20
-'E5-2648L v2',70,1200,1900,2500,10,20
-'E5-2628L v2',70,1200,1900,2400,8,16
-'E5-2603 v2',80,1200,1800,1800,4,4
-'E5-2637 v2',130,1200,3500,3800,4,8
-'E5-2630L v2',60,1200,2400,2800,6,12
-'E5-2630 v2',80,1200,2600,3100,6,12
-'E5-2620 v2',80,1200,2100,2600,6,12
-'E5-2618L v2',50,1200,2000,2000,6,12
-'E5-2609 v2',80,1200,2500,2500,4,4
-'E5-2697 v2',130,1200,2700,3500,12,24
-'E5-2695 v2',115,1200,2400,3200,12,24
-'E5-2690 v2',130,1200,3000,3600,10,20
-'E5-2680 v2',115,1200,2800,3600,10,20
-'E5-2670 v2',115,1200,2500,3300,10,20
-'E5-2667 v2',130,1200,3300,4000,6,16
-'E5-2660 v2',95,1200,2200,3000,10,20
-'E5-2650L v2',70,1200,1700,2100,10,20
-'E5-2650 v2',95,1200,2600,3400,8,16
-'E5-2643 v2',130,1200,3500,3800,6,12
-'E5-2640 v2',95,1200,2000,2500,8,16
-)
-
-gDesktopIvyBridgeCPUList=(
-# Socket 2011 (Premium Power)
-i7-4960X,130,1200,3600,4000,6,12
-i7-4930K,130,1200,3400,3900,6,12
-i7-4820K,130,1200,3700,3900,4,8
-# i7-3700 Desktop Processor Series
-i7-3770T,45,1600,2500,3700,4,8
-i7-3770S,65,1600,3100,3900,4,8
-i7-3770K,77,1600,3500,3900,4,8
-i7-3770,77,1600,3400,3900,4,8
-# i5-3500 Desktop Processor Series
-i5-3570T,45,1600,2300,3300,4,4
-i5-3570K,77,1600,3400,3800,4,4
-i5-3570S,65,1600,3100,3800,4,4
-i5-3570,77,1600,3400,3800,4,4
-i5-3550S,65,1600,3000,3700,4,4
-i5-3550,77,1600,3300,3700,4,4
-# i5-3400 Desktop Processor Series
-i5-3475S,65,1600,2900,3600,4,4
-i5-3470S,65,1600,2900,3600,4,4
-i5-3470,77,1600,3200,3600,4,4
-i5-3470T,35,1600,2900,3600,2,4
-i5-3450S,65,1600,2800,3500,4,4
-i5-3450,77,1600,3100,3500,4,4
-# i5-3300 Desktop Processor Series
-i5-3350P,69,1600,3100,3300,4,4
-i5-3330S,65,1600,2700,3200,4,4
-i5-3333S,65,1600,2700,3200,4,4
-i5-3330S,65,1600,3700,3200,4,4
-i5-3330,77,1600,3000,3200,4,4
-# i3-3200 Desktop Processor Series
-i3-3250,55,1600,3500,0,2,4
-i3-3250T,25,1600,3000,0,2,4
-i3-3245,55,1600,3400,0,2,4
-i3-3240,55,1600,3400,0,2,4
-i3-3240T,35,1600,2900,0,2,4
-i3-3225,55,1600,3300,0,2,4
-i3-3220,55,1600,3300,0,2,4
-i3-3220T,35,1600,2800,0,2,4
-i3-3210,55,1600,3200,0,2,4
-)
-
-gMobileIvyBridgeCPUList=(
-# i7-3900 Mobile Processor Extreme Edition
-i7-3940XM,55,1200,3000,3900,4,8
-i7-3920XM,55,1200,2900,3800,4,8
-# i7-3800 Mobile Processor Series
-i7-3840QM,45,1200,2800,3800,4,8
-i7-3820QM,45,1200,2700,3700,4,8
-# i7-3700 Mobile Processor Series
-i7-3740QM,45,1200,2700,3700,4,8
-i7-3720QM,45,1200,2600,3600,4,8
-# i7-3600 Mobile Processor Series
-i7-3689Y,13,0,1500,2600,2,4
-i7-3687U,17,800,2100,3300,2,4
-i7-3667U,17,800,2000,3200,2,4
-i7-3635QM,45,0,2400,3400,4,8
-i7-3620QM,35,0,2200,3200,4,8
-i7-3632QM,35,0,2200,3200,4,8
-i7-3630QM,45,0,2400,3400,4,8
-i7-3615QM,45,0,2300,3300,4,8
-i7-3615QE,45,0,2300,3300,4,8
-i7-3612QM,35,0,2100,3100,4,8
-i7-3612QE,35,0,2100,3100,4,8
-i7-3610QM,45,0,2300,3300,4,8
-i7-3610QE,45,0,2300,3300,4,8
-# i7-3500 Mobile Processor Series
-i7-3555LE,25,0,2500,3200,2,4
-i7-3540M,35,1200,3000,3700,2,4
-i7-3537U,17,800,2000,3100,2,4
-i7-3520M,35,1200,2900,3600,2,4
-i7-3517UE,17,0,1700,2800,2,4
-i7-3517U,17,800,1900,3000,2,4
-# i5-3600 Mobile Processor Series
-i5-3610ME,35,0,2700,3300,2,4
-# i5-3400 Mobile Processor Series
-i5-3439Y,13,0,1500,2300,2,4
-i5-3437U,17,800,1900,2900,2,4
-i5-3427U,17,800,1800,2800,2,4
-# i5-3300 Mobile Processor Series
-i5-3380M,35,1200,2900,3600,2,4
-i5-3360M,35,1200,2800,3500,2,4
-i5-3340M,35,1200,2700,3400,2,4
-i5-3339Y,13,0,1500,2000,2,4
-i5-3337U,17,0,1800,2700,2,4
-i5-3320M,35,1200,2600,3300,2,4
-i5-3317U,17,800,1700,2600,2,4
-# i5-3200 Mobile Processor Series
-i5-3230M,35,1200,2600,3200,2,4
-i5-3210M,35,1200,2500,3100,2,4
-# i3-3200 Mobile Processor Series
-i3-3239Y,13,0,1400,0,2,4
-i3-3227U,17,800,1900,0,2,4
-i3-3217UE,17,0,1600,0,2,4
-i3-3217U,17,0,1800,0,2,4
-# i3-3100 Mobile Processor Series
-i3-3130M,35,1200,2600,0,2,4
-i3-3120ME,35,0,2400,0,2,4
-i3-3120M,35,0,2500,0,2,4
-i3-3110M,35,0,2400,0,2,4
-)
-
-#
-# Haswell processors (with HD-4600 graphics)
-#
-gServerHaswellCPUList=(
-# E3-1200 v3 Xeon Processor Series
-'E3-1285L v3',65,800,3100,3900,4,8
-'E3-1286L v3',65,800,3200,4000,4,8
-'E3-1285 v3',84,800,3600,4000,4,8
-'E3-1286 v3',84,800,3700,4100,4,8
-'E3-1280 v3',82,800,3600,4000,4,8
-'E3-1281 v3',82,800,3700,4100,4,8
-'E3-1275 v3',84,800,3500,3900,4,8
-'E3-1276 v3',84,800,3600,4000,4,8
-'E3-1270 v3',80,800,3500,3900,4,8
-'E3-1271 v3',80,800,3600,4000,4,8
-'E3-1268L v3',45,800,2300,3300,4,8
-'E3-1265L v3',45,800,2500,3700,4,8
-'E3-1245 v3',84,800,3400,3800,4,8
-'E3-1246 v3',84,800,3500,3900,4,8
-'E3-1240 v3',80,800,3400,3800,4,8
-'E3-1241 v3',80,800,3500,3900,4,8
-'E3-1230L v3',25,800,1800,2800,4,8
-'E3-1230 v3',80,800,3300,3700,4,8
-'E3-1231 v3',80,800,3400,3800,4,8
-'E3-1225 v3',80,800,3200,3600,4,4
-'E3-1226 v3',80,800,3300,3700,4,4
-'E3-1220 v3',80,800,3100,3500,4,4
-'E3-1220L v3',13,800,1100,1500,2,4
-# E5-1600 v3 Xeon Processor Series (AVX2 Turbo Frequency)
-'E5-1620 v3',140,1200,3500,3600,4,8
-'E5-1630 v3',140,1200,3700,3800,4,8
-'E5-1650 v3',140,1200,3500,3800,6,12
-'E5-1660 v3',140,1200,3000,3500,8,16
-'E5-1680 v3',140,1200,3200,3800,8,16
-# E5-2600 v3 Xeon Processor Series (AVX2 Turbo Frequency)
-'E5-2683 v3',120,1200,2000,3000,14,28
-'E5-2695 v3',120,1200,2300,3300,14,28
-'E5-2697 v3',145,1200,2600,3600,14,28
-'E5-2698 v3',135,1200,2300,3600,16,32
-'E5-2699 v3',145,1200,2300,3600,18,36
-'E5-2628L v3',75,1200,2000,2500,10,20
-'E5-2650 v3',105,1200,2300,3000,10,20
-'E5-2660 v3',105,1200,2600,3300,10,20
-'E5-2670 v3',120,1200,2300,3100,12,24
-'E5-2690 v3',135,1200,2600,3500,12,24
-'E5-2609 v3',85,1200,1900,1900,6,6
-'E5-2643 v3',135,1200,3400,3700,6,12
-'E5-2648L v3',75,1200,1900,2500,12,24
-'E5-2650L v3',65,1200,1800,2500,12,24
-'E5-2658 v3',105,1200,2200,2900,12,24
-'E5-2680 v3',120,1200,2500,3300,12,24
-'E5-2687W v3',160,1200,3100,3500,10,20
-'E5-2603 v3',85,1200,1600,1600,6,6
-'E5-2608L v3',52,1200,2000,2000,6,12
-'E5-2618L v3',75,1200,2300,3400,6,12
-'E5-2620 v3',85,1200,2400,3200,6,12
-'E5-2623 v3',105,1200,3000,3500,4,8
-'E5-2630 v3',85,1200,2400,3200,8,16
-'E5-2630L v3',55,1200,1800,2900,8,16
-'E5-2637 v3',135,1200,3500,3700,4,8
-'E5-2640 v3',90,1200,2600,2400,8,16
-'E5-2667 v3',135,1200,3200,3600,8,16
-)
-
-gDesktopHaswellCPUList=(
-# Haswell-E Processor Series (socket 2011-3)
-i7-5960X,140,1200,3000,3400,8,16
-i7-5930K,140,1200,3500,3900,6,12
-i7-5820K,140,1200,3300,3700,6,12
-# Socket 1150 (Standard Power)
-i7-4790K,88,800,4000,4400,4,8
-i5-4690K,88,800,3500,3900,4,4
-i7-4790,84,800,3600,4000,4,8
-i7-4770K,84,800,3500,3900,4,8
-i7-4771,84,800,3500,3900,4,8
-i7-4770,84,800,3400,3900,4,8
-i5-4590K,84,800,3300,3700,4,4
-i5-4590,84,800,3300,3700,4,4
-i5-4670K,84,800,3400,3800,4,4
-i5-4670,84,800,3400,3800,4,4
-i5-4570,84,800,3200,3600,4,4
-i5-4440,84,800,3100,3300,4,4
-i5-4440S,65,800,2800,3300,4,4
-i5-4430,84,800,3000,3200,4,4
-# Socket 1150 (Low Power)
-i7-4790S,65,800,3200,4000,4,8
-i7-4790T,45,800,2700,3900,4,8
-i7-4785T,35,800,2200,3200,4,8
-i7-4770S,65,800,3100,3900,4,8
-i7-4770T,45,800,2500,3700,4,8
-i7-4765T,35,800,2000,3000,4,8
-i5-4690,84,800,3500,3900,4,4
-i5-4690S,65,800,3200,3900,4,4
-i5-4690T,45,800,2500,3500,4,4
-i5-4670S,65,800,3100,3800,4,4
-i5-4670T,45,800,2300,3300,4,4
-i5-4590,84,800,3300,3700,4,4
-i5-4590S,65,800,3000,3700,4,4
-i5-4590T,35,800,3000,3700,4,4
-i5-4570S,65,800,2900,3600,4,4
-i5-4570T,35,800,2900,3600,4,4
-i5-4570TE,35,800,2700,3300,2,4
-i5-4460,84,800,3200,3400,4,4
-i5-4460T,35,800,1900,2700,4,4
-i5-4460S,65,800,2900,3600,4,4
-i5-4430S,65,800,2700,3200,4,4
-# BGA
-i7-4770R,65,800,3200,3900,4,8
-i5-4670R,65,800,3000,3700,4,4
-#FCLGA1150
-i3-4130,54,800,3400,3400,2,4
-i3-4130T,35,800,2900,2900,2,4
-i3-4150,54,800,3500,3500,2,4
-i3-4150T,35,800,3000,3000,2,4
-i3-4160,54,800,3600,3600,2,4
-i3-4160T,35,800,3100,3100,2,4
-i3-4330,54,800,3500,3500,2,4
-i3-4330T,35,800,3000,3000,2,4
-i3-4330TE,35,800,2400,2400,2,4
-i3-4340,54,800,3600,3600,2,4
-i3-4340TE,35,800,2600,2600,2,4
-i3-4350,54,800,3600,3600,2,4
-i3-4350T,35,800,3100,3100,2,4
-i3-4360,54,800,3700,3700,2,4
-i3-4360T,35,800,3200,3200,2,4
-i3-4370,54,800,3800,3800,2,4
-)
-
-gMobileHaswellCPUList=(
-# Socket FCBGA1364
-i7-4980HQ,47,800,2800,4000,4,8
-i7-4960HQ,47,800,2600,3800,4,8
-i7-4950HQ,47,800,2400,3600,4,8
-i7-4870HQ,47,800,2500,3700,4,8
-i7-4860HQ,47,800,2400,3600,4,8
-i7-4850HQ,47,800,2300,3500,4,8
-i7-4770HQ,47,800,2200,3400,4,8
-i7-4760HQ,47,800,2100,3300,4,8
-i7-4750HQ,47,800,2000,3200,4,8
-i7-4702HQ,37,800,2200,3200,4,8
-i7-4700HQ,47,800,2400,3400,4,8
-i7-4710HQ,47,800,2500,3500,4,8
-i7-4712HQ,37,800,2300,3300,4,8
-i7-4700EC,43,800,2700,2700,4,8
-i7-4702EC,27,800,2000,2000,4,8
-# Extreme Edition Series - socket FCPGA946
-i7-4930MX,57,800,3000,3900,4,8
-# Socket FCPGA946
-i7-4910MQ,47,800,2900,3900,4,8
-i7-4900MQ,47,800,2800,3800,4,8
-i7-4810MQ,47,800,2800,3800,4,8
-i7-4800MQ,47,800,2700,3700,4,8
-i7-4702MQ,37,800,2200,3200,4,8
-i7-4700MQ,47,800,2400,3400,4,8
-i7-4710MQ,47,800,2500,3500,4,8
-i7-4712MQ,37,800,2300,3300,4,8
-i7-4610M,37,800,3000,3700,4,8
-i7-4600M,37,800,2900,3300,4,8
-i5-4200M,37,800,2500,3100,2,4
-# Socket FCBGA1168
-i7-4650U,15,800,1700,3300,2,4
-i7-4650U,15,800,1700,3300,2,4
-i7-4600U,15,800,2100,3300,2,4
-i7-4610Y,11.5,800,1700,2900,2,4
-i7-4578U,28,800,3000,3500,2,4
-i7-4558U,28,800,2800,3300,2,4
-i7-4550U,15,800,1500,3000,2,4
-i7-4500U,15,800,1800,3000,2,4
-i7-4510U,15,800,2000,3100,2,4
-i5-4360U,15,800,1500,3000,2,4
-i5-4350U,15,800,1400,2900,2,4
-i5-4310U,15,800,2000,3000,2,4
-i5-4308U,28,800,2800,3300,2,4
-i5-4300U,15,800,1900,2900,2,4
-i5-4302Y,11.5,800,1600,2300,2,4
-i5-4300Y,11.5,800,1600,2300,2,4
-i5-4288U,28,800,2600,3100,2,4
-i5-4278U,28,800,2600,3100,2,4
-i5-4258U,28,800,2400,2900,2,4
-i5-4250U,15,800,1300,2600,2,4
-i5-4200U,15,800,1600,2600,2,4
-i5-4200Y,11.5,800,1400,1900,2,4
-i5-4202Y,11.5,800,1600,2000,2,4
-i5-4210Y,11.5,800,1500,1900,2,4
-i5-4210U,15,800,1700,2700,2,4
-i5-4220Y,11.5,800,1600,2000,2,4
-i5-4260U,15,800,1400,2700,2,4
-# Socket FCPGA946
-i5-4340M,37,800,2900,3600,2,4
-i5-4330M,37,800,2800,3500,2,4
-i5-4310M,37,800,2700,3400,2,4
-i5-4300M,37,800,2600,3300,2,4
-i5-4210M,37,800,2600,3200,2,4
-i3-4000M,37,800,2400,2400,2,4
-i3-4100M,37,800,2500,2500,2,4
-i3-4110M,37,800,2600,2600,2,4
-# Socket FCBGA1364
-i3-4100E,37,800,2400,2400,2,4
-i3-4110E,37,800,2600,2600,2,4
-i3-4102E,25,800,1600,1600,2,4
-i3-4112E,25,800,1800,1800,2,4
-i5-4400E,37,800,2700,3300,2,4
-i5-4410E,37,800,2900,2900,2,4
-i5-4422E,25,800,1800,2900,2,4
-i5-4402E,25,800,1600,2700,2,4
-i5-4402EC,27,800,2500,2500,2,4
-i5-4200H,47,800,2800,3400,2,4
-i5-4210H,47,800,2900,3500,2,4
-# Socket FCBGA1168
-i3-4005U,15,800,1700,1700,2,4
-i3-4010U,15,800,1700,1700,2,4
-i3-4100U,15,800,1800,1800,2,4
-i3-4010Y,11.5,800,1300,1300,2,4
-i3-4158U,28,800,2000,2000,2,4
-i3-4012Y,11.5,800,1500,1500,2,4
-i3-4020Y,11.5,800,1500,1500,2,4
-i3-4120U,15,800,2000,2000,2,4
-i3-4030U,15,800,1900,1900,2,4
-i3-4025U,15,800,1900,1900,2,4
-i3-4030Y,11.5,800,1600,1600,2,4
-)
-
-#
-# New Broadwell processors.
-#
-gServerBroadwellCPUList=()
-gDesktopBroadwellCPUList=()
-gMobileBroadwellCPUList=()
-
 
 #
 #--------------------------------------------------------------------------------
@@ -2810,29 +2229,29 @@ function _findIasl()
       #
       # Yes. Do a quick lookup of iasl (should also be there after the first run).
       #
-      if [ ! -f /usr/local/bin/iasl ];
+      if [ ! -f "${gToolPath}/iasl" ];
         then
-          printf "\nIASL not found. "
+          _debugPrint 'Downloading iasl.zip ...'
+          curl -o "${gPath}/iasl.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/iasl.zip
           #
-          # First we check the target directory (should be there after the first run)
+          # Unzip command line tool.
           #
-          # XXX: Jeroen, try curl --create-dirs without the mkdir here ;)
-          if [ ! -d /usr/local/bin ];
-            then
-              printf "Creating target directory ... "
-              sudo mkdir -p /usr/local/bin/
-              sudo chown -R root:wheel /usr/local/bin/
-          fi
-
-          echo 'Downloading iasl ...'
-          sudo curl -o /usr/local/bin/iasl https://raw.githubusercontent.com/Piker-Alpha/RevoBoot/clang/i386/libsaio/acpi/Tools/iasl
-          sudo chmod +x /usr/local/bin/iasl
-          echo 'Revoking administrator privileges ...'
-          sudo -k
-          echo 'Done.'
+          _debugPrint 'Unzipping iasl.zip ...'
+          unzip -qu "${gPath}/iasl.zip" -d "${gToolPath}/"
+          #
+          # Setting executing bit.
+          #
+          _debugPrint 'Setting executing bit ...'
+          chmod +x "${gToolPath}/iasl"
+          #
+          # Remove downloaded zip file.
+          #
+          _debugPrint 'Cleanups ...'
+          rm "${gPath}/iasl.zip"
+          _debugPrint 'Done.'
       fi
 
-      iasl=/usr/local/bin/iasl
+      iasl="${gToolPath}/iasl"
   fi
 }
 
@@ -2843,22 +2262,22 @@ function _findIasl()
 
 function _extractAcpiTables()
 {
-  if [ ! -f "${gPath}/extractAcpiTables" ];
+  if [ ! -f "${gToolPath}/extractAcpiTables" ];
     then
       _debugPrint 'Downloading extractAcpiTables.zip ...'
-      curl -o "${gPath}/extractAcpiTables.zip" https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
+      curl -o "${gPath}/extractAcpiTables.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
       #
       # Unzip command line tool.
       #
       _debugPrint 'Unzipping extractAcpiTables.zip ...'
-      unzip -qu "${gPath}/extractAcpiTables.zip" -d "${gPath}/"
+      unzip -qu "${gPath}/extractAcpiTables.zip" -d "${gToolPath}/"
       #
       # Setting executing bit.
       #
       _debugPrint 'Setting executing bit ...'
-      chmod +x "${gPath}/extractAcpiTables"
+      chmod +x "${gToolPath}/extractAcpiTables"
       #
-      #
+      # Remove downloaded zip file.
       #
       _debugPrint 'Cleanups ...'
       rm "${gPath}/extractAcpiTables.zip"
@@ -2867,7 +2286,7 @@ function _extractAcpiTables()
   # Extracting ACPI tables.
   #
   _debugPrint 'Extracting ACPI tables ...'
-  "${gPath}/extractAcpiTables"
+  "${gToolPath}/extractAcpiTables"
 
   _debugPrint 'Done.'
 }
@@ -3156,32 +2575,51 @@ function _getCPUDataByProcessorNumber
 
     IFS=$ifs
   }
-
   #
-  # Local function callers
+  # Here we check/download/load the processor data file(s).
   #
+  if [ ! -f "${gDataPath}/Sandy Bridge.cfg" ];
+    then
+      curl -o "${gDataPath}/Sandy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Sandy%20Bridge.cfg
+  fi
+  source "${gDataPath}/Sandy Bridge.cfg"
   __searchList $SANDY_BRIDGE
 
   if (!(( $gTypeCPU )));
     then
+      if [ ! -f "${gDataPath}/Ivy Bridge.cfg" ];
+        then
+          curl -o "${gDataPath}/Ivy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Ivy%20Bridge.cfg
+      fi
+      source "${gDataPath}/Ivy Bridge.cfg"
       __searchList $IVY_BRIDGE
   fi
 
   if (!(( $gTypeCPU )));
     then
+      if [ ! -f "${gDataPath}/Haswell.cfg" ];
+        then
+          curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Haswell.cfg
+      fi
+      source "${gDataPath}/Haswell.cfg"
       __searchList $HASWELL
   fi
 
   if (!(( $gTypeCPU )));
     then
+      if [ ! -f "${gDataPath}/Broadwell.cfg" ];
+        then
+          curl -o "${gDataPath}/Broadwell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Broadwell.cfg
+      fi
+      source "${gDataPath}/Broadwell.cfg"
       __searchList $BROADWELL
   fi
   #
-  # Bail out with error if we failed to find the CPU data.
+  # Bail out with error if we failed to locate the processor data.
   #
   if [[ $gTypeCPU -eq 0 ]];
     then
-      _exitWithError $PROCESSOR_NUMBER_ERROR
+      _exitWithError $PROCESSOR_NUMBER_ERROR $2
   fi
 }
 
@@ -3585,7 +3023,20 @@ function _exitWithError()
       4) _PRINT_MSG "\nError: 'BridgeType' must be 0, 1, 2 or 3 ..."
          _ABORT 4
          ;;
-      5) _PRINT_MSG "\nError: Unknown processor model ..."
+      5) printf "\e[A\e[K"
+         _PRINT_MSG "\nError: Unknown processor model ..."
+
+         if [[ $2 -eq 0 ]];
+           then
+             printf "       Visit http://ark.intel.com to gather the required data:\n"
+             printf "       Processor Number\n"
+             printf "       TDP\n"
+             printf "       Low Frequency Mode (use AppleIntelInfo.kext)\n"
+             printf "       Base Frequency\n"
+             printf "       Max Turbo Frequency\n"
+             printf "       Cores\n"
+             printf "       Threads\n"
+         fi
          _ABORT 5
          ;;
       6) _PRINT_MSG "\nError: Processor label length is less than 3 ..."
@@ -3694,16 +3145,29 @@ function _showSupportedBoardIDsAndModels()
 
 function _checkLibraryDirectory()
 {
-  if [ -d "$HOME/Library/ssdtPRGen" ];
+  #
+  # Check directory.
+  #
+  if [ ! -d "${gDataPath}" ];
     then
-      if [ ! -w "$HOME/Library/ssdtPRGen" ];
-        then
-          chmod -R 744 "$HOME/Library/ssdtPRGen"
-      fi
-    else
-      mkdir "$HOME/Library/ssdtPRGen"
-      chmod -R 744 "$HOME/Library/ssdtPRGen"
+      #
+      # Not there. Create it.
+      #
+      mkdir -p "${gDataPath}"
   fi
+  #
+  # Fix permissions.
+  #
+  chmod -R 755 "${gPath}"
+
+  if [ ! -f "${gDataPath}/Models.cfg" ];
+    then
+      curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Models.cfg
+  fi
+  #
+  # Load model data.
+  #
+  source "${gDataPath}/Models.cfg"
 }
 
 #
@@ -3746,7 +3210,7 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}o${STYLE_RESET}pen the previously generated SSDT\n"
           printf "       -${STYLE_BOLD}p${STYLE_RESET}rocessor model (example: 'E3-1285L v3')\n"
           printf "       -${STYLE_BOLD}s${STYLE_RESET}how supported board-id and model combinations:\n"
-#         printf "           Broadwell\n"
+          printf "           Broadwell\n"
           printf "           Haswell\n"
           printf "           Ivy Bridge\n"
           printf "           Sandy Bridge\n"
@@ -3927,7 +3391,7 @@ function _getScriptArguments()
                               then
                                 open -e "$gSsdtPR"
                               else
-                                _exitWithError 9
+                                _exitWithError $FILE_NOT_FOUND_ERROR
                             fi
                             exit 0
                             ;;
@@ -4115,7 +3579,6 @@ function _getScriptArguments()
   fi
 }
 
-
 #
 #--------------------------------------------------------------------------------
 #
@@ -4160,15 +3623,7 @@ function main()
   fi
 
   _getCPUNumberFromBrandString $modelSpecified
-  _getCPUDataByProcessorNumber
-
-  #
-  # Was the -p flag used and no target processor found?
-  #
-  if [[ $modelSpecified -eq 1 && $gTypeCPU -eq 0 ]];
-    then
-      _exitWithError $PROCESSOR_NUMBER_ERROR
-  fi
+  _getCPUDataByProcessorNumber $modelSpecified
   #
   # Check if -c argument wasn't used.
   #
