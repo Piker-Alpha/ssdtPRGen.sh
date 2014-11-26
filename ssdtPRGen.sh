@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 15.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 15.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=15.1
+gScriptVersion=15.2
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -2262,31 +2262,31 @@ function _findIasl()
 
 function _extractAcpiTables()
 {
-  if [ ! -f "${gToolPath}/extractAcpiTables" ];
+  if [ ! -f "${gToolPath}/extractACPITables" ];
     then
-      _debugPrint 'Downloading extractAcpiTables.zip ...'
-      curl -o "${gPath}/extractAcpiTables.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
+      _debugPrint 'Downloading extractACPITables.zip ...'
+      curl -o "${gPath}/extractACPITables.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
       #
       # Unzip command line tool.
       #
-      _debugPrint 'Unzipping extractAcpiTables.zip ...'
-      unzip -qu "${gPath}/extractAcpiTables.zip" -d "${gToolPath}/"
+      _debugPrint 'Unzipping extractACPITables.zip ...'
+      unzip -qu "${gPath}/extractACPITables.zip" -d "${gToolPath}/"
       #
       # Setting executing bit.
       #
       _debugPrint 'Setting executing bit ...'
-      chmod +x "${gToolPath}/extractAcpiTables"
+      chmod +x "${gToolPath}/extractACPITables"
       #
       # Remove downloaded zip file.
       #
       _debugPrint 'Cleanups ...'
-      rm "${gPath}/extractAcpiTables.zip"
+      rm "${gPath}/extractACPITables.zip"
   fi
   #
   # Extracting ACPI tables.
   #
   _debugPrint 'Extracting ACPI tables ...'
-  "${gToolPath}/extractAcpiTables"
+  "${gToolPath}/extractACPITables"
 
   _debugPrint 'Done.'
 }
