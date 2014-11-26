@@ -1,3 +1,7 @@
+Version 15.2
+
+ - Fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/93 (Pike, November 2014).
+
 Version 15.1
 
  - Download/unzip of IASL should not require administrator privileges (Pike, November 2014).
