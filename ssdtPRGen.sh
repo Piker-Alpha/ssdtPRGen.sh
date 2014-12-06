@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 15.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 15.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=15.2
+gScriptVersion=15.4
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -41,7 +41,7 @@ let gXcpm=-1
 #
 # Note: Will be changed to 0 in _checkForXCPM() when XCPM mode is detected.
 #
-let gIvyWorkAround=0
+let gIvyWorkAround=-1
 
 #
 # Ask for confirmation before copying the new SSDT to the target location.
@@ -590,6 +590,12 @@ function _printScopeStart()
       if (( $gBridgeType == $IVY_BRIDGE && $gIvyWorkAround & 2 ));
         then
           let lowFrequencyPStates=($gBaseFrequency/100)-8
+
+          if [[ $lowFrequencyPStates -lt 0 ]];
+            then
+              let lowFrequencyPStates=$(echo ${lowFrequencyPStates#-})
+              printf "lowFrequencyPStates: $lowFrequencyPStates\n"
+          fi
       fi
 
       let packageLength=($packageLength+$lowFrequencyPStates)
@@ -688,6 +694,7 @@ function _printPackages()
   local p1Ratio
   local ratio
   local powerRatio
+  local multipliedBusFrequency
   #
   # Is the global TDP a floating-point number?
   #
@@ -712,6 +719,15 @@ function _printPackages()
   let p0Ratio=($maxNonTurboFrequency/$gBusFrequency)
   let ratio=($frequency/$gBusFrequency)
   let powerRatio=($p0Ratio-1)
+  let multipliedBusFrequency=($gBusFrequency*10)
+
+  case "$gBusFrequency" in
+    133) let multipliedBusFrequency+=3
+         ;;
+    166) let multipliedBusFrequency+=6
+         ;;
+  esac
+
   #
   # Do we need to add additional (Low Frequency) P-States for Ivy Bridge?
   #
@@ -769,7 +785,7 @@ function _printPackages()
     fi
 
     let ratio-=1
-    let frequency-=$gBusFrequency
+    let frequency=$(printf "%.f\n" $(echo "scale=1;((($multipliedBusFrequency/10)*$ratio)+0.5)" | bc))
 
     if [ $ratio -ge $minRatio ];
       then
@@ -2311,7 +2327,7 @@ function _checkSourceFilename
           _debugPrint "ACPI target directory changed to: ${gDestinationPath}\n"
       fi
 
-      if [[ $gDestinationFile != "ssdt_pr.aml" ]];
+      if [[ "$gDestinationFile" != "ssdt_pr.aml" ]];
         then
           gSsdtID="ssdt_pr"
           gSsdtPR="${gPath}/${gSsdtID}.dsl"
@@ -2357,7 +2373,7 @@ function _setDestinationPath
       gDestinationPath="/Volumes/EFI/Extra/ACPI/"
       _debugPrint "ACPI target directory changed to: ${gDestinationPath}"
 
-      if [[ $gDestinationFile != "ssdt_pr.aml" ]];
+      if [[ "$gDestinationFile" != "ssdt_pr.aml" ]];
         then
           gSsdtID="ssdt_pr"
           gSsdtPR="/Volumes/EFI/Extra/ACPI/${gSsdtID}.dsl"
@@ -2778,7 +2794,7 @@ function _checkForXCPM()
               #
               # Yes. Disable Ivy Bridge workarounds.
               #
-              let gIvyWorkAround=0
+              let gIvyWorkAround=-1
               #
               # Is the target processor an Ivy Bridge one?
               #
@@ -3805,7 +3821,7 @@ function main()
         then
           let gBaseFrequency=$lfm
         else
-          echo -e "\nWarning: Low Frequency Mode is 0 (unknown/unconfirmed)"
+          _PRINT_MSG "\nWarning: Low Frequency Mode is 0 (unknown/unconfirmed)"
 
          if [ $gTypeCPU == $gMobileCPU ];
             then
@@ -3819,7 +3835,7 @@ function main()
       #
       # Check Ivy Bridge, XCPM mode and if -w argument is used.
       #
-      if [[ $gBridgeType -eq $IVY_BRIDGE && $gXcpm -eq -1 && $gIvyWorkAround -eq 0 ]];
+      if [[ $gBridgeType -eq $IVY_BRIDGE && $gXcpm -eq -1 && $gIvyWorkAround -eq -1 ]];
         then
           if [[ $gOSVersion -gt 10100 ]];
             then
@@ -3873,7 +3889,7 @@ function main()
   #
   # Get number of Turbo states.
   #
-  let turboStates=$(echo "(($maxTurboFrequency - $frequency) / 100)" | bc)
+  let turboStates=$(printf "%.f" $(echo "scale=1;((($maxTurboFrequency - $frequency) / $gBusFrequency)+0.5)" | bc))
   #
   # Check number of Turbo states.
   #
@@ -3886,13 +3902,13 @@ function main()
   #
   if [ $turboStates -gt 0 ];
     then
-      let minTurboFrequency=($frequency+100)
+      let minTurboFrequency=($frequency+$gBusFrequency)
       echo "Number of Turbo States: $turboStates ($minTurboFrequency-$maxTurboFrequency MHz)"
     else
       echo "Number of Turbo States: 0"
   fi
 
-  local packageLength=$(echo "((($maxTurboFrequency - $gBaseFrequency)+100) / 100)" | bc)
+  local packageLength=$(echo "((($maxTurboFrequency - $gBaseFrequency)+$gBusFrequency) / $gBusFrequency)" | bc)
 
   echo "Number of P-States: $packageLength ($gBaseFrequency-$maxTurboFrequency MHz)"
 
@@ -3999,8 +4015,7 @@ function main()
       #
       # Compile ssdt.dsl
       #
-      # sudo "$iasl" $gSsdtPR
-      "$iasl" $gSsdtPR
+      "$iasl" "$gSsdtPR"
 
       #
       # Copy ssdt_pr.aml to /Extra/ssdt.aml (example)
@@ -4017,7 +4032,7 @@ function main()
                             _setDestinationPath
                         fi
 
-                        sudo cp ${gPath}/${gSsdtID}.aml ${gDestinationPath}${gDestinationFile}
+                        sudo cp "${gPath}/${gSsdtID}.aml" "${gDestinationPath}${gDestinationFile}"
                       #
                       # Check if we need to unmount the EFI volume.
                       #
