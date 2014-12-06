@@ -1,3 +1,12 @@
+Version 15.4
+
+ - Additional changes for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/80 (Pike, December 2014).
+ - First changes for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/95 (Pike, December 2014).
+
+Version 15.3
+
+ - Fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/88 (Pike, December 2014).
+
 Version 15.2
 
  - Fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/93 (Pike, November 2014).
