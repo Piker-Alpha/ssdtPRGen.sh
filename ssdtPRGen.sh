@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 15.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 15.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=15.4
+gScriptVersion=15.5
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -299,25 +299,25 @@ function _ABORT()
 
 function _printHeader()
 {
-    echo '/*'                                                                         >  $gSsdtPR
-    echo ' * Intel ACPI Component Architecture'                                       >> $gSsdtPR
-    echo ' * AML Disassembler version 20140210-00 [Feb 10 2014]'                      >> $gSsdtPR
-    echo ' * Copyright (c) 2000 - 2014 Intel Corporation'                             >> $gSsdtPR
-    echo ' * '                                                                        >> $gSsdtPR
-    echo ' * Original Table Header:'                                                  >> $gSsdtPR
-    echo ' *     Signature        "SSDT"'                                             >> $gSsdtPR
-    echo ' *     Length           0x0000036A (874)'                                   >> $gSsdtPR
-    echo ' *     Revision         0x01'                                               >> $gSsdtPR
-    echo ' *     Checksum         0x00'                                               >> $gSsdtPR
-    echo ' *     OEM ID           "APPLE "'                                           >> $gSsdtPR
-    echo ' *     OEM Table ID     "CpuPm"'                                            >> $gSsdtPR
-  printf ' *     OEM Revision     '$gRevision' (%d)\n' $gRevision                     >> $gSsdtPR
-    echo ' *     Compiler ID      "INTL"'                                             >> $gSsdtPR
-    echo ' *     Compiler Version 0x20140210 (538182160)'                             >> $gSsdtPR
-    echo ' */'                                                                        >> $gSsdtPR
-    echo ''                                                                           >> $gSsdtPR
-    echo 'DefinitionBlock ("'$gSsdtID'.aml", "SSDT", 1, "APPLE ", "CpuPm", '$gRevision')' >> $gSsdtPR
-    echo '{'                                                                          >> $gSsdtPR
+    echo '/*'                                                                         >  "$gSsdtPR"
+    echo ' * Intel ACPI Component Architecture'                                       >> "$gSsdtPR"
+    echo ' * AML Disassembler version 20140210-00 [Feb 10 2014]'                      >> "$gSsdtPR"
+    echo ' * Copyright (c) 2000 - 2014 Intel Corporation'                             >> "$gSsdtPR"
+    echo ' * '                                                                        >> "$gSsdtPR"
+    echo ' * Original Table Header:'                                                  >> "$gSsdtPR"
+    echo ' *     Signature        "SSDT"'                                             >> "$gSsdtPR"
+    echo ' *     Length           0x0000036A (874)'                                   >> "$gSsdtPR"
+    echo ' *     Revision         0x01'                                               >> "$gSsdtPR"
+    echo ' *     Checksum         0x00'                                               >> "$gSsdtPR"
+    echo ' *     OEM ID           "APPLE "'                                           >> "$gSsdtPR"
+    echo ' *     OEM Table ID     "CpuPm"'                                            >> "$gSsdtPR"
+  printf ' *     OEM Revision     '$gRevision' (%d)\n' $gRevision                     >> "$gSsdtPR"
+    echo ' *     Compiler ID      "INTL"'                                             >> "$gSsdtPR"
+    echo ' *     Compiler Version 0x20140210 (538182160)'                             >> "$gSsdtPR"
+    echo ' */'                                                                        >> "$gSsdtPR"
+    echo ''                                                                           >> "$gSsdtPR"
+    echo 'DefinitionBlock ("'$gSsdtID'.aml", "SSDT", 1, "APPLE ", "CpuPm", '$gRevision')' >> "$gSsdtPR"
+    echo '{'                                                                          >> "$gSsdtPR"
 }
 
 
@@ -351,7 +351,7 @@ function _printExternalObjects()
     #
     while [ $index -lt $maxCoresPerScope ];
     do
-      echo '    External ('${scope}'.'${gProcessorNames[$index]}', DeviceObj)'        >> $gSsdtPR
+      echo '    External ('${scope}'.'${gProcessorNames[$index]}', DeviceObj)'        >> "$gSsdtPR"
       #
       # Next logical processor.
       #
@@ -423,14 +423,14 @@ function _printProcessorDefinitions()
       then
         local scopeName=$(echo $scope | sed -e 's/^\\_SB_\.//')
 
-        echo '    Scope(\_SB_)'                                                       >> $gSsdtPR
-        echo '    {'                                                                  >> $gSsdtPR
-        echo '        Device ('$scopeName')'                                          >> $gSsdtPR
-        echo '        {'                                                              >> $gSsdtPR
-        echo '            Name (_HID, "ACPI0004")'                                    >> $gSsdtPR
+        echo '    Scope(\_SB_)'                                                       >> "$gSsdtPR"
+        echo '    {'                                                                  >> "$gSsdtPR"
+        echo '        Device ('$scopeName')'                                          >> "$gSsdtPR"
+        echo '        {'                                                              >> "$gSsdtPR"
+        echo '            Name (_HID, "ACPI0004")'                                    >> "$gSsdtPR"
       else
-        echo '    {'                                                                  >> $gSsdtPR
-        echo '    Scope('$scope')'                                                    >> $gSsdtPR
+        echo '    {'                                                                  >> "$gSsdtPR"
+        echo '    Scope('$scope')'                                                    >> "$gSsdtPR"
     fi
     #
     # Inject Processor () object for each logical processor in this processor scope.
@@ -439,14 +439,14 @@ function _printProcessorDefinitions()
     do
       if [[ $scope =~ ^"\_SB_." ]];
         then
-          echo ''                                                                     >> $gSsdtPR
-          echo '            Processor ('${gProcessorNames[$index]}', '$index', '$pBlockAddress', Zero)' >> $gSsdtPR
-          echo '            {'                                                        >> $gSsdtPR
-          echo '                Name (_HID, "ACPI0007")'                              >> $gSsdtPR
-          echo '                Name (_STA, 0x0F)'                                    >> $gSsdtPR
-          echo '            }'                                                        >> $gSsdtPR
+          echo ''                                                                     >> "$gSsdtPR"
+          echo '            Processor ('${gProcessorNames[$index]}', '$index', '$pBlockAddress', Zero)' >> "$gSsdtPR"
+          echo '            {'                                                        >> "$gSsdtPR"
+          echo '                Name (_HID, "ACPI0007")'                              >> "$gSsdtPR"
+          echo '                Name (_STA, 0x0F)'                                    >> "$gSsdtPR"
+          echo '            }'                                                        >> "$gSsdtPR"
         else
-          echo '    Processor ('${gProcessorNames[$index]}', '$index', '$pBlockAddress', 0x06) {}' >> $gSsdtPR
+          echo '    Processor ('${gProcessorNames[$index]}', '$index', '$pBlockAddress', 0x06) {}' >> "$gSsdtPR"
       fi
       #
       # Next logical processor.
@@ -456,16 +456,16 @@ function _printProcessorDefinitions()
 
     if [[ $scope =~ ^"\_SB_." ]];
       then
-        echo '        }'                                                              >> $gSsdtPR
+        echo '        }'                                                              >> "$gSsdtPR"
     fi
 
-    echo '    }'                                                                      >> $gSsdtPR
+    echo '    }'                                                                      >> "$gSsdtPR"
     #
     # 
     #
     if [[ $scopeIndex -lt ${#gScope[@]} ]];
       then
-        echo ''                                                                       >> $gSsdtPR
+        echo ''                                                                       >> "$gSsdtPR"
     fi
     #
     # Next processor scope.
@@ -491,43 +491,43 @@ function _injectDebugInfo()
   local maxTurboFrequency=$2
   local packageLength=$3
 
-  echo '        Method (_INI, 0, NotSerialized)'                                      >> $gSsdtPR
-  echo '        {'                                                                    >> $gSsdtPR
-  echo '            Store ("ssdtPRGen version....: '$gScriptVersion' / '$gProductName' '$gProductVersion' ('$gBuildVersion')", Debug)'  >> $gSsdtPR
-  echo '            Store ("target processor.....: '$gProcessorNumber'", Debug)'      >> $gSsdtPR
-  echo '            Store ("running processor....: '$gBrandString'", Debug)'          >> $gSsdtPR
-  echo '            Store ("baseFrequency........: '$gBaseFrequency'", Debug)'        >> $gSsdtPR
-  echo '            Store ("frequency............: '$frequency'", Debug)'             >> $gSsdtPR
-  echo '            Store ("busFrequency.........: '$gBusFrequency'", Debug)'         >> $gSsdtPR
-  echo '            Store ("logicalCPUs..........: '$gLogicalCPUs'", Debug)'          >> $gSsdtPR
-  echo '            Store ("maximum TDP..........: '$gTdp'", Debug)'                  >> $gSsdtPR
-  echo '            Store ("packageLength........: '$packageLength'", Debug)'         >> $gSsdtPR
-  echo '            Store ("turboStates..........: '$turboStates'", Debug)'           >> $gSsdtPR
-  echo '            Store ("maxTurboFrequency....: '$maxTurboFrequency'", Debug)'     >> $gSsdtPR
+  echo '        Method (_INI, 0, NotSerialized)'                                      >> "$gSsdtPR"
+  echo '        {'                                                                    >> "$gSsdtPR"
+  echo '            Store ("ssdtPRGen version....: '$gScriptVersion' / '$gProductName' '$gProductVersion' ('$gBuildVersion')", Debug)'  >> "$gSsdtPR"
+  echo '            Store ("target processor.....: '$gProcessorNumber'", Debug)'      >> "$gSsdtPR"
+  echo '            Store ("running processor....: '$gBrandString'", Debug)'          >> "$gSsdtPR"
+  echo '            Store ("baseFrequency........: '$gBaseFrequency'", Debug)'        >> "$gSsdtPR"
+  echo '            Store ("frequency............: '$frequency'", Debug)'             >> "$gSsdtPR"
+  echo '            Store ("busFrequency.........: '$gBusFrequency'", Debug)'         >> "$gSsdtPR"
+  echo '            Store ("logicalCPUs..........: '$gLogicalCPUs'", Debug)'          >> "$gSsdtPR"
+  echo '            Store ("maximum TDP..........: '$gTdp'", Debug)'                  >> "$gSsdtPR"
+  echo '            Store ("packageLength........: '$packageLength'", Debug)'         >> "$gSsdtPR"
+  echo '            Store ("turboStates..........: '$turboStates'", Debug)'           >> "$gSsdtPR"
+  echo '            Store ("maxTurboFrequency....: '$maxTurboFrequency'", Debug)'     >> "$gSsdtPR"
   #
   # Ivy Bridge workarounds requested?
   #
   if [[ $gIvyWorkAround -gt 0 ]];
     then
-       echo '            Store ("IvyWorkArounds.......: '$gIvyWorkAround'", Debug)'   >> $gSsdtPR
+       echo '            Store ("IvyWorkArounds.......: '$gIvyWorkAround'", Debug)'   >> "$gSsdtPR"
   fi
   #
   # XCPM mode initialised?
   #
   if [[ $gXcpm -ne -1 ]];
     then
-       echo '            Store ("machdep.xcpm.mode....: '$gXcpm'", Debug)'            >> $gSsdtPR
+       echo '            Store ("machdep.xcpm.mode....: '$gXcpm'", Debug)'            >> "$gSsdtPR"
   fi
   #
   # Do we have more than one ACPI processor scope?
   #
   if [[ "${#gScope[@]}" -gt 1 ]];
    then
-      echo '            Store ("number of ACPI scopes: '${#gScope[@]}'", Debug)'      >> $gSsdtPR
+      echo '            Store ("number of ACPI scopes: '${#gScope[@]}'", Debug)'      >> "$gSsdtPR"
   fi
 
-  echo '        }'                                                                    >> $gSsdtPR
-  echo ''                                                                             >> $gSsdtPR
+  echo '        }'                                                                    >> "$gSsdtPR"
+  echo ''                                                                             >> "$gSsdtPR"
 }
 
 
@@ -570,9 +570,9 @@ function _printScopeStart()
       _printProcessorDefinitions
   fi
 
-  echo ''                                                                             >> $gSsdtPR
-  echo '    Scope ('${gScope[${scopeIndex}]}'.'${gProcessorNames[$index]}')'          >> $gSsdtPR
-  echo '    {'                                                                        >> $gSsdtPR
+  echo ''                                                                             >> "$gSsdtPR"
+  echo '    Scope ('${gScope[${scopeIndex}]}'.'${gProcessorNames[$index]}')'          >> "$gSsdtPR"
+  echo '    {'                                                                        >> "$gSsdtPR"
 
   if (( $scopeIndex == 0 && $gDebug & 1 ))
     then
@@ -602,10 +602,10 @@ function _printScopeStart()
 
       if [[ $lowFrequencyPStates -gt 0 ]];
         then
-          printf "        Name (APLF, 0x%02x)\n" $lowFrequencyPStates                 >> $gSsdtPR
+          printf "        Name (APLF, 0x%02x)\n" $lowFrequencyPStates                 >> "$gSsdtPR"
         else
           # Prevent optimization warning.
-          echo "        Name (APLF, Zero)"                                            >> $gSsdtPR
+          echo "        Name (APLF, Zero)"                                            >> "$gSsdtPR"
       fi
 
       # TODO: Remove this when CPUPM for IB works properly!
@@ -622,9 +622,9 @@ function _printScopeStart()
       # TODO: Remove this when CPUPM for IB works properly!
       if (( $useWorkArounds ));
         then
-          echo '        Name (APSN, One)'                                             >> $gSsdtPR
+          echo '        Name (APSN, One)'                                             >> "$gSsdtPR"
         else
-          echo '        Name (APSN, Zero)'                                            >> $gSsdtPR
+          echo '        Name (APSN, Zero)'                                            >> "$gSsdtPR"
       fi
     else
       # TODO: Remove this when CPUPM for IB works properly!
@@ -633,7 +633,7 @@ function _printScopeStart()
           let turboStates+=1
       fi
 
-      printf "        Name (APSN, 0x%02X)\n" $turboStates                             >> $gSsdtPR
+      printf "        Name (APSN, 0x%02X)\n" $turboStates                             >> "$gSsdtPR"
   fi
 
   # TODO: Remove this when CPUPM for IB works properly!
@@ -642,8 +642,8 @@ function _printScopeStart()
       let packageLength+=1
   fi
 
-  printf "        Name (APSS, Package (0x%02X)\n" $packageLength                      >> $gSsdtPR
-  echo '        {'                                                                    >> $gSsdtPR
+  printf "        Name (APSS, Package (0x%02X)\n" $packageLength                      >> "$gSsdtPR"
+  echo '        {'                                                                    >> "$gSsdtPR"
 
   # TODO: Remove this when CPUPM for IB works properly!
   if (( $useWorkArounds ));
@@ -667,8 +667,8 @@ function _printScopeStart()
       fi
 
       let extraR=($maxTurboFrequency/100)+1
-      echo "            /* Workaround for the Ivy Bridge PM 'bug' */"                 >> $gSsdtPR
-      printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x%02X00, 0x%02X00 },\n" $extraF $maxTDP $extraR $extraR >> $gSsdtPR
+      echo "            /* Workaround for the Ivy Bridge PM 'bug' */"                 >> "$gSsdtPR"
+      printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x%02X00, 0x%02X00 },\n" $extraF $maxTDP $extraR $extraR >> "$gSsdtPR"
   fi
 }
 
@@ -738,22 +738,22 @@ function _printPackages()
 
   if (( $turboStates ));
     then
-      echo '            /* High Frequency Modes (turbo) */'                           >> $gSsdtPR
+      echo '            /* High Frequency Modes (turbo) */'                           >> "$gSsdtPR"
   fi
 
   while [ $ratio -ge $minRatio ];
   do
     if [ $frequency -eq $gBaseFrequency ];
       then
-        echo '            /* Low Frequency Mode */'                                   >> $gSsdtPR
+        echo '            /* Low Frequency Mode */'                                   >> "$gSsdtPR"
     fi
 
     if [ $frequency -eq $maxNonTurboFrequency ];
       then
-        echo '            /* High Frequency Modes (non-turbo) */'                     >> $gSsdtPR
+        echo '            /* High Frequency Modes (non-turbo) */'                     >> "$gSsdtPR"
     fi
 
-    printf "            Package (0x06) { 0x%04X, " $frequency                         >> $gSsdtPR
+    printf "            Package (0x06) { 0x%04X, " $frequency                         >> "$gSsdtPR"
 
     if [ $frequency -lt $maxNonTurboFrequency ];
       then
@@ -772,16 +772,16 @@ function _printPackages()
 
     if [ $frequency -ge $gBaseFrequency ];
       then
-        printf "0x%06X, " $power                                                      >> $gSsdtPR
+        printf "0x%06X, " $power                                                      >> "$gSsdtPR"
       else
-        printf '    Zero, '                                                           >> $gSsdtPR
+        printf '    Zero, '                                                           >> "$gSsdtPR"
     fi
 
     if [ $gBusFrequency -eq 100 ];
       then
-        printf "0x0A, 0x0A, 0x%02X00, 0x%02X00 }" $ratio $ratio                       >> $gSsdtPR
+        printf "0x0A, 0x0A, 0x%02X00, 0x%02X00 }" $ratio $ratio                       >> "$gSsdtPR"
       else
-        printf "0x0A, 0x0A, 0x00%02X, 0x00%02X }" $ratio $ratio                       >> $gSsdtPR
+        printf "0x0A, 0x0A, 0x00%02X, 0x00%02X }" $ratio $ratio                       >> "$gSsdtPR"
     fi
 
     let ratio-=1
@@ -789,14 +789,14 @@ function _printPackages()
 
     if [ $ratio -ge $minRatio ];
       then
-        echo ','                                                                      >> $gSsdtPR
+        echo ','                                                                      >> "$gSsdtPR"
       else
-        echo ''                                                                       >> $gSsdtPR
+        echo ''                                                                       >> "$gSsdtPR"
     fi
 
   done
 
-  echo '        })'                                                                   >> $gSsdtPR
+  echo '        })'                                                                   >> "$gSsdtPR"
 }
 
 
@@ -811,37 +811,37 @@ function _printMethodDSM()
       #
       # New stand-alone version of Method _DSM - Copyright (c) 2009 by Master Chief
       #
-      echo ''                                                                             >> $gSsdtPR
-      echo '        Method (_DSM, 4, NotSerialized)'                                      >> $gSsdtPR
-      echo '        {'                                                                    >> $gSsdtPR
+      echo ''                                                                             >> "$gSsdtPR"
+      echo '        Method (_DSM, 4, NotSerialized)'                                      >> "$gSsdtPR"
+      echo '        {'                                                                    >> "$gSsdtPR"
 
       if [[ $gDebug -eq 1 ]];
         then
           #
           # Note: This will be called twice!
           #
-          echo '            Store ("Method '${gProcessorNames[0]}'._DSM Called", Debug)'  >> $gSsdtPR
-          echo ''                                                                         >> $gSsdtPR
+          echo '            Store ("Method '${gProcessorNames[0]}'._DSM Called", Debug)'  >> "$gSsdtPR"
+          echo ''                                                                         >> "$gSsdtPR"
       fi
 
-      echo '            If (LEqual (Arg2, Zero))'                                         >> $gSsdtPR
-      echo '            {'                                                                >> $gSsdtPR
-      echo '                Return (Buffer (One)'                                         >> $gSsdtPR
-      echo '                {'                                                            >> $gSsdtPR
-      echo '                    0x03'                                                     >> $gSsdtPR
-      echo '                })'                                                           >> $gSsdtPR
-      echo '            }'                                                                >> $gSsdtPR
-      echo ''                                                                             >> $gSsdtPR
+      echo '            If (LEqual (Arg2, Zero))'                                         >> "$gSsdtPR"
+      echo '            {'                                                                >> "$gSsdtPR"
+      echo '                Return (Buffer (One)'                                         >> "$gSsdtPR"
+      echo '                {'                                                            >> "$gSsdtPR"
+      echo '                    0x03'                                                     >> "$gSsdtPR"
+      echo '                })'                                                           >> "$gSsdtPR"
+      echo '            }'                                                                >> "$gSsdtPR"
+      echo ''                                                                             >> "$gSsdtPR"
       #
       # This property is required to get X86Platform[Plugin/Shim].kext loaded.
       #
-      echo '            Return (Package (0x02)'                                           >> $gSsdtPR
-      echo '            {'                                                                >> $gSsdtPR
-      echo '                "plugin-type",'                                               >> $gSsdtPR
-      echo '                One'                                                          >> $gSsdtPR
-      echo '            })'                                                               >> $gSsdtPR
-      echo '        }'                                                                    >> $gSsdtPR
-      echo '    }'                                                                        >> $gSsdtPR
+      echo '            Return (Package (0x02)'                                           >> "$gSsdtPR"
+      echo '            {'                                                                >> "$gSsdtPR"
+      echo '                "plugin-type",'                                               >> "$gSsdtPR"
+      echo '                One'                                                          >> "$gSsdtPR"
+      echo '            })'                                                               >> "$gSsdtPR"
+      echo '        }'                                                                    >> "$gSsdtPR"
+      echo '    }'                                                                        >> "$gSsdtPR"
   fi
 }
 
@@ -914,13 +914,13 @@ function _printScopeACST()
       let targetCPU=0
   fi
 
-  echo ''                                                                             >> $gSsdtPR
-  echo '        Method (ACST, 0, NotSerialized)'                                      >> $gSsdtPR
-  echo '        {'                                                                    >> $gSsdtPR
+  echo ''                                                                             >> "$gSsdtPR"
+  echo '        Method (ACST, 0, NotSerialized)'                                      >> "$gSsdtPR"
+  echo '        {'                                                                    >> "$gSsdtPR"
 
   if (( $gDebug ));
     then
-      echo '            Store ("Method '${gProcessorNames[$targetCPU]}'.ACST Called", Debug)'  >> $gSsdtPR
+      echo '            Store ("Method '${gProcessorNames[$targetCPU]}'.ACST Called", Debug)'  >> "$gSsdtPR"
   fi
   #
   # Are we injecting C-States for CPU1?
@@ -952,8 +952,8 @@ function _printScopeACST()
 
   if (( $gDebug ));
     then
-      echo '            Store ("'${gProcessorNames[$targetCPU]}' C-States    : '$targetCStates'", Debug)' >> $gSsdtPR
-      echo ''                                                                         >> $gSsdtPR
+      echo '            Store ("'${gProcessorNames[$targetCPU]}' C-States    : '$targetCStates'", Debug)' >> "$gSsdtPR"
+      echo ''                                                                         >> "$gSsdtPR"
   fi
 
   _debugPrint "targetCStates: $targetCStates\n"
@@ -1003,44 +1003,44 @@ function _printScopeACST()
 
   let hintCode=0x00
 
-    echo "            /* Low Power Modes for ${gProcessorNames[$1]} */"                 >> $gSsdtPR
-  printf "            Return (Package (0x%02x)\n" $pkgLength                            >> $gSsdtPR
-    echo '            {'                                                                >> $gSsdtPR
-    echo '                One,'                                                         >> $gSsdtPR
-  printf "                0x%02x,\n" $numberOfCStates                                   >> $gSsdtPR
-    echo '                Package (0x04)'                                               >> $gSsdtPR
-    echo '                {'                                                            >> $gSsdtPR
-    echo '                    ResourceTemplate ()'                                      >> $gSsdtPR
-    echo '                    {'                                                        >> $gSsdtPR
-    echo '                        Register (FFixedHW,'                                  >> $gSsdtPR
-    echo '                            0x01,               // Bit Width'                 >> $gSsdtPR
-    echo '                            0x02,               // Bit Offset'                >> $gSsdtPR
-  printf "                            0x%016x, // Address\n" $hintCode                  >> $gSsdtPR
-    echo '                            0x01,               // Access Size'               >> $gSsdtPR
-    echo '                            )'                                                >> $gSsdtPR
-    echo '                    },'                                                       >> $gSsdtPR
-    echo '                    One,'                                                     >> $gSsdtPR
-    echo '                    '$latency_C1','                                           >> $gSsdtPR
-    echo '                    0x03E8'                                                   >> $gSsdtPR
+    echo "            /* Low Power Modes for ${gProcessorNames[$1]} */"                 >> "$gSsdtPR"
+  printf "            Return (Package (0x%02x)\n" $pkgLength                            >> "$gSsdtPR"
+    echo '            {'                                                                >> "$gSsdtPR"
+    echo '                One,'                                                         >> "$gSsdtPR"
+  printf "                0x%02x,\n" $numberOfCStates                                   >> "$gSsdtPR"
+    echo '                Package (0x04)'                                               >> "$gSsdtPR"
+    echo '                {'                                                            >> "$gSsdtPR"
+    echo '                    ResourceTemplate ()'                                      >> "$gSsdtPR"
+    echo '                    {'                                                        >> "$gSsdtPR"
+    echo '                        Register (FFixedHW,'                                  >> "$gSsdtPR"
+    echo '                            0x01,               // Bit Width'                 >> "$gSsdtPR"
+    echo '                            0x02,               // Bit Offset'                >> "$gSsdtPR"
+  printf "                            0x%016x, // Address\n" $hintCode                  >> "$gSsdtPR"
+    echo '                            0x01,               // Access Size'               >> "$gSsdtPR"
+    echo '                            )'                                                >> "$gSsdtPR"
+    echo '                    },'                                                       >> "$gSsdtPR"
+    echo '                    One,'                                                     >> "$gSsdtPR"
+    echo '                    '$latency_C1','                                           >> "$gSsdtPR"
+    echo '                    0x03E8'                                                   >> "$gSsdtPR"
 
     if (($C2)); then
         let hintCode+=0x10
-        echo '                },'                                                       >> $gSsdtPR
-        echo ''                                                                         >> $gSsdtPR
-        echo '                Package (0x04)'                                           >> $gSsdtPR
-        echo '                {'                                                        >> $gSsdtPR
-        echo '                    ResourceTemplate ()'                                  >> $gSsdtPR
-        echo '                    {'                                                    >> $gSsdtPR
-        echo '                        Register (FFixedHW,'                              >> $gSsdtPR
-        echo '                            0x01,               // Bit Width'             >> $gSsdtPR
-        echo '                            0x02,               // Bit Offset'            >> $gSsdtPR
-      printf "                            0x%016x, // Address\n" $hintCode              >> $gSsdtPR
-        echo '                            0x03,               // Access Size'           >> $gSsdtPR
-        echo '                            )'                                            >> $gSsdtPR
-        echo '                    },'                                                   >> $gSsdtPR
-        echo '                    0x02,'                                                >> $gSsdtPR
-        echo '                    '$latency_C2','                                       >> $gSsdtPR
-        echo '                    0x01F4'                                               >> $gSsdtPR
+        echo '                },'                                                       >> "$gSsdtPR"
+        echo ''                                                                         >> "$gSsdtPR"
+        echo '                Package (0x04)'                                           >> "$gSsdtPR"
+        echo '                {'                                                        >> "$gSsdtPR"
+        echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
+        echo '                    {'                                                    >> "$gSsdtPR"
+        echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
+        echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
+        echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
+      printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
+        echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
+        echo '                            )'                                            >> "$gSsdtPR"
+        echo '                    },'                                                   >> "$gSsdtPR"
+        echo '                    0x02,'                                                >> "$gSsdtPR"
+        echo '                    '$latency_C2','                                       >> "$gSsdtPR"
+        echo '                    0x01F4'                                               >> "$gSsdtPR"
     fi
 
     if (($C3)); then
@@ -1060,42 +1060,42 @@ function _printScopeACST()
             fi
         fi
 
-        echo '                },'                                                       >> $gSsdtPR
-        echo ''                                                                         >> $gSsdtPR
-        echo '                Package (0x04)'                                           >> $gSsdtPR
-        echo '                {'                                                        >> $gSsdtPR
-        echo '                    ResourceTemplate ()'                                  >> $gSsdtPR
-        echo '                    {'                                                    >> $gSsdtPR
-        echo '                        Register (FFixedHW,'                              >> $gSsdtPR
-        echo '                            0x01,               // Bit Width'             >> $gSsdtPR
-        echo '                            0x02,               // Bit Offset'            >> $gSsdtPR
-      printf "                            0x%016x, // Address\n" $hintCode              >> $gSsdtPR
-        echo '                            0x03,               // Access Size'           >> $gSsdtPR
-        echo '                            )'                                            >> $gSsdtPR
-        echo '                    },'                                                   >> $gSsdtPR
-        echo '                    0x03,'                                                >> $gSsdtPR
-        echo '                    '$latency_C3','                                       >> $gSsdtPR
-        echo '                    '$power_C3                                            >> $gSsdtPR
+        echo '                },'                                                       >> "$gSsdtPR"
+        echo ''                                                                         >> "$gSsdtPR"
+        echo '                Package (0x04)'                                           >> "$gSsdtPR"
+        echo '                {'                                                        >> "$gSsdtPR"
+        echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
+        echo '                    {'                                                    >> "$gSsdtPR"
+        echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
+        echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
+        echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
+      printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
+        echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
+        echo '                            )'                                            >> "$gSsdtPR"
+        echo '                    },'                                                   >> "$gSsdtPR"
+        echo '                    0x03,'                                                >> "$gSsdtPR"
+        echo '                    '$latency_C3','                                       >> "$gSsdtPR"
+        echo '                    '$power_C3                                            >> "$gSsdtPR"
     fi
 
     if (($C6)); then
         let hintCode+=0x10
-        echo '                },'                                                       >> $gSsdtPR
-        echo ''                                                                         >> $gSsdtPR
-        echo '                Package (0x04)'                                           >> $gSsdtPR
-        echo '                {'                                                        >> $gSsdtPR
-        echo '                    ResourceTemplate ()'                                  >> $gSsdtPR
-        echo '                    {'                                                    >> $gSsdtPR
-        echo '                        Register (FFixedHW,'                              >> $gSsdtPR
-        echo '                            0x01,               // Bit Width'             >> $gSsdtPR
-        echo '                            0x02,               // Bit Offset'            >> $gSsdtPR
-      printf "                            0x%016x, // Address\n" $hintCode              >> $gSsdtPR
-        echo '                            0x03,               // Access Size'           >> $gSsdtPR
-        echo '                            )'                                            >> $gSsdtPR
-        echo '                    },'                                                   >> $gSsdtPR
-        echo '                    0x06,'                                                >> $gSsdtPR
-        echo '                    '$latency_C6','                                       >> $gSsdtPR
-        echo '                    0x015E'                                               >> $gSsdtPR
+        echo '                },'                                                       >> "$gSsdtPR"
+        echo ''                                                                         >> "$gSsdtPR"
+        echo '                Package (0x04)'                                           >> "$gSsdtPR"
+        echo '                {'                                                        >> "$gSsdtPR"
+        echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
+        echo '                    {'                                                    >> "$gSsdtPR"
+        echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
+        echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
+        echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
+      printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
+        echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
+        echo '                            )'                                            >> "$gSsdtPR"
+        echo '                    },'                                                   >> "$gSsdtPR"
+        echo '                    0x06,'                                                >> "$gSsdtPR"
+        echo '                    '$latency_C6','                                       >> "$gSsdtPR"
+        echo '                    0x015E'                                               >> "$gSsdtPR"
     fi
 
 	if (($C7)); then
@@ -1108,36 +1108,36 @@ function _printScopeACST()
             else
                 let hintCode+=0x10
         fi
-        echo '                },'                                                       >> $gSsdtPR
-        echo ''                                                                         >> $gSsdtPR
-        echo '                Package (0x04)'                                           >> $gSsdtPR
-        echo '                {'                                                        >> $gSsdtPR
-        echo '                    ResourceTemplate ()'                                  >> $gSsdtPR
-        echo '                    {'                                                    >> $gSsdtPR
-        echo '                        Register (FFixedHW,'                              >> $gSsdtPR
-        echo '                            0x01,               // Bit Width'             >> $gSsdtPR
-        echo '                            0x02,               // Bit Offset'            >> $gSsdtPR
-      printf "                            0x%016x, // Address\n" $hintCode              >> $gSsdtPR
-        echo '                            0x03,               // Access Size'           >> $gSsdtPR
-        echo '                            )'                                            >> $gSsdtPR
-        echo '                    },'                                                   >> $gSsdtPR
-        echo '                    0x07,'                                                >> $gSsdtPR
-        echo '                    '$latency_C7','                                       >> $gSsdtPR
-        echo '                    0xC8'                                                 >> $gSsdtPR
+        echo '                },'                                                       >> "$gSsdtPR"
+        echo ''                                                                         >> "$gSsdtPR"
+        echo '                Package (0x04)'                                           >> "$gSsdtPR"
+        echo '                {'                                                        >> "$gSsdtPR"
+        echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
+        echo '                    {'                                                    >> "$gSsdtPR"
+        echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
+        echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
+        echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
+      printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
+        echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
+        echo '                            )'                                            >> "$gSsdtPR"
+        echo '                    },'                                                   >> "$gSsdtPR"
+        echo '                    0x07,'                                                >> "$gSsdtPR"
+        echo '                    '$latency_C7','                                       >> "$gSsdtPR"
+        echo '                    0xC8'                                                 >> "$gSsdtPR"
     fi
 
-    echo '                }'                                                            >> $gSsdtPR
-    echo '            })'                                                               >> $gSsdtPR
-    echo '        }'                                                                    >> $gSsdtPR
+    echo '                }'                                                            >> "$gSsdtPR"
+    echo '            })'                                                               >> "$gSsdtPR"
+    echo '        }'                                                                    >> "$gSsdtPR"
 
   #
   # Do we need to add a closing bracket?
   #
   if [[ $gBridgeType -eq $SANDY_BRIDGE && $gXcpm -ne 1 ]];
     then
-      echo '    }'                                                                      >> $gSsdtPR
+      echo '    }'                                                                      >> "$gSsdtPR"
 #   else
-#     echo ''                                                                           >> $gSsdtPR
+#     echo ''                                                                           >> "$gSsdtPR"
   fi
 }
 
@@ -1169,22 +1169,22 @@ function _printScopeCPUn()
 
   while [ $index -lt $logicalCPUsPerScope ];
   do
-    echo ''                                                                             >> $gSsdtPR
-    echo '    Scope ('${scope}'.'${gProcessorNames[${apIndex}]}')'                      >> $gSsdtPR
-    echo '    {'                                                                        >> $gSsdtPR
-    echo '        Method (APSS, 0, NotSerialized)'                                      >> $gSsdtPR
-    echo '        {'                                                                    >> $gSsdtPR
+    echo ''                                                                             >> "$gSsdtPR"
+    echo '    Scope ('${scope}'.'${gProcessorNames[${apIndex}]}')'                      >> "$gSsdtPR"
+    echo '    {'                                                                        >> "$gSsdtPR"
+    echo '        Method (APSS, 0, NotSerialized)'                                      >> "$gSsdtPR"
+    echo '        {'                                                                    >> "$gSsdtPR"
 
     if (( $gDebug ));
       then
         local debugScopeName=$(echo $scope | sed -e 's/^\\//')
 
-        echo '            Store ("Method '$debugScopeName'.'${gProcessorNames[${apIndex}]}'.APSS Called", Debug)'  >> $gSsdtPR
-        echo ''                                                                         >> $gSsdtPR
+        echo '            Store ("Method '$debugScopeName'.'${gProcessorNames[${apIndex}]}'.APSS Called", Debug)'  >> "$gSsdtPR"
+        echo ''                                                                         >> "$gSsdtPR"
     fi
 
-    echo '            Return ('${scope}'.'${gProcessorNames[${bspIndex}]}'.APSS)'       >> $gSsdtPR
-    echo '        }'                                                                    >> $gSsdtPR
+    echo '            Return ('${scope}'.'${gProcessorNames[${bspIndex}]}'.APSS)'       >> "$gSsdtPR"
+    echo '        }'                                                                    >> "$gSsdtPR"
     #
     # IB CPUPM tries to parse/execute CPUn.ACST (see debug data) and thus we add
     # this method, conditionally, since SB CPUPM doesn't seem to care about it.
@@ -1195,13 +1195,13 @@ function _printScopeCPUn()
           then
             _printScopeACST 1
           else
-            echo ''                                                                     >> $gSsdtPR
+            echo ''                                                                     >> "$gSsdtPR"
             local processorName=${gProcessorNames[$bspIndex+1]}
-            echo '        Method (ACST, 0, NotSerialized) { Return ('$scope'.'$processorName'.ACST ()) }' >> $gSsdtPR
+            echo '        Method (ACST, 0, NotSerialized) { Return ('$scope'.'$processorName'.ACST ()) }' >> "$gSsdtPR"
         fi
     fi
 
-    echo '    }'                                                                        >> $gSsdtPR
+    echo '    }'                                                                        >> "$gSsdtPR"
 
     let index+=1
     let apIndex+=1
@@ -1213,7 +1213,7 @@ function _printScopeCPUn()
 
   if [[ $scopeIndex -eq ${#gScope[@]} ]];
     then
-      echo '}'                                                                          >> $gSsdtPR
+      echo '}'                                                                          >> "$gSsdtPR"
   fi
   #
   # Done.
@@ -1993,7 +1993,7 @@ function _initProcessorScope()
   #
   # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects.
   #
-  _getACPIProcessorScope $filename
+  _getACPIProcessorScope "$filename"
   #
   # Did we find any with Processor declarations?
   #
@@ -2009,7 +2009,7 @@ function _initProcessorScope()
   #
   # Search for Scope (_PR) and the like.
   #
-  _getProcessorScope $filename
+  _getProcessorScope "$filename"
   #
   # Do we have a processor scope with processor declarations?
   #
@@ -2258,7 +2258,15 @@ function _findIasl()
           # Setting executing bit.
           #
           _debugPrint 'Setting executing bit ...'
-          chmod +x "${gToolPath}/iasl"
+
+          if [ -w "${gToolPath}/iasl" ];
+            then
+              chmod +x "${gToolPath}/iasl"
+            else
+              printf "Enter password to set file permissions for: ${gToolPath}/iasl\n"
+              sudo chmod +x "${gToolPath}/iasl"
+              sudo -k
+          fi
           #
           # Remove downloaded zip file.
           #
@@ -2291,7 +2299,15 @@ function _extractAcpiTables()
       # Setting executing bit.
       #
       _debugPrint 'Setting executing bit ...'
-      chmod +x "${gToolPath}/extractACPITables"
+
+      if [ -w "${gToolPath}/iasl" ];
+        then
+          chmod +x "${gToolPath}/extractACPITables"
+        else
+          printf "Enter password to set file permissions for: ${gToolPath}/extractACPITables\n"
+          chmod +x "${gToolPath}/extractACPITables"
+          sudo -k
+      fi
       #
       # Remove downloaded zip file.
       #
@@ -3161,29 +3177,48 @@ function _showSupportedBoardIDsAndModels()
 
 function _checkLibraryDirectory()
 {
+  printf "gDataPath: ${gDataPath}\n"
   #
   # Check directory.
   #
   if [ ! -d "${gDataPath}" ];
     then
+      printf "NO\n"
       #
-      # Not there. Create it.
+      # Not there. Check permissions and create the directory.
       #
-      mkdir -p "${gDataPath}"
+      if [ -w "${gDataPath}" ];
+        then
+          mkdir -p "${gDataPath}"
+        else
+          sudo mkdir -p "${gDataPath}"
+      fi
   fi
   #
   # Fix permissions.
   #
-  chmod -R 755 "${gPath}"
+  if [ -w "${gPath}" ];
+    then
+      chmod -R 755 "${gPath}"
+    else
+      sudo chmod -R 755 "${gPath}"
+  fi
 
   if [ ! -f "${gDataPath}/Models.cfg" ];
     then
-      curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Models.cfg
+      if [ -w "${gDataPath}" ];
+        then
+          curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Models.cfg
+        else
+          sudo curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Models.cfg
+      fi
   fi
   #
   # Load model data.
   #
   source "${gDataPath}/Models.cfg"
+
+  sudo -k
 }
 
 #
@@ -3957,7 +3992,7 @@ function main()
       else
         if [ $gBridgeType -ge $IVY_BRIDGE ];
           then
-            echo '    }' >> $gSsdtPR
+            echo '    }' >> "$gSsdtPR"
         fi
     fi
 
@@ -4010,7 +4045,7 @@ function main()
 
   _findIasl
 
-  if [ $gCallIasl -eq 1 ];
+  if [[ $gCallIasl -eq 1 && -f "$gSsdtPR" ]];
     then
       #
       # Compile ssdt.dsl
@@ -4022,7 +4057,7 @@ function main()
       #
       if [ $gAutoCopy -eq 1 ];
         then
-          if [ -f ${gPath}/${gSsdtID}.aml ];
+          if [ -f "${gPath}/${gSsdtID}.aml" ];
             then
               echo -e
               read -p "Do you want to copy ${gPath}/${gSsdtID}.aml to ${gDestinationPath}${gDestinationFile}? (y/n)? " choice
@@ -4070,7 +4105,7 @@ function main()
   #
   # Ask for confirmation before opening the new SSDT.dsl?
   #
-  if [[ $gCallOpen -eq 2 ]];
+  if [[ $gCallOpen -eq 2 && -f "$gSsdtPR" ]];
     then
       #
       # Yes. Ask for confirmation.
