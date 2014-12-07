@@ -23,3 +23,4 @@ Contributors
  - Thanks to 'open1010' on Github issues for reporting the Ivy Bridge LFM frequency errors.
  - Thanks to 'ginsbu' on Github issues for reporting the Intel i5-4690 problems.
  - Thanks to Drew Hammond for the README.md formatting.
+ - Thanks to 'fidoboy' for reporting and solving issue 97.
