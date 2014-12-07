@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 15.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 15.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,13 @@
 #
 # Script version info.
 #
-gScriptVersion=15.5
+gScriptVersion=15.6
+
+#
+# The script expects '0.5' but non-US localizations use '0,5' so we export
+# LC_NUMERIC here (for the duration of the ssdtPRGen.sh) to prevent errors.
+#
+export LC_NUMERIC="en_US.UTF-8"
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -3183,7 +3189,6 @@ function _checkLibraryDirectory()
   #
   if [ ! -d "${gDataPath}" ];
     then
-      printf "NO\n"
       #
       # Not there. Check permissions and create the directory.
       #
