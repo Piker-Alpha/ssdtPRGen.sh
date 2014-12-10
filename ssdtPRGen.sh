@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 15.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 15.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=15.6
+gScriptVersion=15.7
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -165,13 +165,11 @@ STYLE_UNDERLINED="[4m"
 #
 # Other global variables.
 #
-
 gRevision='0x000'${gScriptVersion:0:2}${gScriptVersion:3:1}'00'
 
 #
 # Path and filename setup.
 #
-
 gHome=$(echo $HOME)
 gPath="${gHome}/Library/ssdtPRGen"
 gDataPath="${gPath}/Data"
@@ -190,6 +188,7 @@ let gACST_CPU1=7
 
 gTargetMacModel=""
 
+let USER_DEFINED=1
 let SANDY_BRIDGE=2
 let IVY_BRIDGE=4
 let HASWELL=8
@@ -202,6 +201,7 @@ let gBridgeType=-1
 
 let gTypeCPU=0
 let gProcessorStartIndex=0
+let gLfm=0
 gProcessorData="Unknown CPU"
 gProcessorNumber=""
 gBusFrequency=100
@@ -1009,141 +1009,145 @@ function _printScopeACST()
 
   let hintCode=0x00
 
-    echo "            /* Low Power Modes for ${gProcessorNames[$1]} */"                 >> "$gSsdtPR"
-  printf "            Return (Package (0x%02x)\n" $pkgLength                            >> "$gSsdtPR"
-    echo '            {'                                                                >> "$gSsdtPR"
-    echo '                One,'                                                         >> "$gSsdtPR"
-  printf "                0x%02x,\n" $numberOfCStates                                   >> "$gSsdtPR"
-    echo '                Package (0x04)'                                               >> "$gSsdtPR"
-    echo '                {'                                                            >> "$gSsdtPR"
-    echo '                    ResourceTemplate ()'                                      >> "$gSsdtPR"
-    echo '                    {'                                                        >> "$gSsdtPR"
-    echo '                        Register (FFixedHW,'                                  >> "$gSsdtPR"
-    echo '                            0x01,               // Bit Width'                 >> "$gSsdtPR"
-    echo '                            0x02,               // Bit Offset'                >> "$gSsdtPR"
-  printf "                            0x%016x, // Address\n" $hintCode                  >> "$gSsdtPR"
-    echo '                            0x01,               // Access Size'               >> "$gSsdtPR"
-    echo '                            )'                                                >> "$gSsdtPR"
-    echo '                    },'                                                       >> "$gSsdtPR"
-    echo '                    One,'                                                     >> "$gSsdtPR"
-    echo '                    '$latency_C1','                                           >> "$gSsdtPR"
-    echo '                    0x03E8'                                                   >> "$gSsdtPR"
+    echo "            /* Low Power Modes for ${gProcessorNames[$1]} */"               >> "$gSsdtPR"
+  printf "            Return (Package (0x%02x)\n" $pkgLength                          >> "$gSsdtPR"
+    echo '            {'                                                              >> "$gSsdtPR"
+    echo '                One,'                                                       >> "$gSsdtPR"
+  printf "                0x%02x,\n" $numberOfCStates                                 >> "$gSsdtPR"
+    echo '                Package (0x04)'                                             >> "$gSsdtPR"
+    echo '                {'                                                          >> "$gSsdtPR"
+    echo '                    ResourceTemplate ()'                                    >> "$gSsdtPR"
+    echo '                    {'                                                      >> "$gSsdtPR"
+    echo '                        Register (FFixedHW,'                                >> "$gSsdtPR"
+    echo '                            0x01,               // Bit Width'               >> "$gSsdtPR"
+    echo '                            0x02,               // Bit Offset'              >> "$gSsdtPR"
+  printf "                            0x%016x, // Address\n" $hintCode                >> "$gSsdtPR"
+    echo '                            0x01,               // Access Size'             >> "$gSsdtPR"
+    echo '                            )'                                              >> "$gSsdtPR"
+    echo '                    },'                                                     >> "$gSsdtPR"
+    echo '                    One,'                                                   >> "$gSsdtPR"
+    echo '                    '$latency_C1','                                         >> "$gSsdtPR"
+    echo '                    0x03E8'                                                 >> "$gSsdtPR"
 
-    if (($C2)); then
-        let hintCode+=0x10
-        echo '                },'                                                       >> "$gSsdtPR"
-        echo ''                                                                         >> "$gSsdtPR"
-        echo '                Package (0x04)'                                           >> "$gSsdtPR"
-        echo '                {'                                                        >> "$gSsdtPR"
-        echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
-        echo '                    {'                                                    >> "$gSsdtPR"
-        echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
-        echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
-        echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
-      printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
-        echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
-        echo '                            )'                                            >> "$gSsdtPR"
-        echo '                    },'                                                   >> "$gSsdtPR"
-        echo '                    0x02,'                                                >> "$gSsdtPR"
-        echo '                    '$latency_C2','                                       >> "$gSsdtPR"
-        echo '                    0x01F4'                                               >> "$gSsdtPR"
-    fi
+  if (($C2));
+    then
+      let hintCode+=0x10
+      echo '                },'                                                       >> "$gSsdtPR"
+      echo ''                                                                         >> "$gSsdtPR"
+      echo '                Package (0x04)'                                           >> "$gSsdtPR"
+      echo '                {'                                                        >> "$gSsdtPR"
+      echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
+      echo '                    {'                                                    >> "$gSsdtPR"
+      echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
+      echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
+      echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
+    printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
+      echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
+      echo '                            )'                                            >> "$gSsdtPR"
+      echo '                    },'                                                   >> "$gSsdtPR"
+      echo '                    0x02,'                                                >> "$gSsdtPR"
+      echo '                    '$latency_C2','                                       >> "$gSsdtPR"
+      echo '                    0x01F4'                                               >> "$gSsdtPR"
+  fi
 
-    if (($C3)); then
-        let hintCode+=0x10
-        local power_C3=0x01F4
-        #
-        # Is this for CPU1?
-        #
-        if (($1)); then
-            if [[ ${gModelID:0:7} == "iMac13," ]];
-                then
-                    local power_C3=0x15E
-                    latency_C3=0xA9
-                else
-                    local power_C3=0xC8
-                    let hintCode+=0x10
-            fi
-        fi
-
-        echo '                },'                                                       >> "$gSsdtPR"
-        echo ''                                                                         >> "$gSsdtPR"
-        echo '                Package (0x04)'                                           >> "$gSsdtPR"
-        echo '                {'                                                        >> "$gSsdtPR"
-        echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
-        echo '                    {'                                                    >> "$gSsdtPR"
-        echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
-        echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
-        echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
-      printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
-        echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
-        echo '                            )'                                            >> "$gSsdtPR"
-        echo '                    },'                                                   >> "$gSsdtPR"
-        echo '                    0x03,'                                                >> "$gSsdtPR"
-        echo '                    '$latency_C3','                                       >> "$gSsdtPR"
-        echo '                    '$power_C3                                            >> "$gSsdtPR"
-    fi
-
-    if (($C6)); then
-        let hintCode+=0x10
-        echo '                },'                                                       >> "$gSsdtPR"
-        echo ''                                                                         >> "$gSsdtPR"
-        echo '                Package (0x04)'                                           >> "$gSsdtPR"
-        echo '                {'                                                        >> "$gSsdtPR"
-        echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
-        echo '                    {'                                                    >> "$gSsdtPR"
-        echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
-        echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
-        echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
-      printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
-        echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
-        echo '                            )'                                            >> "$gSsdtPR"
-        echo '                    },'                                                   >> "$gSsdtPR"
-        echo '                    0x06,'                                                >> "$gSsdtPR"
-        echo '                    '$latency_C6','                                       >> "$gSsdtPR"
-        echo '                    0x015E'                                               >> "$gSsdtPR"
-    fi
-
-	if (($C7)); then
-        #
-        # If $hintCode is already 0x30 then use 0x31 otherwise 0x30
-        #
-        if [ $hintCode -eq 48 ];
+  if (($C3));
+    then
+      let hintCode+=0x10
+      local power_C3=0x01F4
+      #
+      # Is this for CPU1?
+      #
+      if (($1));
+        then
+          if [[ ${gModelID:0:7} == "iMac13," ]];
             then
-                let hintCode+=0x01
+              local power_C3=0x15E
+              latency_C3=0xA9
             else
-                let hintCode+=0x10
-        fi
-        echo '                },'                                                       >> "$gSsdtPR"
-        echo ''                                                                         >> "$gSsdtPR"
-        echo '                Package (0x04)'                                           >> "$gSsdtPR"
-        echo '                {'                                                        >> "$gSsdtPR"
-        echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
-        echo '                    {'                                                    >> "$gSsdtPR"
-        echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
-        echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
-        echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
-      printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
-        echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
-        echo '                            )'                                            >> "$gSsdtPR"
-        echo '                    },'                                                   >> "$gSsdtPR"
-        echo '                    0x07,'                                                >> "$gSsdtPR"
-        echo '                    '$latency_C7','                                       >> "$gSsdtPR"
-        echo '                    0xC8'                                                 >> "$gSsdtPR"
-    fi
+              local power_C3=0xC8
+              let hintCode+=0x10
+          fi
+      fi
 
-    echo '                }'                                                            >> "$gSsdtPR"
-    echo '            })'                                                               >> "$gSsdtPR"
-    echo '        }'                                                                    >> "$gSsdtPR"
+      echo '                },'                                                       >> "$gSsdtPR"
+      echo ''                                                                         >> "$gSsdtPR"
+      echo '                Package (0x04)'                                           >> "$gSsdtPR"
+      echo '                {'                                                        >> "$gSsdtPR"
+      echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
+      echo '                    {'                                                    >> "$gSsdtPR"
+      echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
+      echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
+      echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
+    printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
+      echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
+      echo '                            )'                                            >> "$gSsdtPR"
+      echo '                    },'                                                   >> "$gSsdtPR"
+      echo '                    0x03,'                                                >> "$gSsdtPR"
+      echo '                    '$latency_C3','                                       >> "$gSsdtPR"
+      echo '                    '$power_C3                                            >> "$gSsdtPR"
+  fi
 
+  if (($C6));
+    then
+      let hintCode+=0x10
+      echo '                },'                                                       >> "$gSsdtPR"
+      echo ''                                                                         >> "$gSsdtPR"
+      echo '                Package (0x04)'                                           >> "$gSsdtPR"
+      echo '                {'                                                        >> "$gSsdtPR"
+      echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
+      echo '                    {'                                                    >> "$gSsdtPR"
+      echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
+      echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
+      echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
+    printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
+      echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
+      echo '                            )'                                            >> "$gSsdtPR"
+      echo '                    },'                                                   >> "$gSsdtPR"
+      echo '                    0x06,'                                                >> "$gSsdtPR"
+      echo '                    '$latency_C6','                                       >> "$gSsdtPR"
+      echo '                    0x015E'                                               >> "$gSsdtPR"
+  fi
+
+  if (($C7));
+    then
+      #
+      # If $hintCode is already 0x30 then use 0x31 otherwise 0x30
+      #
+      if [ $hintCode -eq 48 ];
+        then
+          let hintCode+=0x01
+        else
+          let hintCode+=0x10
+      fi
+      echo '                },'                                                       >> "$gSsdtPR"
+      echo ''                                                                         >> "$gSsdtPR"
+      echo '                Package (0x04)'                                           >> "$gSsdtPR"
+      echo '                {'                                                        >> "$gSsdtPR"
+      echo '                    ResourceTemplate ()'                                  >> "$gSsdtPR"
+      echo '                    {'                                                    >> "$gSsdtPR"
+      echo '                        Register (FFixedHW,'                              >> "$gSsdtPR"
+      echo '                            0x01,               // Bit Width'             >> "$gSsdtPR"
+      echo '                            0x02,               // Bit Offset'            >> "$gSsdtPR"
+    printf "                            0x%016x, // Address\n" $hintCode              >> "$gSsdtPR"
+      echo '                            0x03,               // Access Size'           >> "$gSsdtPR"
+      echo '                            )'                                            >> "$gSsdtPR"
+      echo '                    },'                                                   >> "$gSsdtPR"
+      echo '                    0x07,'                                                >> "$gSsdtPR"
+      echo '                    '$latency_C7','                                       >> "$gSsdtPR"
+      echo '                    0xC8'                                                 >> "$gSsdtPR"
+  fi
+
+  echo '                }'                                                            >> "$gSsdtPR"
+  echo '            })'                                                               >> "$gSsdtPR"
+  echo '        }'                                                                    >> "$gSsdtPR"
   #
   # Do we need to add a closing bracket?
   #
-  if [[ $gBridgeType -eq $SANDY_BRIDGE && $gXcpm -ne 1 ]];
+  # Note: The injected _DSM method will otherwise take care of it.
+  #
+  if [[ $gBridgeType -le $SANDY_BRIDGE && $gXcpm -ne 1 ]];
     then
-      echo '    }'                                                                      >> "$gSsdtPR"
-#   else
-#     echo ''                                                                           >> "$gSsdtPR"
+      echo '    }'                                                                    >> "$gSsdtPR"
   fi
 }
 
@@ -2203,9 +2207,9 @@ function _getCPUtype()
 function _getCPUModel()
 {
   #
-  # Returns the hexadecimal value of machdep.cpu.model
+  # Return the hexadecimal value of machdep.cpu.model
   #
-  echo 0x$(echo "obase=16; `sysctl machdep.cpu.model | sed -e 's/^machdep.cpu.model: //'`" | bc)
+  echo 0x$(sysctl machdep.cpu.model | awk '{ printf("%X", $2) }')
 }
 
 
@@ -2216,9 +2220,9 @@ function _getCPUModel()
 function _getCPUSignature()
 {
   #
-  # Returns the hexadecimal value of machdep.cpu.signature
+  # Return the hexadecimal value of machdep.cpu.signature
   #
-  echo 0x$(echo "obase=16; `sysctl machdep.cpu.signature | sed -e 's/^machdep.cpu.signature: //'`" | bc)
+  echo 0x$(sysctl machdep.cpu.signature | awk '{ printf("%X", $2) }')
 }
 
 
@@ -2261,17 +2265,18 @@ function _findIasl()
           _debugPrint 'Unzipping iasl.zip ...'
           unzip -qu "${gPath}/iasl.zip" -d "${gToolPath}/"
           #
-          # Setting executing bit.
+          #  Checking/setting executing bit.
           #
-          _debugPrint 'Setting executing bit ...'
+          _debugPrint 'Setting executing bit of iasl ...'
 
-          if [ -w "${gToolPath}/iasl" ];
+          if [ ! -x "${gToolPath}/iasl" ];
             then
+              printf "Fixing executing bit of iasl ...\n"
               chmod +x "${gToolPath}/iasl"
-            else
-              printf "Enter password to set file permissions for: ${gToolPath}/iasl\n"
-              sudo chmod +x "${gToolPath}/iasl"
-              sudo -k
+#           else
+#             printf "Enter password to set file permissions for: ${gToolPath}/iasl\n"
+#             sudo chmod +x "${gToolPath}/iasl"
+#             sudo -k
           fi
           #
           # Remove downloaded zip file.
@@ -2302,17 +2307,18 @@ function _extractAcpiTables()
       _debugPrint 'Unzipping extractACPITables.zip ...'
       unzip -qu "${gPath}/extractACPITables.zip" -d "${gToolPath}/"
       #
-      # Setting executing bit.
+      # Checking/setting executing bit.
       #
-      _debugPrint 'Setting executing bit ...'
+      _debugPrint 'Checking executing bit of extractACPITables ...'
 
-      if [ -w "${gToolPath}/iasl" ];
+      if [ ! -x "${gToolPath}/extractACPITables" ];
         then
+          printf "Fixing executing bit of extractACPITables ...\n"
           chmod +x "${gToolPath}/extractACPITables"
-        else
-          printf "Enter password to set file permissions for: ${gToolPath}/extractACPITables\n"
-          chmod +x "${gToolPath}/extractACPITables"
-          sudo -k
+#       else
+#         printf "Enter password to set file permissions for: ${gToolPath}/extractACPITables\n"
+#         chmod +x "${gToolPath}/extractACPITables"
+#         sudo -k
       fi
       #
       # Remove downloaded zip file.
@@ -2383,7 +2389,6 @@ function _setDestinationPath
       sudo mount_hfs /dev/disk0s1 /Volumes/EFI
       let gUnmountEFIPartition=1
   fi
-
   #
   # Check for RevoBoot (legacy) setup on EFI volume.
   #
@@ -2444,7 +2449,7 @@ function _getCPUNumberFromBrandString
   # Get CPU brandstring
   #
   gBrandString=$(echo `sysctl machdep.cpu.brand_string` | sed -e 's/machdep.cpu.brand_string: //')
-
+# gBrandString="Intel(R) Xeon(R) CPU X5560 @ 2.80GHz"
   #
   # Show brandstring (this helps me to debug stuff).
   #
@@ -2573,6 +2578,8 @@ function _getCPUDataByProcessorNumber
     let targetType=0
 
     case $1 in
+        1) local cpuSpecLists=("gUserDefinedCPUList[@]")
+           ;;
         2) local cpuSpecLists=("gDesktopSandyBridgeCPUList[@]" "gMobileSandyBridgeCPUList[@]" "gServerSandyBridgeCPUList[@]")
            ;;
         4) local cpuSpecLists=("gDesktopIvyBridgeCPUList[@]" "gMobileIvyBridgeCPUList[@]" "gServerIvyBridgeCPUList[@]")
@@ -2583,7 +2590,7 @@ function _getCPUDataByProcessorNumber
            ;;
     esac
 
-    for cpuList in ${cpuSpecLists[@]}
+    for cpuList in "${cpuSpecLists[@]}"
     do
       let targetType+=1
       local targetCPUList=("${!cpuList}")
@@ -2593,7 +2600,7 @@ function _getCPUDataByProcessorNumber
         IFS=","
         data=($cpuData)
 
-        if [[ ${data[0]} == $gProcessorNumber ]];
+        if [[ "${data[0]}" == "$gProcessorNumber" ]];
           then
             gProcessorData="$cpuData"
             let gTypeCPU=$targetType
@@ -2602,25 +2609,52 @@ function _getCPUDataByProcessorNumber
             #
             if [[ $gBridgeType -eq -1 ]];
               then
-                let gBridgeType=$1
+                if [[ "${#data[@]}" -ge 8 ]];
+                  then
+                    let gBridgeType="${data[7]}"
+                  else
+                    let gBridgeType=$1
+                fi
+            fi
+            #
+            # Do we have a custom bclk/bus frequency?
+            #
+            if [[ "${#data[@]}" -eq 9 ]];
+              then
+                let gBusFrequency="${data[8]}"
             fi
 
             IFS=$ifs
-            return
+            return 1
         fi
       done
     done
 
     IFS=$ifs
+    return 0
   }
   #
-  # Here we check/download/load the processor data file(s).
+  # From here on we check/download/load the processor data file(s).
   #
+  if [ -f "${gDataPath}/User Defined.cfg" ];
+    then
+      _debugPrint 'Checking user defined processor data ...\n'
+      source "${gDataPath}/User Defined.cfg"
+      __searchList $USER_DEFINED
+
+      if [[ $? -eq 1 ]];
+        then
+          return
+      fi
+  fi
+
   if [ ! -f "${gDataPath}/Sandy Bridge.cfg" ];
     then
       curl -o "${gDataPath}/Sandy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Sandy%20Bridge.cfg
   fi
+
   source "${gDataPath}/Sandy Bridge.cfg"
+  _debugPrint "Checking Sandy Bridge processor data ...\n"
   __searchList $SANDY_BRIDGE
 
   if (!(( $gTypeCPU )));
@@ -2629,36 +2663,43 @@ function _getCPUDataByProcessorNumber
         then
           curl -o "${gDataPath}/Ivy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Ivy%20Bridge.cfg
       fi
+
       source "${gDataPath}/Ivy Bridge.cfg"
+      _debugPrint "Checking Ivy Bridge processor data ...\n"
       __searchList $IVY_BRIDGE
+
+      if (!(( $gTypeCPU )));
+        then
+          if [ ! -f "${gDataPath}/Haswell.cfg" ];
+            then
+              curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Haswell.cfg
+          fi
+
+          source "${gDataPath}/Haswell.cfg"
+          _debugPrint "Checking Haswell processor data ...\n"
+          __searchList $HASWELL
+
+          if (!(( $gTypeCPU )));
+            then
+              if [ ! -f "${gDataPath}/Broadwell.cfg" ];
+                then
+                  curl -o "${gDataPath}/Broadwell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Broadwell.cfg
+              fi
+
+              source "${gDataPath}/Broadwell.cfg"
+              _debugPrint "Checking Broadwell processor data ...\n"
+              __searchList $BROADWELL
+          fi
+      fi
   fi
 
-  if (!(( $gTypeCPU )));
-    then
-      if [ ! -f "${gDataPath}/Haswell.cfg" ];
-        then
-          curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Haswell.cfg
-      fi
-      source "${gDataPath}/Haswell.cfg"
-      __searchList $HASWELL
-  fi
-
-  if (!(( $gTypeCPU )));
-    then
-      if [ ! -f "${gDataPath}/Broadwell.cfg" ];
-        then
-          curl -o "${gDataPath}/Broadwell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Broadwell.cfg
-      fi
-      source "${gDataPath}/Broadwell.cfg"
-      __searchList $BROADWELL
-  fi
-  #
-  # Bail out with error if we failed to locate the processor data.
-  #
-  if [[ $gTypeCPU -eq 0 ]];
-    then
-      _exitWithError $PROCESSOR_NUMBER_ERROR $2
-  fi
+# if (!(($gTypeCPU)));
+#   then
+    #
+    # Bail out with error if we failed to locate the processor data.
+    #
+#   _exitWithError $PROCESSOR_NUMBER_ERROR $2
+# fi
 }
 
 
@@ -3183,7 +3224,6 @@ function _showSupportedBoardIDsAndModels()
 
 function _checkLibraryDirectory()
 {
-  printf "gDataPath: ${gDataPath}\n"
   #
   # Check directory.
   #
@@ -3192,38 +3232,44 @@ function _checkLibraryDirectory()
       #
       # Not there. Check permissions and create the directory.
       #
-      if [ -w "${gDataPath}" ];
-        then
+#     if [ -w "${gDataPath}" ];
+#       then
           mkdir -p "${gDataPath}"
-        else
-          sudo mkdir -p "${gDataPath}"
-      fi
+#       else
+#         printf "Missing write-permission(1)\n"
+#         exit -1
+#         sudo mkdir -p "${gDataPath}"
+#     fi
   fi
   #
   # Fix permissions.
   #
-  if [ -w "${gPath}" ];
-    then
-      chmod -R 755 "${gPath}"
-    else
-      sudo chmod -R 755 "${gPath}"
-  fi
+# if [ -w "${gPath}" ];
+#   then
+#     chmod -R 755 "${gPath}"
+#   else
+#     printf "Missing write-permission(2)\n"
+#     exit -1
+#     sudo chmod -R 755 "${gPath}"
+# fi
 
   if [ ! -f "${gDataPath}/Models.cfg" ];
     then
-      if [ -w "${gDataPath}" ];
-        then
+#     if [ -w "${gDataPath}" ];
+#       then
           curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Models.cfg
-        else
-          sudo curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Models.cfg
-      fi
+#       else
+#         printf "Missing write-permission(3)\n"
+#         exit -1
+#         sudo curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Models.cfg
+#     fi
   fi
   #
   # Load model data.
   #
   source "${gDataPath}/Models.cfg"
 
-  sudo -k
+# sudo -k
 }
 
 #
@@ -3456,7 +3502,7 @@ function _getScriptArguments()
 
                       if [[ "$1" =~ ^[a-zA-Z0-9\ \-]+$ ]];
                         then
-                          if [ "$processorNumber" != "$1" ];
+                          if [ "$gProcessorNumber" != "$1" ];
                             then
                               let gFunctionReturn=0
                               #
@@ -3471,29 +3517,31 @@ function _getScriptArguments()
                               #
                               if [[ ${1:0:4} == "i3-3" || ${1:0:4} == "i5-3" || ${1:0:4} == "i7-3" ]];
                                 then
-                                  let gFunctionReturn=1
+                                  let gFunctionReturn=2
                               fi
                               #
                               # Haswell/Haswell-E checks.
                               #
                               if [[ ${1:0:4} == "i3-4" || ${1:0:4} == "i5-4" || ${1:0:4} == "i7-4" || ${1:0:4} == "i7-5" ]];
                                 then
-                                  let gFunctionReturn=1
+                                  let gFunctionReturn=3
                               fi
                               #
                               # Xeon check.
                               #
                               if [[ ${1:0:1} == "E" ]];
                                 then
-                                  let gFunctionReturn=1
+                                  let gFunctionReturn=4
                               fi
                               #
                               # Set processor model override and inform user about the change.
                               #
-                              if [ $gFunctionReturn -eq 1 ];
+                              if [ $gFunctionReturn -gt 0 ];
                                 then
                                   gProcessorNumber=$1
                                   _PRINT_MSG "Override value: (-p) processor model, now using: ${gProcessorNumber}!"
+                                else
+                                  gProcessorNumber=$1
                               fi
                           fi
                         else
@@ -3678,8 +3726,14 @@ function main()
       _getModelID
   fi
 
+  printf "gProcessorNumber: >$gProcessorNumber<\n"
   _getCPUNumberFromBrandString $modelSpecified
-  _getCPUDataByProcessorNumber $modelSpecified
+  _getCPUDataByProcessorNumber
+
+#  if [ $gTypeCPU -eq 0 ];
+#    then
+#      _getCPUNumberFromBrandString $modelSpecified
+#  fi
   #
   # Check if -c argument wasn't used.
   #
@@ -3740,6 +3794,8 @@ function main()
   _initProcessorScope
   _extractAcpiTables
 
+  printf "gBridgeType: $gBridgeType\n"
+
   case $gBridgeType in
        2) local bridgeTypeString="Sandy Bridge"
           ;;
@@ -3758,12 +3814,19 @@ function main()
   local cpuSignature=$(_getCPUSignature)
 
   echo "Generating ${gSsdtID}.dsl for a '${gModelID}' with board-id [${gBoardID}]"
-  echo "$bridgeTypeString Core $gProcessorNumber processor [$cpuSignature] setup [0x${cpu_type}]"
+
+  if [ $gBridgeType -eq 1 ];
+    then
+      echo "Intel $gProcessorNumber processor [$cpuSignature] setup [0x${cpu_type}]"
+    else
+      echo "$bridgeTypeString Core $gProcessorNumber processor [$cpuSignature] setup [0x${cpu_type}]"
+  fi
   #
   # gTypeCPU is greater than 0 when the processor is found in one of the CPU lists
   #
   if [ $gTypeCPU -gt 0 ];
     then
+      printf "Processor matched!\n"
       #
       # Save default (0) delimiter.
       #
@@ -3810,7 +3873,7 @@ function main()
           let lfm=${cpuData[2]}
       fi
       #
-      # Check if -f argument wasn't used.
+      # Check if -f argument is used.
       #
       if [[ $gFrequency -gt 0 ]];
         then
@@ -3825,7 +3888,7 @@ function main()
           let frequency=${cpuData[3]}
       fi
       #
-      # Check if -turbo argument wasn't used.
+      # Check if -turbo argument is used.
       #
       if [[ $gMaxTurboFrequency -gt 0 ]];
         then
@@ -3841,7 +3904,7 @@ function main()
           let maxTurboFrequency=$frequency
       fi
       #
-      # Check if -l argument wasn't used.
+      # Check if -l argument is used.
       #
       if [ $gLogicalCPUs -eq 0 ];
         then
@@ -3886,31 +3949,40 @@ function main()
       fi
     else
       #
-      # No CPU data found.
-      #
-      # Note: We only get here when the -p argument wasn't used.
-      #
-      # Now check if -l argument wasn't used.
+      # No CPU data found. Check if -l argument is used.
       #
       if [ $gLogicalCPUs -eq 0 ];
         then
           #
           # No. Get thread count (logical cores) from the running system.
           #
-          let gLogicalCPUs=$(echo `sysctl machdep.cpu.thread_count` | sed -e 's/^machdep.cpu.thread_count: //')
+          let gLogicalCPUs=$(sysctl machdep.cpu.thread_count | awk '{ print $2 }')
       fi
       #
-      # Check if -f argument wasn't used.
+      # Check if -f argument is used.
       #
       if [ $gFrequency -eq -1 ];
         then
           #
           # No. Get the clock frequency from the running system.
           #
-          let frequency=$(echo `sysctl hw.cpufrequency` | sed -e 's/^hw.cpufrequency: //')
+          let frequency=$(sysctl hw.cpufrequency | awk '{ print($2) / 1000000 }')
+        else
+          let frequency=$gFrequency
+      fi
+      #
+      # Check if -turbo argument is used.
+      #
+      if [[ $gMaxTurboFrequency -gt 0 ]];
+        then
+          let maxTurboFrequency=$gMaxTurboFrequency
+        else
+          let maxTurboFrequency=$frequency
       fi
 
-      let frequency=($frequency / 1000000)
+      let gCoreCount=$(sysctl machdep.cpu.core_count | awk '{ print $2 }')
+
+      printf "${gProcessorNumber},${gTdp},${gLfm},${gFrequency},${gMaxTurboFrequency},${gCoreCount},${gLogicalCPUs}\n"
   fi
 
   echo "Number logical CPU's: $gLogicalCPUs (Core Frequency: $frequency MHz)"
@@ -4071,24 +4143,31 @@ function main()
                           then
                             _setDestinationPath
                         fi
-
-                        sudo cp "${gPath}/${gSsdtID}.aml" "${gDestinationPath}${gDestinationFile}"
-                      #
-                      # Check if we need to unmount the EFI volume.
-                      #
-                      if [[ $gIsLegacyRevoBoot -eq 0 && $gUnmountEFIPartition ]];
-                        then
-                          _debugPrint "Unmounting EFI partition...\n"
-                          sudo umount -f /Volumes/EFI
-                          #
-                          # Check return status for Success.
-                          #
-                          # Note: Without this check we may end up removing the whole freaking EFI directory!
-                          #
-                          if [[ $? -eq 0 ]];
-                            then
-                              read -p  "Do you want to remove the temporarily mount point (y/n)? " choice2
-                              case "$choice2" in
+                        #
+                        # Check write permissions.
+                        #
+                        if [ -w "${gDestinationPath}${gDestinationFile}" ];
+                          then
+                            cp "${gPath}/${gSsdtID}.aml" "${gDestinationPath}${gDestinationFile}"
+                          else
+                            sudo cp "${gPath}/${gSsdtID}.aml" "${gDestinationPath}${gDestinationFile}"
+                        fi
+                        #
+                        # Check if we need to unmount the EFI volume.
+                        #
+                        if [[ $gIsLegacyRevoBoot -eq 0 && $gUnmountEFIPartition ]];
+                          then
+                            _debugPrint "Unmounting EFI partition...\n"
+                            sudo umount -f /Volumes/EFI
+                            #
+                            # Check return status for Success.
+                            #
+                            # Note: Without this check we may end up removing the whole freaking EFI directory!
+                            #
+                            if [[ $? -eq 0 ]];
+                              then
+                                read -p  "Do you want to remove the temporarily mount point (y/n)? " choice2
+                                case "$choice2" in
                                     y|Y ) #
                                           # You fool: don't use <em>rm</em> commands in a script!
                                           #
@@ -4102,6 +4181,8 @@ function main()
                               esac
                           fi
                       fi
+
+                      sudo -k
                       ;;
             esac
         fi
