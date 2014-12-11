@@ -1,3 +1,21 @@
+Version 15.7 - Beta
+
+ - Lots of changes for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/80 (Pike, December 2014).
+ - Support for 'User Defined' processor models added. See example below:
+
+```
+gUserDefinedCPUList=(
+X5560,95,1600,2800,3200,8,16,2,133
+)
+```
+Note the last two new values (cpu/bridge type, bclk/bus frequency). You can select a custom/override processor data with, in this case:
+
+``` sh
+./ssdtPRGen.sh -p X5560
+```
+
+ - Done some cleanups and other minor optimization changes.
+
 Version 15.6
 
  - Fix for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/97 (Pike, December 2014).
