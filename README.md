@@ -1,22 +1,22 @@
 ssdtPRGen.sh
 ============
 
-You can download the latest revision of ssdtPRGen.sh by entering the following command in a terminal window:
+You can download the latest Beta of ssdtPRGen.sh by entering the following command in a terminal window:
 
 ``` sh
-curl -o ~/ssdtPRGen.sh https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/ssdtPRGen.sh
+curl -o ~/ssdtPRGen.sh https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/ssdtPRGen.sh
 ```
 
-That will download ssdtPRGen.sh to your user directory. The next step is to change the file mode (+x) with:
+This will download ssdtPRGen.sh to your home directory (~) and the next step is to change the permissions of the file (add +x) so that it can be run.
  
 ``` sh
 chmod +x ~/ssdtPRGen.sh
 ```
 
-Please note that ssdtPRGen.sh v15.1 and greater requires a working Internet connection, to download configuration data and command line tools, but you can download a complete zip archive by entering the following in a terminal window:
+Note: ssdtPRGen.sh v15.1 and greater require a working Internet connection so that it can download configuration data and command line tools. You can also download a complete zip archive by entering the following commands in a terminal window:
 
 ``` sh
-curl -o ~/Library/ssdtPRGen.zip https://codeload.github.com/Piker-Alpha/ssdtPRGen.sh/zip/master
+curl -o ~/Library/ssdtPRGen.zip https://codeload.github.com/Piker-Alpha/ssdtPRGen.sh/zip/Beta
 unzip -qu ~/Library/ssdtPRGen.zip -d ~/Library/
 mv ~/Library/ssdtPRGen.sh-master ~/Library/ssdtPRGen
 rm ~/Library/ssdtPRGen.zip
