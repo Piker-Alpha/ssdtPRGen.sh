@@ -3344,28 +3344,28 @@ function _getScriptArguments()
             #
             # Note 'uro' was only added to support '-turbo'
             #
-            if [[ "${flag}" =~ ^[-abcdfhklmpensturowx]+$ ]];
+            if [[ "${flag}" =~ ^[-abcdfhiklmpensturowx]+$ ]];
               then
                 #
                 # Yes. Figure out what flag it is.
                 #
                 case "${flag}" in
-                  -a) shift
+                  -a|-acpi) shift
 
-                      if [[ "$1" =~ ^[a-zA-Z0-9]+$ ]];
-                        then
-                          if [ ${#1} -eq 3 ];
-                            then
-                              gProcLabel=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-                              _PRINT_MSG "Override value: (-a) label for ACPI Processors, now using '${gProcLabel}'!"
-                              _updateProcessorNames ${#gProcessorNames[@]}
-                            else
-                              _exitWithError $PROCESSOR_LABEL_LENGTH_ERROR
-                          fi
-                        else
-                          _invalidArgumentError "-a $1"
-                      fi
-                      ;;
+                            if [[ "$1" =~ ^[a-zA-Z0-9]+$ ]];
+                              then
+                                if [ ${#1} -eq 4 ];
+                                  then
+                                    gProcLabel=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+                                    _PRINT_MSG "Override value: (-a) label for ACPI Processors, now using '${gProcLabel}'!"
+                                    _updateProcessorNames "${#gProcessorNames[@]}"
+                                  else
+                                    _exitWithError $PROCESSOR_LABEL_LENGTH_ERROR
+                                fi
+                              else
+                                _invalidArgumentError "-a $1"
+                            fi
+                            ;;
 
                   -bclk) shift
 
@@ -3708,6 +3708,7 @@ function main()
 
   _checkLibraryDirectory
   _checkSourceFilename
+  _getProcessorNames
   _getScriptArguments "$@"
   #
   # Set local variable from global function variable.
@@ -3790,7 +3791,6 @@ function main()
       _getBoardID
   fi
 
-  _getProcessorNames
   _initProcessorScope
   _extractAcpiTables
 
@@ -3987,7 +3987,7 @@ function main()
 
   echo "Number logical CPU's: $gLogicalCPUs (Core Frequency: $frequency MHz)"
 
-  if [ $gLogicalCPUs -gt ${#gProcessorNames[@]} ];
+  if [ $gLogicalCPUs -gt "${#gProcessorNames[@]}" ];
     then
       _updateProcessorNames $gLogicalCPUs
   fi
