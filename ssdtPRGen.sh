@@ -101,7 +101,7 @@ let gBaseFrequency=1600
 #
 # This is the default processor label (verified by _setProcessorLabel).
 #
-gProcLabel="CPU"
+gProcLabel="CPU0"
 
 #
 # The Processor scope will be initialised by _initProcessorScope).
@@ -3077,7 +3077,7 @@ function _exitWithError()
          fi
          _ABORT 5
          ;;
-      6) _PRINT_MSG "\nError: Processor label length is less than 3 ..."
+      6) _PRINT_MSG "\nError: Processor label length is less than 4 ..."
          _ABORT 6
          ;;
       7) _PRINT_MSG "\nError: Processor label not found ..."
@@ -3245,7 +3245,7 @@ function _getScriptArguments()
       if [[ $# -eq 1 && "$argument" == "-h" || "$argument" == "-help" ]];
         then
           printf "${STYLE_BOLD}Usage:${STYLE_RESET} ./ssdtPRGen.sh [-abcdfhlmptwx]\n"
-          printf "       -${STYLE_BOLD}a${STYLE_RESET}cpi Processor name (example: CPU0, C000)\n"
+          printf "       -${STYLE_BOLD}a${STYLE_RESET}cpi Processor name (example: CPU0 or C000)\n"
           printf "       -${STYLE_BOLD}bclk${STYLE_RESET} frequency (base clock frequency)\n"
           printf "       -${STYLE_BOLD}b${STYLE_RESET}oard-id (example: Mac-F60DEB81FF30ACF6)\n"
           printf "       -${STYLE_BOLD}c${STYLE_RESET}pu type [0/1/2/3]\n"
@@ -3298,28 +3298,28 @@ function _getScriptArguments()
             #
             # Note 'uro' was only added to support '-turbo'
             #
-            if [[ "${flag}" =~ ^[-abcdfhklmpensturowx]+$ ]];
+            if [[ "${flag}" =~ ^[-abcdfhiklmpensturowx]+$ ]];
               then
                 #
                 # Yes. Figure out what flag it is.
                 #
                 case "${flag}" in
-                  -a) shift
+                  -a|-acpi) shift
 
-                      if [[ "$1" =~ ^[a-zA-Z0-9]+$ ]];
-                        then
-                          if [ ${#1} -eq 3 ];
-                            then
-                              gProcLabel=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-                              _PRINT_MSG "Override value: (-a) label for ACPI Processors, now using '${gProcLabel}'!"
-                              _updateProcessorNames ${#gProcessorNames[@]}
-                            else
-                              _exitWithError $PROCESSOR_LABEL_LENGTH_ERROR
-                          fi
-                        else
-                          _invalidArgumentError "-a $1"
-                      fi
-                      ;;
+                            if [[ "$1" =~ ^[a-zA-Z0-9]+$ ]];
+                              then
+                                if [ ${#1} -eq 4 ];
+                                  then
+                                    gProcLabel=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+                                    _PRINT_MSG "Override value: (-a) label for ACPI Processors, now using '${gProcLabel}'!"
+                                    _updateProcessorNames ${#gProcessorNames[@]}
+                                  else
+                                    _exitWithError $PROCESSOR_LABEL_LENGTH_ERROR
+                                fi
+                              else
+                                _invalidArgumentError "-a $1"
+                            fi
+                            ;;
 
                   -bclk) shift
 
@@ -3660,6 +3660,7 @@ function main()
 
   _checkLibraryDirectory
   _checkSourceFilename
+  _getProcessorNames
   _getScriptArguments "$@"
   #
   # Set local variable from global function variable.
@@ -3736,7 +3737,6 @@ function main()
       _getBoardID
   fi
 
-  _getProcessorNames
   _initProcessorScope
   _extractAcpiTables
 
