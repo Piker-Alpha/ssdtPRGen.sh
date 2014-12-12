@@ -173,11 +173,12 @@ gRevision='0x000'${gScriptVersion:0:2}${gScriptVersion:3:1}'00'
 #
 
 gHome=$(echo $HOME)
-gPath="${gHome}/Library/ssdtPRGen"
-gDataPath="${gPath}/Data"
-gToolPath="${gPath}/Tools"
+gPath="${gHome}/Library"
+gScriptPath="${gPath}/ssdtPRGen"
+gDataPath="${gScriptPath}/Data"
+gToolPath="${gScriptPath}/Tools"
 gSsdtID="ssdt"
-gSsdtPR="${gPath}/${gSsdtID}.dsl"
+gSsdtPR="${gScriptPath}/${gSsdtID}.dsl"
 
 let gDesktopCPU=1
 let gMobileCPU=2
@@ -380,7 +381,7 @@ function _getPBlockAddress()
   #
   # Get Processor Control Block (P_BLK) address from offset: 152/0x98 in facp.aml
   #
-  local data=$(xxd -s 152 -l 4 -ps "${gPath}/facp.aml")
+  local data=$(xxd -s 152 -l 4 -ps "${gScriptPath}/facp.aml")
   #
   # Convert data to Little Endian
   #
@@ -1974,7 +1975,7 @@ function _initProcessorScope()
   #
   # Local variable declarations.
   #
-  local filename="${gPath}/dsdt.dat"
+  local filename="${gScriptPath}/dsdt.dat"
   #
   #
   #
@@ -1995,7 +1996,7 @@ function _initProcessorScope()
   #
   # Note: Comment this out for dry runs!
   #
-  xxd -ps "${gPath}/DSDT.aml" | tr -d '\n' > "$filename"
+  xxd -ps "${gScriptPath}/DSDT.aml" | tr -d '\n' > "$filename"
   #
   # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects.
   #
@@ -2254,12 +2255,12 @@ function _findIasl()
       if [ ! -f "${gToolPath}/iasl" ];
         then
           _debugPrint 'Downloading iasl.zip ...'
-          curl -o "${gPath}/iasl.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/iasl.zip
+          curl -o "${gScriptPath}/iasl.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/iasl.zip
           #
           # Unzip command line tool.
           #
           _debugPrint 'Unzipping iasl.zip ...'
-          unzip -qu "${gPath}/iasl.zip" -d "${gToolPath}/"
+          unzip -qu "${gScriptPath}/iasl.zip" -d "${gToolPath}/"
           #
           # Setting executing bit.
           #
@@ -2277,7 +2278,7 @@ function _findIasl()
           # Remove downloaded zip file.
           #
           _debugPrint 'Cleanups ...'
-          rm "${gPath}/iasl.zip"
+          rm "${gScriptPath}/iasl.zip"
           _debugPrint 'Done.'
       fi
 
@@ -2295,12 +2296,12 @@ function _extractAcpiTables()
   if [ ! -f "${gToolPath}/extractACPITables" ];
     then
       _debugPrint 'Downloading extractACPITables.zip ...'
-      curl -o "${gPath}/extractACPITables.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
+      curl -o "${gScriptPath}/extractACPITables.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
       #
       # Unzip command line tool.
       #
       _debugPrint 'Unzipping extractACPITables.zip ...'
-      unzip -qu "${gPath}/extractACPITables.zip" -d "${gToolPath}/"
+      unzip -qu "${gScriptPath}/extractACPITables.zip" -d "${gToolPath}/"
       #
       # Setting executing bit.
       #
@@ -2318,7 +2319,7 @@ function _extractAcpiTables()
       # Remove downloaded zip file.
       #
       _debugPrint 'Cleanups ...'
-      rm "${gPath}/extractACPITables.zip"
+      rm "${gScriptPath}/extractACPITables.zip"
   fi
   #
   # Extracting ACPI tables.
@@ -2352,7 +2353,7 @@ function _checkSourceFilename
       if [[ "$gDestinationFile" != "ssdt_pr.aml" ]];
         then
           gSsdtID="ssdt_pr"
-          gSsdtPR="${gPath}/${gSsdtID}.dsl"
+          gSsdtPR="${gScriptPath}/${gSsdtID}.dsl"
           gDestinationFile="ssdt_pr.aml"
           _debugPrint "ACPI target filename changed to: ${gDestinationFile}\n"
       fi
@@ -3187,16 +3188,18 @@ function _checkLibraryDirectory()
   #
   # Check directory.
   #
-  if [ ! -d "${gDataPath}" ];
+  if [ ! -d "${gScriptPath}" ];
     then
       #
-      # Not there. Check permissions and create the directory.
+      # Not there. Check write-permission and create the script directory.
       #
-      if [ -w "${gDataPath}" ];
+      if [ -w "${gPath}" ];
         then
           mkdir -p "${gDataPath}"
+          mkdir -p "${gToolPath}"
         else
           sudo mkdir -p "${gDataPath}"
+          sudo mkdir -p "${gToolPath}"
       fi
   fi
   #
@@ -3204,9 +3207,13 @@ function _checkLibraryDirectory()
   #
   if [ -w "${gPath}" ];
     then
-      chmod -R 755 "${gPath}"
+      chmod 755 "${gScriptPath}"
+      chmod 755 "${gDataPath}"
+      chmod 755 "${gToolPath}"
     else
-      sudo chmod -R 755 "${gPath}"
+      sudo chmod 755 "${gScriptPath}"
+      sudo chmod 755 "${gDataPath}"
+      sudo chmod 755 "${gToolPath}"
   fi
 
   if [ ! -f "${gDataPath}/Models.cfg" ];
@@ -4062,17 +4069,17 @@ function main()
       #
       if [ $gAutoCopy -eq 1 ];
         then
-          if [ -f "${gPath}/${gSsdtID}.aml" ];
+          if [ -f "${gScriptPath}/${gSsdtID}.aml" ];
             then
               echo -e
-              read -p "Do you want to copy ${gPath}/${gSsdtID}.aml to ${gDestinationPath}${gDestinationFile}? (y/n)? " choice
+              read -p "Do you want to copy ${gScriptPath}/${gSsdtID}.aml to ${gDestinationPath}${gDestinationFile}? (y/n)? " choice
               case "$choice" in
                   y|Y ) if [[ $gIsLegacyRevoBoot -eq 0 ]];
                           then
                             _setDestinationPath
                         fi
 
-                        sudo cp "${gPath}/${gSsdtID}.aml" "${gDestinationPath}${gDestinationFile}"
+                        sudo cp "${gScriptPath}/${gSsdtID}.aml" "${gDestinationPath}${gDestinationFile}"
                       #
                       # Check if we need to unmount the EFI volume.
                       #
