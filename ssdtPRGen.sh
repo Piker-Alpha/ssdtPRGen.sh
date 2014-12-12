@@ -2600,7 +2600,7 @@ function _getCPUDataByProcessorNumber
         IFS=","
         data=($cpuData)
 
-        if [[ "${data[0]}" == "$gProcessorNumber" ]];
+        if [[ "${data[0]}" == "${gProcessorNumber}" ]];
           then
             gProcessorData="$cpuData"
             let gTypeCPU=$targetType
@@ -3504,34 +3504,34 @@ function _getScriptArguments()
                         then
                           if [ "$gProcessorNumber" != "$1" ];
                             then
-                              let gFunctionReturn=0
+                              let gFunctionReturn=1
                               #
                               # Sandy Bridge checks.
                               #
                               if [[ ${1:0:4} == "i3-2" || ${1:0:4} == "i5-2" || ${1:0:4} == "i7-2" ]];
                                 then
-                                  let gFunctionReturn=1
+                                  let gFunctionReturn=2
                               fi
                               #
                               # Ivy Bridge checks.
                               #
                               if [[ ${1:0:4} == "i3-3" || ${1:0:4} == "i5-3" || ${1:0:4} == "i7-3" ]];
                                 then
-                                  let gFunctionReturn=2
+                                  let gFunctionReturn=4
                               fi
                               #
                               # Haswell/Haswell-E checks.
                               #
                               if [[ ${1:0:4} == "i3-4" || ${1:0:4} == "i5-4" || ${1:0:4} == "i7-4" || ${1:0:4} == "i7-5" ]];
                                 then
-                                  let gFunctionReturn=3
+                                  let gFunctionReturn=5
                               fi
                               #
                               # Xeon check.
                               #
                               if [[ ${1:0:1} == "E" ]];
                                 then
-                                  let gFunctionReturn=4
+                                  let gFunctionReturn=6
                               fi
                               #
                               # Set processor model override and inform user about the change.
@@ -3727,14 +3727,8 @@ function main()
       _getModelID
   fi
 
-  printf "gProcessorNumber: >$gProcessorNumber<\n"
   _getCPUNumberFromBrandString $modelSpecified
   _getCPUDataByProcessorNumber
-
-#  if [ $gTypeCPU -eq 0 ];
-#    then
-#      _getCPUNumberFromBrandString $modelSpecified
-#  fi
   #
   # Check if -c argument wasn't used.
   #
@@ -3794,8 +3788,6 @@ function main()
   _initProcessorScope
   _extractAcpiTables
 
-  printf "gBridgeType: $gBridgeType\n"
-
   case $gBridgeType in
        2) local bridgeTypeString="Sandy Bridge"
           ;;
@@ -3814,8 +3806,10 @@ function main()
   local cpuSignature=$(_getCPUSignature)
 
   echo "Generating ${gSsdtID}.dsl for a '${gModelID}' with board-id [${gBoardID}]"
-
-  if [ $gBridgeType -eq 1 ];
+  #
+  # Intel Core processor model?
+  #
+  if [ $modelSpecified -eq 1 ];
     then
       echo "Intel $gProcessorNumber processor [$cpuSignature] setup [0x${cpu_type}]"
     else
