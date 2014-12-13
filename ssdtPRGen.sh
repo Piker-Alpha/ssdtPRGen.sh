@@ -2307,12 +2307,12 @@ function _extractAcpiTables()
       #
       _debugPrint 'Setting executing bit ...'
 
-      if [ -w "${gToolPath}/iasl" ];
+      if [ -w "${gToolPath}/extractACPITables" ];
         then
           chmod +x "${gToolPath}/extractACPITables"
         else
           printf "Enter password to set file permissions for: ${gToolPath}/extractACPITables\n"
-          chmod +x "${gToolPath}/extractACPITables"
+          sudo chmod +x "${gToolPath}/extractACPITables"
           sudo -k
       fi
       #
