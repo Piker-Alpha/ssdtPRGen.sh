@@ -2795,6 +2795,26 @@ function _checkPlatformSupport()
     else
        _PRINT_MSG 'Warning: /S*/L*/C*/PlatformSupport.plist not found (normal for Snow Leopard)!'
   fi
+  #
+  # Check for FrequencyVectors in plist.
+  #
+  if [ $gBridgeType == $HASWELL ];
+    then
+       local plist="/System/Library/Extensions/IOPlatformPluginFamily.kext/Contents/PlugIns/X86PlatformPlugin.kext/Contents/Resources/${gBoardID}.plist"
+
+       if [ -e "$plist" ];
+         then
+           local freqVectorMatched=$(grep -c 'FrequencyVectors' "$plist")
+
+           if [ $freqVectorMatched -eq 0 ];
+             then
+               _PRINT_MSG "Warning..: FrequencyVectors missing in ${gBoardID}.plist"
+               printf "\t Download https://github.com/Piker-Alpha/freqVectorsEdit.sh to fix this\n"
+           fi
+         else
+          _PRINT_MSG "Warning: File ${gBoardID}.plist Not Found!"
+       fi
+  fi
 }
 
 
