@@ -3936,7 +3936,8 @@ function main()
   #
   # Get number of Turbo states.
   #
-  let turboStates=$(printf "%.f" $(echo "scale=1;((($maxTurboFrequency - $frequency) / $gBusFrequency)+0.5)" | bc))
+  # let turboStates=$(printf "%.f" $(echo "scale=1;((($maxTurboFrequency - $frequency) / $gBusFrequency)+0.5)" | bc))
+  let turboStates=$(echo "(($maxTurboFrequency - $frequency) / $gBusFrequency)" | bc)
   #
   # Check number of Turbo states.
   #
