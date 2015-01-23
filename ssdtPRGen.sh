@@ -202,6 +202,7 @@ let gBridgeType=-1
 let gTypeCPU=0
 let gProcessorStartIndex=0
 let gLfm=0
+let gTdp=0
 gProcessorData="Unknown CPU"
 gProcessorNumber=""
 gBusFrequency=100
@@ -228,6 +229,7 @@ let PROCESSOR_LABEL_LENGTH_ERROR=6
 let PROCESSOR_NAMES_ERROR=7
 let PROCESSOR_DECLARATION_ERROR=8
 let FILE_NOT_FOUND_ERROR=9
+let LFM_ERROR=10
 
 #
 # First OS version number that no longer requires extra Low Frequency Mode P-States.
@@ -501,7 +503,7 @@ function _injectDebugInfo()
   echo '        {'                                                                    >> "$gSsdtPR"
   echo '            Store ("ssdtPRGen version....: '$gScriptVersion' / '$gProductName' '$gProductVersion' ('$gBuildVersion')", Debug)'  >> "$gSsdtPR"
   echo '            Store ("target processor.....: '$gProcessorNumber'", Debug)'      >> "$gSsdtPR"
-  echo '            Store ("running processor....: '$gBrandString'", Debug)'          >> "$gSsdtPR"
+  echo '            Store ("source processor.....: '$gBrandString'", Debug)'          >> "$gSsdtPR"
   echo '            Store ("baseFrequency........: '$gBaseFrequency'", Debug)'        >> "$gSsdtPR"
   echo '            Store ("frequency............: '$frequency'", Debug)'             >> "$gSsdtPR"
   echo '            Store ("busFrequency.........: '$gBusFrequency'", Debug)'         >> "$gSsdtPR"
@@ -823,10 +825,9 @@ function _printMethodDSM()
 
       if [[ $gDebug -eq 1 ]];
         then
-          #
-          # Note: This will be called twice!
-          #
-          echo '            Store ("Method '${gProcessorNames[0]}'._DSM Called", Debug)'  >> "$gSsdtPR"
+          local debugScopeName=$(echo $scope | sed -e 's/^\\//')
+
+          echo '            Store ("Method '$debugScopeName'.'${gProcessorNames[0]}'._DSM Called", Debug)'  >> "$gSsdtPR"
           echo ''                                                                         >> "$gSsdtPR"
       fi
 
@@ -926,7 +927,9 @@ function _printScopeACST()
 
   if (( $gDebug ));
     then
-      echo '            Store ("Method '${gProcessorNames[$targetCPU]}'.ACST Called", Debug)'  >> "$gSsdtPR"
+     local debugScopeName=$(echo $scope | sed -e 's/^\\//')
+
+      echo '            Store ("Method '$debugScopeName'.'${gProcessorNames[$targetCPU]}'.ACST Called", Debug)'  >> "$gSsdtPR"
   fi
   #
   # Are we injecting C-States for CPU1?
@@ -2329,10 +2332,10 @@ function _extractAcpiTables()
   #
   # Extracting ACPI tables.
   #
-  _debugPrint 'Extracting ACPI tables ...'
+  _debugPrint 'Extracting ACPI tables ... '
   "${gToolPath}/extractACPITables"
 
-  _debugPrint 'Done.'
+  _debugPrint 'Done.\n'
 }
 
 
@@ -2555,9 +2558,20 @@ function _getCPUNumberFromBrandString
           fi
         else
           #
-          # All other non-Xeon processor models.
+          # Is this a Pentium processor model?
           #
-          gProcessorNumber="${data[2]}"
+          if [[ "${data[1]}" == "Pentium(R)" ]];
+            then
+              #
+              # Yes. Use fourth value from brandstring ("Intel(R) Pentium(R) CPU G3420 @ 3.20GHz")
+              #
+              gProcessorNumber="${data[3]}"
+            else
+              #
+              # No. Use third value from brandstring for all other processor models.
+              #
+              gProcessorNumber="${data[2]}"
+          fi
       fi
   fi
 }
@@ -3113,45 +3127,48 @@ function _initBroadwellSetup()
 function _exitWithError()
 {
   case "$1" in
-      2) _PRINT_MSG "\nError: 'MaxTurboFrequency' must be in the range of $frequency-$gMaxOCFrequency ..."
-         _ABORT 2
-         ;;
-      3) _PRINT_MSG "\nError: -t [TDP] must be in the range of 11.5 - 150 Watt ..."
-         _ABORT 3
-         ;;
-      4) _PRINT_MSG "\nError: 'BridgeType' must be 0, 1, 2 or 3 ..."
-         _ABORT 4
-         ;;
-      5) printf "\e[A\e[K"
-         _PRINT_MSG "\nError: Unknown processor model ..."
+      2)  _PRINT_MSG "\nError: 'MaxTurboFrequency' must be in the range of $frequency-$gMaxOCFrequency ..."
+          _ABORT 2
+          ;;
+      3)  _PRINT_MSG "\nError: -t [TDP] must be in the range of 11.5 - 150 Watt ..."
+          _ABORT 3
+          ;;
+      4)  _PRINT_MSG "\nError: 'BridgeType' must be 0, 1, 2 or 3 ..."
+          _ABORT 4
+          ;;
+      5)  printf "\e[A\e[K"
+          _PRINT_MSG "\nError: Unknown processor model ..."
 
-         if [[ $2 -eq 0 ]];
-           then
-             printf "       Visit http://ark.intel.com to gather the required data:\n"
-             printf "       Processor Number\n"
-             printf "       TDP\n"
-             printf "       Low Frequency Mode (use AppleIntelInfo.kext)\n"
-             printf "       Base Frequency\n"
-             printf "       Max Turbo Frequency\n"
-             printf "       Cores\n"
-             printf "       Threads\n"
-         fi
-         _ABORT 5
-         ;;
-      6) _PRINT_MSG "\nError: Processor label length is less than 3 ..."
-         _ABORT 6
-         ;;
-      7) _PRINT_MSG "\nError: Processor label not found ..."
-         _ABORT 7
-         ;;
-      8) _PRINT_MSG "\nError: Processor Declarations not found ..."
-         _ABORT 8
-         ;;
-      9) _PRINT_MSG "\nError: File not found ..."
-         _ABORT 9
-         ;;
-      *) _ABORT 1
-         ;;
+          if [[ $2 -eq 0 ]];
+            then
+              printf "       Visit http://ark.intel.com to gather the required data:\n"
+              printf "       Processor Number\n"
+              printf "       TDP\n"
+              printf "       Low Frequency Mode (use AppleIntelInfo.kext)\n"
+              printf "       Base Frequency\n"
+              printf "       Max Turbo Frequency\n"
+              printf "       Cores\n"
+              printf "       Threads\n"
+          fi
+          _ABORT 5
+          ;;
+      6)  _PRINT_MSG "\nError: Processor label length is less than 3 ..."
+          _ABORT 6
+          ;;
+      7)  _PRINT_MSG "\nError: Processor label not found ..."
+          _ABORT 7
+          ;;
+      8)  _PRINT_MSG "\nError: Processor Declarations not found ..."
+          _ABORT 8
+          ;;
+      9)  _PRINT_MSG "\nError: File not found ..."
+          _ABORT 9
+          ;;
+      10) _PRINT_MSG "\nError: Low Frequency Mode is 0 ..."
+          _ABORT 10
+          ;;
+      *)  _ABORT 1
+          ;;
   esac
 }
 
@@ -3391,8 +3408,13 @@ function _getScriptArguments()
 
                          if [[ "$1" =~ ^[0-9]+$ ]];
                            then
-                             _PRINT_MSG "Override value: (-bclk) frequency, now using: ${1} MHz!"
-                             let gBusFrequency=$1
+                             if [[ $1 < 167 ]];
+                               then
+                                 _PRINT_MSG "Override value: (-bclk) frequency, now using: ${1} MHz!"
+                                 let gBusFrequency=$1
+                               else
+                                 _invalidArgumentError "-bclk $1 (use 100, 133 or 166)"
+                             fi
                            else
                              _invalidArgumentError "-bclk $1"
                          fi
@@ -3962,6 +3984,21 @@ function main()
           fi
       fi
     else
+      printf "Processor NOT matched, checking required arguments!\n"
+      #
+      # Check if -lfm argument was used.
+      #
+      if [[ $gLfm -eq 0 ]];
+        then
+          _exitWithError $LFM_ERROR
+      fi
+      #
+      # Check if -t argument was used.
+      #
+      if [[ $gTdp -eq 0 ]];
+        then
+          _exitWithError $MAX_TDP_ERROR
+      fi
       #
       # No CPU data found. Check if -l argument is used.
       #
@@ -3981,6 +4018,9 @@ function main()
           # No. Get the clock frequency from the running system.
           #
           let frequency=$(sysctl hw.cpufrequency | awk '{ print($2) / 1000000 }')
+          let gFrequency=frequency
+
+          _PRINT_MSG "Warning: Core Frequency is unknown, now using $gFrequency MHz from sysctl hw.cpufrequency!"
         else
           let frequency=$gFrequency
       fi
@@ -3992,6 +4032,9 @@ function main()
           let maxTurboFrequency=$gMaxTurboFrequency
         else
           let maxTurboFrequency=$frequency
+          let gMaxTurboFrequency=$frequency
+
+          _PRINT_MSG "Warning: Maximum Turbo Frequency is unknown, now using $gMaxTurboFrequency MHz from Core Frequency!"
       fi
 
       let gCoreCount=$(sysctl machdep.cpu.core_count | awk '{ print $2 }')
@@ -4015,8 +4058,9 @@ function main()
   #
   # Get number of Turbo states.
   #
-  # let turboStates=$(printf "%.f" $(echo "scale=1;((($maxTurboFrequency - $frequency) / $gBusFrequency)+0.5)" | bc))
+# let turboStates=$(printf "%.f" $(echo "scale=1;((($maxTurboFrequency - $frequency) / $gBusFrequency)+0.5)" | bc))
   let turboStates=$(echo "(($maxTurboFrequency - $frequency) / $gBusFrequency)" | bc)
+  #
   #
   # Check number of Turbo states.
   #
