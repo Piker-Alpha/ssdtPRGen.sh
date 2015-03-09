@@ -610,7 +610,12 @@ function _printScopeStart()
 
       if [[ $lowFrequencyPStates -gt 0 ]];
         then
-          printf "        Name (APLF, 0x%02x)\n" $lowFrequencyPStates                 >> "$gSsdtPR"
+          if [[ $lowFrequencyPStates -gt 1 ]];
+            then
+              printf "        Name (APLF, 0x%02x)\n" $lowFrequencyPStates             >> "$gSsdtPR"
+            else
+              printf "        Name (APLF, One)\n"                                     >> "$gSsdtPR"
+           fi
         else
           # Prevent optimization warning.
           echo "        Name (APLF, Zero)"                                            >> "$gSsdtPR"
