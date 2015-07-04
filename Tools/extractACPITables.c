@@ -47,6 +47,7 @@ int main(int argc, char * argv[])
 		allTables = false;
 	}
 
+	setlocale(LC_ALL, "en_US");
 	homeDirectory = getenv("HOME");
 
 	if (homeDirectory)
