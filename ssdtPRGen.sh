@@ -2296,7 +2296,9 @@ function _extractAcpiTables()
   if [ ! -f "${gToolPath}/extractACPITables" ];
     then
       _debugPrint 'Downloading extractACPITables.zip ...'
-      curl -o "${gScriptPath}/extractACPITables.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
+	  curl -o "${gScriptPath}/extractACPITables.zip" --silent https://raw.githubusercontent.com/Ty3uK/ssdtPRGen.sh/master/Tools/extractACPITables.zip
+	  # Change when you updates zip with fixed binary inside
+	  # curl -o "${gScriptPath}/extractACPITables.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
       #
       # Unzip command line tool.
       #
