@@ -1,3 +1,8 @@
+Version 15.8 - Beta
+
+ - Broadwell and Skylake processor data added.
+ - Initial support for Skylake processors added.
+
 Version 15.7 - Beta
 
  - Lots of changes for https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/80 (Pike, December 2014).

@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 15.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 15.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=15.7
+gScriptVersion=15.8
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -193,6 +193,7 @@ let SANDY_BRIDGE=2
 let IVY_BRIDGE=4
 let HASWELL=8
 let BROADWELL=16
+let SKYLAKE=32
 
 #
 # Global variable used as target cpu/bridge type.
@@ -2607,6 +2608,8 @@ function _getCPUDataByProcessorNumber
            ;;
        16) local cpuSpecLists=("gDesktopBroadwellCPUList[@]" "gMobileBroadwellCPUList[@]" "gServerBroadwellCPUList[@]")
            ;;
+       32) local cpuSpecLists=("gDesktopSkylakeCPUList[@]" "gMobileSkylakeCPUList[@]" "gServerSkylakeCPUList[@]")
+           ;;
     esac
 
     for cpuList in "${cpuSpecLists[@]}"
@@ -2708,6 +2711,18 @@ function _getCPUDataByProcessorNumber
               source "${gDataPath}/Broadwell.cfg"
               _debugPrint "Checking Broadwell processor data ...\n"
               __searchList $BROADWELL
+
+              if (!(( $gTypeCPU )));
+                then
+                  if [ ! -f "${gDataPath}/Skylake.cfg" ];
+                    then
+                      curl -o "${gDataPath}/Skylake.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Skylake.cfg
+                  fi
+
+                  source "${gDataPath}/Skylake.cfg"
+                  _debugPrint "Checking Skylake processor data ...\n"
+                  __searchList $SKYLAKE
+              fi
           fi
       fi
   fi
@@ -3125,6 +3140,30 @@ function _initBroadwellSetup()
 }
 
 
+
+#
+#--------------------------------------------------------------------------------
+#
+
+function _initSkylakeSetup()
+{
+  #
+  # Global variable (re)initialisation.
+  #
+  gSystemType=2
+  gACST_CPU0=253  # C1, C3, C6, C7, C8, C9 and C10
+  gACST_CPU1=31   # C1, C2, C3, C6 and C7
+  #
+  # Overrides are set below.
+  #
+  case $gBoardID in
+    Mac-APPLE-SKYLAKES) gSystemType=1
+                        gTargetMacModel="Macmini7,1"
+                        ;;
+  esac
+}
+
+
 #
 #--------------------------------------------------------------------------------
 #
@@ -3227,6 +3266,8 @@ function _showSupportedBoardIDsAndModels()
            Haswell) local modelDataList="gHaswellModelData[@]"
                     ;;
          Broadwell) local modelDataList="gBroadwellModelData[@]"
+                    ;;
+         Skylake)   local modelDataList="gSkylakeModelData[@]"
                     ;;
   esac
   #
@@ -3336,11 +3377,12 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}a${STYLE_RESET}cpi Processor name (example: CPU0, C000)\n"
           printf "       -${STYLE_BOLD}bclk${STYLE_RESET} frequency (base clock frequency)\n"
           printf "       -${STYLE_BOLD}b${STYLE_RESET}oard-id (example: Mac-F60DEB81FF30ACF6)\n"
-          printf "       -${STYLE_BOLD}c${STYLE_RESET}pu type [0/1/2/3]\n"
+          printf "       -${STYLE_BOLD}c${STYLE_RESET}pu type [0/1/2/3/4]\n"
           printf "          0 = Sandy Bridge\n"
           printf "          1 = Ivy Bridge\n"
           printf "          2 = Haswell\n"
           printf "          3 = Broadwell\n"
+          printf "          4 = Skylake\n"
           printf "       -${STYLE_BOLD}d${STYLE_RESET}ebug output [0/1/3]\n"
           printf "          0 = no debug injection/debug output\n"
           printf "          1 = inject debug statements in: ${gSsdtID}.dsl\n"
@@ -3441,7 +3483,7 @@ function _getScriptArguments()
 
                   -c) shift
 
-                      if [[ "$1" =~ ^[0123]+$ ]];
+                      if [[ "$1" =~ ^[01234]+$ ]];
                         then
                           local detectedBridgeType=$gBridgeType
 
@@ -3457,6 +3499,9 @@ function _getScriptArguments()
                                  ;;
                               3) local bridgeType=$BROADWELL
                                  local bridgeTypeString="Broadwell"
+                                 ;;
+                              4) local bridgeType=$SKYLAKE
+                                 local bridgeTypeString="Skylake"
                                  ;;
                           esac
 
@@ -3574,11 +3619,18 @@ function _getScriptArguments()
                                   let gFunctionReturn=5
                               fi
                               #
+                              # Skylake checks.
+                              #
+                              if [[ ${1:0:4} == "i5-6" || ${1:0:4} == "i7-6" ]];
+                                then
+                                  let gFunctionReturn=5
+                              fi
+                              #
                               # Xeon check.
                               #
                               if [[ ${1:0:1} == "E" ]];
                                 then
-                                  let gFunctionReturn=6
+                                  let gFunctionReturn=7
                               fi
                               #
                               # Set processor model override and inform user about the change.
@@ -3613,8 +3665,12 @@ function _getScriptArguments()
                               BROADWELL) _showSupportedBoardIDsAndModels "Broadwell"
                                          ;;
 
+                              SKYLAKE)   _showSupportedBoardIDsAndModels "Skylake"
+                                         ;;
+
                                       *) if [ "$1" == "" ];
                                            then
+#                                            _showSupportedBoardIDsAndModels "Skylake"
 #                                            _showSupportedBoardIDsAndModels "Broadwell"
                                              _showSupportedBoardIDsAndModels "Haswell"
                                              _showSupportedBoardIDsAndModels "Ivy Bridge"
@@ -4114,6 +4170,9 @@ function main()
                    ;;
        $BROADWELL) local cpuTypeString="09"
                    _initBroadwellSetup
+                   ;;
+       $BKYLAKE)   local cpuTypeString="09"
+                   _initSkylakeSetup
                    ;;
   esac
 
