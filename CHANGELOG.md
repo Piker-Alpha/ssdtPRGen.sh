@@ -1,6 +1,6 @@
 Version 15.8 - Beta
 
- - Broadwell and Skylake processor data added.
+ - Broadwell and Skylake processor data added (Pike, August 2015).
  - Initial support for Skylake processors added.
 
 Version 15.7 - Beta
