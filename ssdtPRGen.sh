@@ -2587,6 +2587,27 @@ function _getCPUNumberFromBrandString
 #--------------------------------------------------------------------------------
 #
 
+function _haveConfigFile
+{
+  if [ ! -f "${1}" ];
+    then
+     return 0
+  fi
+
+  if [ $(wc -c "${1}" | awk '{print $1}') -lt 100 ];
+    then
+      rm "$1"
+      return 0
+  fi
+
+  return 1
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
+
 function _getCPUDataByProcessorNumber
 {
   #
@@ -2681,7 +2702,7 @@ function _getCPUDataByProcessorNumber
 
   if (!(( $gTypeCPU )));
     then
-      if [ ! -f "${gDataPath}/Ivy Bridge.cfg" ];
+      if [[ $(_haveConfigFile "${gDataPath}/Ivy Bridge.cfg") ]];
         then
           curl -o "${gDataPath}/Ivy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Ivy%20Bridge.cfg
       fi
@@ -2692,7 +2713,7 @@ function _getCPUDataByProcessorNumber
 
       if (!(( $gTypeCPU )));
         then
-          if [ ! -f "${gDataPath}/Haswell.cfg" ];
+          if [[ $(_haveConfigFile "${gDataPath}/Haswell.cfg") ]];
             then
               curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Haswell.cfg
           fi
@@ -2703,9 +2724,9 @@ function _getCPUDataByProcessorNumber
 
           if (!(( $gTypeCPU )));
             then
-              if [ ! -f "${gDataPath}/Broadwell.cfg" ];
+              if [[ $(_haveConfigFile "${gDataPath}/Broadwell.cfg") ]];
                 then
-                  curl -o "${gDataPath}/Broadwell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Broadwell.cfg
+                  curl -o "${gDataPath}/Broadwell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Broadwell.cfg
               fi
 
               source "${gDataPath}/Broadwell.cfg"
@@ -2714,9 +2735,9 @@ function _getCPUDataByProcessorNumber
 
               if (!(( $gTypeCPU )));
                 then
-                  if [ ! -f "${gDataPath}/Skylake.cfg" ];
+                  if [[ $(_haveConfigFile "${gDataPath}/Skylake.cfg") ]];
                     then
-                      curl -o "${gDataPath}/Skylake.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Skylake.cfg
+                      curl -o "${gDataPath}/Skylake.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Skylake.cfg
                   fi
 
                   source "${gDataPath}/Skylake.cfg"
@@ -3705,7 +3726,7 @@ function _getScriptArguments()
                           ;;
 
 
-                  -t) shift
+                  -t|-tdp) shift
 
                       if [[ "$1" =~ ^[0-9]+$ ]];
                         then
