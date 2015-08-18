@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 15.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 15.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=15.8
+gScriptVersion=15.9
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -3123,10 +3123,20 @@ function _initHaswellSetup()
                           gACST_CPU1=31   # C1, C2, C3, C6 and C7
                           ;;
 
+    Mac-06F11FD93F0323C5) gTargetMacModel="MacBookPro11,4"
+                          ;;
+
+    Mac-06F11F11946D27C5) gTargetMacModel="MacBookPro11,5"
+                          ;;
+
     Mac-35C1E88140C3E6CF) gTargetMacModel="MacBookAir6,1"
                           ;;
 
     Mac-7DF21CB3ED6977E5) gTargetMacModel="MacBookAir6,2"
+                          ;;
+
+    Mac-35C5E08120C7EEAF) gSystemType=1
+                          gTargetMacModel="Macmini7,1"
                           ;;
 
     Mac-F60DEB81FF30ACF6) gSystemType=3
@@ -3154,8 +3164,13 @@ function _initBroadwellSetup()
   # Overrides are set below.
   #
   case $gBoardID in
-    Mac-APPLE-BROADWELLS) gSystemType=1
-                          gTargetMacModel="Macmini7,1"
+    Mac-E43C1C25D4880AD6) gTargetMacModel="MacBookPro12,1"
+                          ;;
+
+    Mac-9F18E312C5C2BF0B) gTargetMacModel="MacBookAir7,1"
+                          ;;
+
+    Mac-937CB26E2E02BB01) gTargetMacModel="MacBookAir7,2"
                           ;;
   esac
 }
