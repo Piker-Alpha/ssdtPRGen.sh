@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 15.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 16.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=15.9
+gScriptVersion=160
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -1281,7 +1281,7 @@ function _getProcessorNames()
   #
   # Global variable initialisation.
   #
-  # Note: COmment this out for dry runs.
+  # Note: Comment this out for dry runs.
   #
   gProcessorNames=($acpiNames)
   #
@@ -2589,14 +2589,19 @@ function _getCPUNumberFromBrandString
 
 function _haveConfigFile
 {
-  if [ ! -f "${1}" ];
+  if [ ! -f "${gDataPath}/${1}" ];
     then
-     return 0
+      return 0
   fi
 
-  if [ $(wc -c "${1}" | awk '{print $1}') -lt 100 ];
+  if [[ $(cmp "${gDataPath}/${1}" "Data/${1}") ]];
     then
-      rm "$1"
+      return 1
+  fi
+
+  if [ $(wc -c "${gDataPath}/${1}" | awk '{print $1}') -lt 100 ];
+    then
+      rm "${gDataPath}/$1"
       return 0
   fi
 
@@ -2610,6 +2615,7 @@ function _haveConfigFile
 
 function _getCPUDataByProcessorNumber
 {
+  printf "gModelDataVersion: ${gModelDataVersion}\n"
   #
   # Local function definition
   #
@@ -2668,6 +2674,7 @@ function _getCPUDataByProcessorNumber
             fi
 
             IFS=$ifs
+            _debugPrint "Processor data found for the Intel ${gProcessorNumber}\n"
             return 1
         fi
       done
@@ -2681,7 +2688,7 @@ function _getCPUDataByProcessorNumber
   #
   if [ -f "${gDataPath}/User Defined.cfg" ];
     then
-      _debugPrint 'Checking user defined processor data ...\n'
+      _debugPrint 'Checking User Defined processor data ...\n'
       source "${gDataPath}/User Defined.cfg"
       __searchList $USER_DEFINED
 
@@ -2702,7 +2709,7 @@ function _getCPUDataByProcessorNumber
 
   if (!(( $gTypeCPU )));
     then
-      if [[ $(_haveConfigFile "${gDataPath}/Ivy Bridge.cfg") ]];
+      if [[ $(_haveConfigFile "Ivy Bridge.cfg") ]];
         then
           curl -o "${gDataPath}/Ivy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Ivy%20Bridge.cfg
       fi
@@ -2713,7 +2720,7 @@ function _getCPUDataByProcessorNumber
 
       if (!(( $gTypeCPU )));
         then
-          if [[ $(_haveConfigFile "${gDataPath}/Haswell.cfg") ]];
+          if [[ $(_haveConfigFile "Haswell.cfg") ]];
             then
               curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Haswell.cfg
           fi
@@ -2724,7 +2731,7 @@ function _getCPUDataByProcessorNumber
 
           if (!(( $gTypeCPU )));
             then
-              if [[ $(_haveConfigFile "${gDataPath}/Broadwell.cfg") ]];
+              if [[ $(_haveConfigFile "Broadwell.cfg") ]];
                 then
                   curl -o "${gDataPath}/Broadwell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Broadwell.cfg
               fi
@@ -2735,7 +2742,7 @@ function _getCPUDataByProcessorNumber
 
               if (!(( $gTypeCPU )));
                 then
-                  if [[ $(_haveConfigFile "${gDataPath}/Skylake.cfg") ]];
+                  if [[ $(_haveConfigFile "Skylake.cfg") ]];
                     then
                       curl -o "${gDataPath}/Skylake.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Skylake.cfg
                   fi
@@ -3172,6 +3179,15 @@ function _initBroadwellSetup()
 
     Mac-937CB26E2E02BB01) gTargetMacModel="MacBookAir7,2"
                           ;;
+
+    Mac-A369DDC4E67F1C45) gSystemType=1
+                          gTargetMacModel="iMac16,1"
+                          ;;
+
+    Mac-FFE5EF870D7BA81A) # Retina 4K, 21.5-inch, Core i5 3.1GHz
+                          gSystemType=1
+                          gTargetMacModel="iMaci16,2"
+                          ;;
   esac
 }
 
@@ -3193,9 +3209,20 @@ function _initSkylakeSetup()
   # Overrides are set below.
   #
   case $gBoardID in
-    Mac-APPLE-SKYLAKES) gSystemType=1
-                        gTargetMacModel="Macmini7,1"
-                        ;;
+    Mac-65CE76090165799A) # Retina 5K, 27-inch, Core i7 4.0GHz
+                          gSystemType=1
+                          gTargetMacModel="iMaci17,1"
+                          ;;
+
+    Mac-B809C3757DA9BB8D) # Retina 5K, 27-inch, Core i5 3.3GHz
+                          gSystemType=1
+                          gTargetMacModel="iMaci17,1"
+                          ;;
+
+    Mac-DB15BD556843C820) # Retina 5K, 27-inch, Core i5 3.2GHz
+                          gSystemType=1
+                          gTargetMacModel="iMaci17,1"
+                          ;;
   esac
 }
 
@@ -3372,11 +3399,11 @@ function _checkLibraryDirectory()
 #     sudo chmod -R 755 "${gPath}"
 # fi
 
-  if [ ! -f "${gDataPath}/Models.cfg" ];
+  if [[ $(_haveConfigFile "Models.cfg") ]];
     then
 #     if [ -w "${gDataPath}" ];
 #       then
-          curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Models.cfg
+          curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Models.cfg
 #       else
 #         printf "Missing write-permission(3)\n"
 #         exit -1
@@ -3707,7 +3734,7 @@ function _getScriptArguments()
                                       *) if [ "$1" == "" ];
                                            then
 #                                            _showSupportedBoardIDsAndModels "Skylake"
-#                                            _showSupportedBoardIDsAndModels "Broadwell"
+                                             _showSupportedBoardIDsAndModels "Broadwell"
                                              _showSupportedBoardIDsAndModels "Haswell"
                                              _showSupportedBoardIDsAndModels "Ivy Bridge"
                                              _showSupportedBoardIDsAndModels "Sandy Bridge"
