@@ -3963,6 +3963,8 @@ function main()
           ;;
       16) local bridgeTypeString="Broadwell"
           ;;
+      32) local bridgeTypeString="Skylake"
+          ;;
        *) local bridgeTypeString="Unknown"
           ;;
   esac
