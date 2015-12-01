@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 16.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 16.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=160
+gScriptVersion=16.1
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -4068,10 +4068,10 @@ function main()
       #
       # Check if -l argument is used.
       #
-      if [ $gLogicalCPUs -eq 0 ];
+      if [[ $gLogicalCPUs -eq 0 || $gLogicalCPUs -lt ${cpuData[6]} ]];
         then
           #
-          # No. Get thread count (logical cores) from CPU data.
+          # Get thread count (logical cores) from CPU data.
           #
           let gLogicalCPUs=${cpuData[6]}
       fi
