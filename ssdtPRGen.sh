@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 16.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 16.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=16.2
+gScriptVersion=16.3
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -3201,17 +3201,17 @@ function _initSkylakeSetup()
   case $gBoardID in
     Mac-65CE76090165799A) # Retina 5K, 27-inch, Core i7 4.0GHz
                           gSystemType=1
-                          gTargetMacModel="iMaci17,1"
+                          gTargetMacModel="iMac17,1"
                           ;;
 
     Mac-B809C3757DA9BB8D) # Retina 5K, 27-inch, Core i5 3.3GHz
                           gSystemType=1
-                          gTargetMacModel="iMaci17,1"
+                          gTargetMacModel="iMac17,1"
                           ;;
 
     Mac-DB15BD556843C820) # Retina 5K, 27-inch, Core i5 3.2GHz
                           gSystemType=1
-                          gTargetMacModel="iMaci17,1"
+                          gTargetMacModel="iMac17,1"
                           ;;
   esac
 }
@@ -4226,7 +4226,7 @@ function main()
        $BROADWELL) local cpuTypeString="09"
                    _initBroadwellSetup
                    ;;
-       $BKYLAKE)   local cpuTypeString="09"
+       $SKYLAKE)   local cpuTypeString="09"
                    _initSkylakeSetup
                    ;;
   esac
