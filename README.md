@@ -18,7 +18,7 @@ Note: ssdtPRGen.sh v15.1 and greater require a working Internet connection so th
 ``` sh
 curl -o ~/Library/ssdtPRGen.zip https://codeload.github.com/Piker-Alpha/ssdtPRGen.sh/zip/Beta
 unzip -qu ~/Library/ssdtPRGen.zip -d ~/Library/
-mv ~/Library/ssdtPRGen.sh-master ~/Library/ssdtPRGen
+mv ~/Library/ssdtPRGen.sh-Beta ~/Library/ssdtPRGen
 rm ~/Library/ssdtPRGen.zip
 ```
 
