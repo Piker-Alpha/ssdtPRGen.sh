@@ -38,6 +38,7 @@ Usage: ./ssdtPRGen.sh [-abcdfhlmptwx]
           1 = Ivy Bridge
           2 = Haswell
           3 = Broadwell
+          4 = Skylake
        -debug output [0/1/3]
           0 = no debug injection/debug output
           1 = inject debug statements in: ssdt.dsl
@@ -51,9 +52,11 @@ Usage: ./ssdtPRGen.sh [-abcdfhlmptwx]
        -open the previously generated SSDT
        -processor model (example: 'E3-1285L v3')
        -show supported board-id and model combinations:
+           Broadwell
            Haswell
            Ivy Bridge
            Sandy Bridge
+           Skylake
        -turbo maximum (turbo) frequency:
           6300 for Sandy Bridge and Ivy Bridge
           8000 for Haswell and Broadwell
