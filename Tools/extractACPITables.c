@@ -1,6 +1,6 @@
 /*
  * Name			: extractACPITables.c
- * Version		: 0.4
+ * Version		: 0.5
  * Type			: Command line tool
  * Copyright	: Pike R. Alpha (c) September 2014
  * Description	: ACPI table extractor.
@@ -17,6 +17,7 @@
  *			v0.2	renamed from acpiTableExtract.c to extractAcpiTables.c
  *			v0.3	check arguments, use argv[1] as target table.
  *			v0.4	changed output path from /tmp/ to ~/Library/ssdtPRGen
+ *			v0.5	fix segmentation fault (thanks to theracermaster).
  */
 
 #include <stdio.h>
@@ -47,6 +48,7 @@ int main(int argc, char * argv[])
 		allTables = false;
 	}
 
+	setlocale(LC_ALL, "en_US"); // Many thanks to theracermaster!
 	homeDirectory = getenv("HOME");
 
 	if (homeDirectory)
