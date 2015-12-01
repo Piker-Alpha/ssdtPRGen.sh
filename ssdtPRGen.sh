@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 16.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 16.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=16.1
+gScriptVersion=16.2
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -1300,16 +1300,6 @@ function _getProcessorNames()
       # No. Bail out with error.
       #
       _exitWithError $PROCESSOR_NAMES_ERROR
-  fi
-  #
-  # Is the -l argument, to specify the number of logical cores, used?
-  #
-  if [ $gLogicalCPUs -eq 0 ];
-    then
-      #
-      # No. Use number of processor names.
-      #
-      let gLogicalCPUs=${#gProcessorNames[@]}
   fi
 }
 
@@ -3874,8 +3864,8 @@ function main()
 
   _checkLibraryDirectory
   _checkSourceFilename
-  _getProcessorNames
   _getScriptArguments "$@"
+  _getProcessorNames
   #
   # Set local variable from global function variable.
   #
@@ -4068,10 +4058,10 @@ function main()
       #
       # Check if -l argument is used.
       #
-      if [[ $gLogicalCPUs -eq 0 || $gLogicalCPUs -lt ${cpuData[6]} ]];
+      if [ $gLogicalCPUs -eq 0 ];
         then
           #
-          # Get thread count (logical cores) from CPU data.
+          # No. Get thread count (logical cores) from CPU data.
           #
           let gLogicalCPUs=${cpuData[6]}
       fi
