@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 16.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 16.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=16.3
+gScriptVersion=16.4
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -3176,7 +3176,7 @@ function _initBroadwellSetup()
 
     Mac-FFE5EF870D7BA81A) # Retina 4K, 21.5-inch, Core i5 3.1GHz
                           gSystemType=1
-                          gTargetMacModel="iMaci16,2"
+                          gTargetMacModel="iMac16,2"
                           ;;
   esac
 }
@@ -3426,7 +3426,7 @@ function _getScriptArguments()
 
       if [[ $# -eq 1 && "$argument" == "-h" || "$argument" == "-help" ]];
         then
-          printf "${STYLE_BOLD}Usage:${STYLE_RESET} ./ssdtPRGen.sh [-abcdfhlmptwx]\n"
+          printf "${STYLE_BOLD}Usage:${STYLE_RESET} ./ssdtPRGen.sh [-abcdfhklmopsutwx]\n"
           printf "       -${STYLE_BOLD}a${STYLE_RESET}cpi Processor name (example: CPU0, C000)\n"
           printf "       -${STYLE_BOLD}bclk${STYLE_RESET} frequency (base clock frequency)\n"
           printf "       -${STYLE_BOLD}b${STYLE_RESET}oard-id (example: Mac-F60DEB81FF30ACF6)\n"
@@ -3436,7 +3436,7 @@ function _getScriptArguments()
           printf "          2 = Haswell\n"
           printf "          3 = Broadwell\n"
           printf "          4 = Skylake\n"
-          printf "       -${STYLE_BOLD}d${STYLE_RESET}ebug output [0/1/3]\n"
+          printf "       -${STYLE_BOLD}d${STYLE_RESET}ebug output [0/1/2/3]\n"
           printf "          0 = no debug injection/debug output\n"
           printf "          1 = inject debug statements in: ${gSsdtID}.dsl\n"
           printf "          2 = show debug output\n"
