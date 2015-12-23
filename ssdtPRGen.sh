@@ -2690,7 +2690,7 @@ function _getCPUDataByProcessorNumber
 
   if [ ! -f "${gDataPath}/Sandy Bridge.cfg" ];
     then
-      curl -o "${gDataPath}/Sandy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Sandy%20Bridge.cfg
+      curl -o "${gDataPath}/Sandy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Sandy%20Bridge.cfg
   fi
 
   source "${gDataPath}/Sandy Bridge.cfg"
@@ -2701,7 +2701,7 @@ function _getCPUDataByProcessorNumber
     then
       if [[ $(_haveConfigFile "Ivy Bridge.cfg") ]];
         then
-          curl -o "${gDataPath}/Ivy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Ivy%20Bridge.cfg
+          curl -o "${gDataPath}/Ivy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Ivy%20Bridge.cfg
       fi
 
       source "${gDataPath}/Ivy Bridge.cfg"
@@ -2712,7 +2712,7 @@ function _getCPUDataByProcessorNumber
         then
           if [[ $(_haveConfigFile "Haswell.cfg") ]];
             then
-              curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Haswell.cfg
+              curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Haswell.cfg
           fi
 
           source "${gDataPath}/Haswell.cfg"
@@ -3397,7 +3397,7 @@ function _checkLibraryDirectory()
 #       else
 #         printf "Missing write-permission(3)\n"
 #         exit -1
-#         sudo curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Data/Models.cfg
+#         sudo curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Models.cfg
 #     fi
   fi
   #

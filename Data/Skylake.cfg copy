@@ -1,0 +1,24 @@
+#
+# This file includes future supported Skylake processor models. You can add missing 
+# models like this:
+#
+# Processor Number, Max TDP, Low Frequency Mode, Clock Speed, Max Turbo Frequency, Cores, Threads
+#
+# Notes:
+#
+#        A "low frequency mode" of 0 means that the frequency is unconfirmed (use AppleIntelInfo.kext).
+#        Processors without turbo support should set Max Turbo Frequency equal to the Clock Speed.
+#
+#
+# Please report missing processor data at: https://github.com/Piker-Alpha/ssdtPRGen.sh/issues
+#
+
+#
+# Change this to 0 and ssdtPRGen.sh won't check for updates and/or download the data file.
+#
+
+let gSkylakeCPUDataVersion=0
+
+gUserDefinedCPUList=(
+E5620,80,1600,2400,2660,4,8,2,133
+)
