@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 16.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 16.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=16.4
+gScriptVersion=16.5
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
