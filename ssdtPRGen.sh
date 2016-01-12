@@ -34,7 +34,7 @@ gScriptVersion=16.7
 export LC_NUMERIC="en_US.UTF-8"
 
 #
-# Prevent non-printable/control characters (see issue 180).
+# Prevent non-printable/control characters (see issue #180).
 #
 unset GREP_OPTIONS
 unset GREP_COLORS
