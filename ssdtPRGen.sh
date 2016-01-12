@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 16.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 17.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=16.7
+gScriptVersion=17.0
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -144,6 +144,11 @@ gModelID=""
 # Number of logical processors.
 #
 let gLogicalCPUs=0
+
+#
+# Number of physical processors.
+#
+let gPhysicalCPUs=1
 
 #
 # Clock frequency (uninitialised).
@@ -1452,6 +1457,10 @@ function _checkProcessorDeclarationsforAP()
   local targetData="$1"
   local deviceName=$2
   local typeEncoding=$3
+  local processorScopes
+
+  let targetCPUs=($gLogicalCPUs/$gPhysicalCPUs)
+  let processorScopes=0
   #
   # Loop through all ACPI processor names extracted from the ioreg.
   #
@@ -1475,18 +1484,26 @@ function _checkProcessorDeclarationsforAP()
     #
     # ACPI processor declaration name found?
     #
-    if [[ ${#processorObjectData} -gt 8 ]];
+    if [[ $gProcessorStartIndex -lt ${#gProcessorNames[@]} ]];
       then
         _debugPrint "logicalCore: ${gProcessorStartIndex} ${gProcessorNames[$gProcessorStartIndex]}\n"
         #
         # Up
         #
-        let gProcessorStartIndex+=1
+        if [[ $processorScopes -lt $targetCPUs ]];
+          then
+            let gProcessorStartIndex+=1
+            let processorScopes+=1
+          else
+            return $gProcessorStartIndex
+        fi
+      else
+        return $gProcessorStartIndex
     fi
 
     if [[ $gProcessorStartIndex -eq ${#gProcessorNames[@]} ]];
       then
-        return 0
+        return $gProcessorStartIndex
     fi
   done
   #
@@ -1495,9 +1512,9 @@ function _checkProcessorDeclarationsforAP()
   if [[ $gProcessorStartIndex -eq ${#gProcessorNames[@]} ]];
     then
       #
-      # Yes. Return SUCCESS.
+      # Yes. Return number of ACPI processor declarations.
       #
-      return 0
+      return $gProcessorStartIndex
     else
       #
       # No. Was a deviceName given?
@@ -1763,9 +1780,9 @@ function _getACPIProcessorScope()
           #
           _checkForProcessorDeclarations $deviceObjectData $deviceName 0
           #
-          # Check return status (0 is SUCCESS).
+          # Check return status.
           #
-          if [[ $? -eq 0 ]];
+          if [[ $? -eq ${#gProcessorNames[@]} ]];
             then
               #
               # Update the global processor scope.
@@ -3321,7 +3338,7 @@ function _confirmUnsupported()
 
 function _invalidArgumentError()
 {
-  _PRINT_MSG "\nError: Invalid argument detected: ${1} "
+  _PRINT_MSG "\nError: Invalid argument detected: ${1} (check ssdtPRGen.sh -h)"
   _ABORT
 }
 
@@ -3455,7 +3472,7 @@ function _getScriptArguments()
 
       if [[ $# -eq 1 && "$argument" == "-h" || "$argument" == "-help" ]];
         then
-          printf "${STYLE_BOLD}Usage:${STYLE_RESET} ./ssdtPRGen.sh [-abcdfhklmopsutwx]\n"
+          printf "${STYLE_BOLD}Usage:${STYLE_RESET} ./ssdtPRGen.sh [-abcdefghiklmnoprsutwx]\n"
           printf "       -${STYLE_BOLD}a${STYLE_RESET}cpi Processor name (example: CPU0, C000)\n"
           printf "       -${STYLE_BOLD}bclk${STYLE_RESET} frequency (base clock frequency)\n"
           printf "       -${STYLE_BOLD}b${STYLE_RESET}oard-id (example: Mac-F60DEB81FF30ACF6)\n"
@@ -3475,6 +3492,7 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}lfm${STYLE_RESET}ode, lowest idle frequency\n"
           printf "       -${STYLE_BOLD}l${STYLE_RESET}ogical processors [2-128]\n"
           printf "       -${STYLE_BOLD}m${STYLE_RESET}odel (example: MacPro6,1)\n"
+          printf "       -${STYLE_BOLD}number${STYLE_RESET} of processors [2/3/4]\n"
           printf "       -${STYLE_BOLD}o${STYLE_RESET}pen the previously generated SSDT\n"
           printf "       -${STYLE_BOLD}p${STYLE_RESET}rocessor model (example: 'E3-1285L v3')\n"
           printf "       -${STYLE_BOLD}s${STYLE_RESET}how supported board-id and model combinations:\n"
@@ -3510,7 +3528,7 @@ function _getScriptArguments()
             #
             # Note 'uro' was only added to support '-turbo'
             #
-            if [[ "${flag}" =~ ^[-abcdfhiklmpensturowx]+$ ]];
+            if [[ "${flag}" =~ ^[-abcdefghiklmnoprsutwx]+$ ]];
               then
                 #
                 # Yes. Figure out what flag it is.
@@ -3549,21 +3567,7 @@ function _getScriptArguments()
                          fi
                          ;;
 
-                  -b) shift
-
-                      if [[ "$1" =~ ^Mac-[0-9A-F]+$ ]];
-                        then
-                          if [[ $gBoardID != "$1" ]];
-                            then
-                              gBoardID=$1
-                              _PRINT_MSG "Override value: (-b) board-id, now using: ${gBoardID}!"
-                          fi
-                        else
-                          _invalidArgumentError "-b $1"
-                      fi
-                      ;;
-
-                  -c) shift
+                  -target) shift
 
                       if [[ "$1" =~ ^[01234]+$ ]];
                         then
@@ -3590,10 +3594,43 @@ function _getScriptArguments()
                           if [[ $detectedBridgeType -ne $((2 << $1)) ]];
                             then
                               let gBridgeType=$bridgeType
-                              _PRINT_MSG "Override value: (-c) CPU type, now using: ${bridgeTypeString}!"
+                              _PRINT_MSG "Override value: (-target) CPU, now using: ${bridgeTypeString}!"
                           fi
                         else
                           _exitWithError $TARGET_CPU_ERROR
+                      fi
+                      ;;
+
+                  -b) shift
+
+                      if [[ "$1" =~ ^Mac-[0-9A-F]+$ ]];
+                        then
+                          if [[ $gBoardID != "$1" ]];
+                            then
+                              gBoardID=$1
+                              _PRINT_MSG "Override value: (-b) board-id, now using: ${gBoardID}!"
+                          fi
+                        else
+                          _invalidArgumentError "-b $1"
+                      fi
+                      ;;
+
+                  -cpus) shift
+
+                      if [[ "$1" =~ ^[2-4]+$ ]];
+                        then
+                          #
+                          # Sanity checking.
+                          #
+                          if [[ $1 -gt 1 && $1 -lt 5 ]];
+                            then
+                              let gPhysicalCPUs=$1
+                              _PRINT_MSG "Override value: (-cpus) number of processors, now using: ${1}!"
+                            else
+                             _invalidArgumentError "-cpus $1"
+                          fi
+                        else
+                          _invalidArgumentError "-cpus $1"
                       fi
                       ;;
 
@@ -3638,7 +3675,7 @@ function _getScriptArguments()
                           if [[ $1 -gt 1 && $1 -lt 129 ]];
                             then
                               let gLogicalCPUs=$1
-                              _PRINT_MSG "Override value: (-l) number of logical processors, now using: ${gLogicalCPUs}!"
+                              _PRINT_MSG "Override value: (-l) number of logical cores, now using: ${gLogicalCPUs}!"
                             else
                               _invalidArgumentError "-l $1"
                           fi
