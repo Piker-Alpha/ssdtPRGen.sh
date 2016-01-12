@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 16.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 16.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,13 +25,20 @@
 #
 # Script version info.
 #
-gScriptVersion=16.6
+gScriptVersion=16.7
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
 # LC_NUMERIC here (for the duration of the ssdtPRGen.sh) to prevent errors.
 #
 export LC_NUMERIC="en_US.UTF-8"
+
+#
+# Prevent non-printable/control characters (see issue 180).
+#
+unset GREP_OPTIONS
+unset GREP_COLORS
+unset GREP_COLOR
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
