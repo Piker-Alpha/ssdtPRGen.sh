@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 16.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 16.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=16.5
+gScriptVersion=16.6
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -2577,25 +2577,25 @@ function _getCPUNumberFromBrandString
 #--------------------------------------------------------------------------------
 #
 
-function _haveConfigFile
+function _checkForConfigFile
 {
   if [ ! -f "${gDataPath}/${1}" ];
-    then
-      return 0
-  fi
-
-  if [[ $(cmp "${gDataPath}/${1}" "Data/${1}") ]];
     then
       return 1
   fi
 
-  if [ $(wc -c "${gDataPath}/${1}" | awk '{print $1}') -lt 100 ];
+  if [[ $(cmp "${gDataPath}/${1}" "Data/${1}") ]];
     then
-      rm "${gDataPath}/$1"
-      return 0
+      return 2
   fi
 
-  return 1
+  if [[ $(wc -c "${gDataPath}/${1}" | awk '{print $1}') -lt 100 ]];
+    then
+      rm "${gDataPath}/$1"
+      return 3
+  fi
+
+  return 0
 }
 
 
@@ -2605,7 +2605,6 @@ function _haveConfigFile
 
 function _getCPUDataByProcessorNumber
 {
-  printf "gModelDataVersion: ${gModelDataVersion}\n"
   #
   # Local function definition
   #
@@ -2688,7 +2687,9 @@ function _getCPUDataByProcessorNumber
       fi
   fi
 
-  if [ ! -f "${gDataPath}/Sandy Bridge.cfg" ];
+  _checkForConfigFile "Sandy Bridge.cfg"
+
+  if [[ $? -eq 1 ]];
     then
       curl -o "${gDataPath}/Sandy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Sandy%20Bridge.cfg
   fi
@@ -2699,7 +2700,9 @@ function _getCPUDataByProcessorNumber
 
   if (!(( $gTypeCPU )));
     then
-      if [[ $(_haveConfigFile "Ivy Bridge.cfg") ]];
+      _checkForConfigFile "Ivy Bridge.cfg"
+
+      if [[ $? -eq 1 ]];
         then
           curl -o "${gDataPath}/Ivy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Ivy%20Bridge.cfg
       fi
@@ -2710,7 +2713,9 @@ function _getCPUDataByProcessorNumber
 
       if (!(( $gTypeCPU )));
         then
-          if [[ $(_haveConfigFile "Haswell.cfg") ]];
+          _checkForConfigFile "Haswell.cfg"
+
+          if [[ $? -eq 1  ]];
             then
               curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Haswell.cfg
           fi
@@ -2721,7 +2726,9 @@ function _getCPUDataByProcessorNumber
 
           if (!(( $gTypeCPU )));
             then
-              if [[ $(_haveConfigFile "Broadwell.cfg") ]];
+              _checkForConfigFile "Broadwell.cfg"
+
+              if [[ $? -eq 1  ]];
                 then
                   curl -o "${gDataPath}/Broadwell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Broadwell.cfg
               fi
@@ -2732,7 +2739,9 @@ function _getCPUDataByProcessorNumber
 
               if (!(( $gTypeCPU )));
                 then
-                  if [[ $(_haveConfigFile "Skylake.cfg") ]];
+                  _checkForConfigFile "Skylake.cfg"
+
+                  if [[ $? -eq 1  ]];
                     then
                       curl -o "${gDataPath}/Skylake.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Skylake.cfg
                   fi
@@ -2740,18 +2749,29 @@ function _getCPUDataByProcessorNumber
                   source "${gDataPath}/Skylake.cfg"
                   _debugPrint "Checking Skylake processor data ...\n"
                   __searchList $SKYLAKE
+                  let gCPUDataVersion=gSkylakeCPUDataVersion
+                else
+                  let gCPUDataVersion=gSkylakeCPUDataVersion
               fi
+            else
+              let gCPUDataVersion=gHaswellCPUDataVersion
           fi
+        else
+          let gCPUDataVersion=gIvyBridgeCPUDataVersion
       fi
+    else
+      let gCPUDataVersion=gSandyBridgeCPUDataVersion
   fi
 
-# if (!(($gTypeCPU)));
-#   then
+  printf "gModelDataVersion: ${gModelDataVersion} / gCPUDataVersion: ${gCPUDataVersion}\n"
+
+  if (!(($gTypeCPU)));
+    then
     #
     # Bail out with error if we failed to locate the processor data.
     #
-#   _exitWithError $PROCESSOR_NUMBER_ERROR $2
-# fi
+    _exitWithError $PROCESSOR_NUMBER_ERROR $2
+  fi
 }
 
 
@@ -3389,7 +3409,9 @@ function _checkLibraryDirectory()
 #     sudo chmod -R 755 "${gPath}"
 # fi
 
-  if [[ $(_haveConfigFile "Models.cfg") ]];
+  _checkForConfigFile "Models.cfg"
+
+  if [[ $? -eq 1 ]];
     then
 #     if [ -w "${gDataPath}" ];
 #       then
