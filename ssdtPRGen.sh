@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 17.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 17.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=17.0
+gScriptVersion=17.1
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -39,6 +39,17 @@ export LC_NUMERIC="en_US.UTF-8"
 unset GREP_OPTIONS
 unset GREP_COLORS
 unset GREP_COLOR
+
+#
+# Change this to 1 if you want to enable custom mode by default:
+#
+# Note: Custom mode will look for ~/Desktop/DSDT.aml and use that instead of
+#       the ACPI tables (extracted during normal mode) from the host computer.
+#
+# _getProcessorNames - will use hardcoded processor names (not ioreg extracted).
+# _extractAcpiTables – will not extract ACPI tables.
+#
+let gCustomMode=0
 
 #
 # Initial xcpm mode. Default value is -1 (uninitialised).
@@ -106,7 +117,7 @@ let gID=$(id -u)
 let gBaseFrequency=1600
 
 #
-# This is the default processor label (verified by _setProcessorLabel).
+# Custom ACPI processor label (initialised by _updateProcessorNames).
 #
 gProcLabel="CPU"
 
@@ -151,6 +162,11 @@ let gLogicalCPUs=0
 let gPhysicalCPUs=1
 
 #
+# Number of logical cores per ACPI processor scope (initialised in main).
+#
+let gLogicalCPUsPerScope=0
+
+#
 # Clock frequency (uninitialised).
 #
 let gFrequency=-1
@@ -188,6 +204,11 @@ gDataPath="${gPath}/Data"
 gToolPath="${gPath}/Tools"
 gSsdtID="ssdt"
 gSsdtPR="${gPath}/${gSsdtID}.dsl"
+
+#
+# The default override DSDT.aml (for custom mode).
+#
+gOverrideDSDT="${gHome}/Desktop/DSDT.aml"
 
 let gDesktopCPU=1
 let gMobileCPU=2
@@ -354,19 +375,37 @@ function _printExternalObjects()
   local index
   local scopeIndex
   local maxCoresPerScope
-  local numberOfLogicalCPUsPerScope
   #
   # Local variable initialisation.
   #
   let index=0
   let scopeIndex=1
-  let logicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
   #
   # Loop through all processor scopes.
   #
   for scope in "${gScope[@]}"
   do
-    let maxCoresPerScope=($logicalCPUsPerScope*$scopeIndex)
+    let maxCoresPerScope=($gLogicalCPUsPerScope*$scopeIndex)
+    #
+    # Are we done yet?
+    #
+    if [[ $index -eq $gLogicalCPUs ]];
+      then
+        #
+        # Yes. Bail out early.
+        #
+        return
+    fi
+    #
+    # Are we targeting a multi-processor configuration?
+    #
+    if [[ $gPhysicalCPUs -gt 1 ]];
+      then
+        #
+        # Yes. Add a comment about the target device scope.
+        #
+        echo '    /* Device('${scope}') */'                                           >> "$gSsdtPR"
+    fi
     #
     # Inject External () object for each logical processor in this processor scope.
     #
@@ -423,20 +462,18 @@ function _printProcessorDefinitions()
   local index
   local scopeIndex
   local maxCoresPerScope
-  local numberOfLogicalCPUsPerScope
   local pBlockAddress=$(_getPBlockAddress)
   #
   # Local variable initialisation.
   #
   let index=0
   let scopeIndex=1
-  let logicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
   #
   # Loop through all processor scopes.
   #
   for scope in "${gScope[@]}"
   do
-    let maxCoresPerScope=($logicalCPUsPerScope*$scopeIndex)
+    let maxCoresPerScope=($gLogicalCPUsPerScope*$scopeIndex)
     #
     # Do we have a device name?
     #
@@ -577,9 +614,7 @@ function _printScopeStart()
   let packageLength=$3
   let maxTurboFrequency=$4
   let useWorkArounds=0
-
-  let logicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
-  let index=($logicalCPUsPerScope*$scopeIndex)
+  let index=($gLogicalCPUsPerScope*$scopeIndex)
   #
   # Have we injected External () objects?
   #
@@ -1184,7 +1219,6 @@ function _printScopeCPUn()
   #
   local index
   local scopeIndex
-  local logicalCPUsPerScope
   local bspIndex
   local apIndex
   #
@@ -1192,13 +1226,12 @@ function _printScopeCPUn()
   #
   let index=1
   let scopeIndex=$1
-  let logicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
-  let bspIndex=$logicalCPUsPerScope*$scopeIndex
+  let bspIndex=$gLogicalCPUsPerScope*$scopeIndex
   let apIndex=$bspIndex+1
 
   local scope=${gScope[$scopeIndex]}
 
-  while [ $index -lt $logicalCPUsPerScope ];
+  while [ $index -lt $gLogicalCPUsPerScope ];
   do
     echo ''                                                                             >> "$gSsdtPR"
     echo '    Scope ('${scope}'.'${gProcessorNames[${apIndex}]}')'                      >> "$gSsdtPR"
@@ -1352,7 +1385,16 @@ function _updateProcessorNames()
   #
   if [[ $numberOfLogicalCores -gt ${#gProcessorNames[@]} ]];
     then
-      _PRINT_MSG "\nWarning: Target CPU has $gLogicalCPUs logical cores, the running system only ${#gProcessorNames[@]}"
+      printf "${STYLE_BOLD}Warning:${STYLE_RESET} Target CPU"
+
+      if [[ $gPhysicalCPUs -eq 1 ]];
+        then
+          printf " has"
+        else
+          printf "s have"
+      fi
+
+      echo    " gLogicalCPUs logical cores, the running system only ${#gProcessorNames[@]}"
       echo    "         Now using '$label' to extent the current range to $gLogicalCPUs..."
       echo -e "         Check/fix the generated $gSsdtID.dsl in case of a failure!\n"
   fi
@@ -1449,6 +1491,7 @@ function _getPackageLength()
 #
 #--------------------------------------------------------------------------------
 #
+
 function _checkProcessorDeclarationsforAP()
 {
   #
@@ -1486,12 +1529,12 @@ function _checkProcessorDeclarationsforAP()
     #
     if [[ $gProcessorStartIndex -lt ${#gProcessorNames[@]} ]];
       then
-        _debugPrint "logicalCore: ${gProcessorStartIndex} ${gProcessorNames[$gProcessorStartIndex]}\n"
         #
         # Up
         #
         if [[ $processorScopes -lt $targetCPUs ]];
           then
+            _debugPrint "logicalCore: ${gProcessorStartIndex} ${gProcessorNames[$gProcessorStartIndex]}\n"
             let gProcessorStartIndex+=1
             let processorScopes+=1
           else
@@ -1680,7 +1723,7 @@ function _getACPIProcessorScope()
     #
     local ifs=$IFS
     #
-    # Change delimiter to a space character.
+    # Change delimiter to a comma character.
     #
     IFS=","
     #
@@ -1692,7 +1735,7 @@ function _getACPIProcessorScope()
     #
     let index+=1
     #
-    # Restore the default delimiter.
+    # Restore the default (0) delimiter.
     #
     IFS=$ifs
     #
@@ -2002,27 +2045,40 @@ function _initProcessorScope()
   # Local variable declarations.
   #
   local filename="${gPath}/dsdt.dat"
-  #
-  #
-  #
-  _extractAcpiTables
-  #
-  # Note: Dry runs can be done with help of; xxd -c 256 -ps [path]dsdt.aml | tr -d '\n' > ~/Library/ssdtPRGen/dsdt.dat
-  #       You may also need to change the CPU ID to get a match.
-  #
-  # gProcessorNames[0]="C000"
-  #
   local processorDeclarationsFound
   #
   # Local variable initialisation.
   #
   let processorDeclarationsFound=0
   #
-  # Convert extracted DSDT.aml file to postscript format.
+  # Custom mode?
   #
-  # Note: Comment this out for dry runs!
-  #
-  xxd -ps "${gPath}/DSDT.aml" | tr -d '\n' > "$filename"
+  if [[ $gCustomMode -eq 1 ]];
+    then
+      #
+      # Yes. Notify user about it.
+      #
+      _PRINT_MSG "\nNotice: Custom mode enabled"
+      printf "\tSkipping ACPI table extraction from host computer!\n\tUsing Processor declaration from: ${gOverrideDSDT}!\n"
+      printf "\tUsing ACPI processor labels: "
+
+      if [[ ${#gProcessorNames[@]} -lt 8 ]];
+        then
+          echo -e "${gProcessorNames[@]}\n"
+        else
+          echo -e "\n\t– ${gProcessorNames[@]}\n"
+      fi
+      #
+      # Convert extracted DSDT.aml file to postscript format.
+      #
+      xxd -c 256 -ps "$gOverrideDSDT" | tr -d '\n' > "$filename"
+    else
+      #
+      # No. Proceed normally.
+      #
+      _extractAcpiTables
+      xxd -ps "${gPath}/DSDT.aml" | tr -d '\n' > "$filename"
+  fi
   #
   # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects.
   #
@@ -2320,6 +2376,23 @@ function _findIasl()
 
 function _extractAcpiTables()
 {
+  #
+  # Check for custom mode.
+  #
+  if [[ $gCustomMode -eq 1 ]];
+    then
+      #
+      # Check if -l argument used.
+      #
+      if [[ $gLogicalCPUs -gt 0 && $gLogicalCPUs -ne ${#gProcessorNames[@]} ]];
+        then
+          printf "\tUsing ${gLogicalCPUs} instead of ${#gProcessorNames[@]} logical processor cores\n"
+      fi
+
+      printf "\n"
+      return
+  fi
+
   if [ ! -f "${gToolPath}/extractACPITables" ];
     then
       _debugPrint 'Downloading extractACPITables.zip ...'
@@ -2471,12 +2544,12 @@ function _getCPUNumberFromBrandString
   #
   # Get CPU brandstring
   #
-  gBrandString=$(echo `sysctl machdep.cpu.brand_string` | sed -e 's/machdep.cpu.brand_string: //')
+# gBrandString=$(echo `sysctl machdep.cpu.brand_string` | sed -e 's/machdep.cpu.brand_string: //')
 # gBrandString="Intel(R) Xeon(R) CPU X5560 @ 2.80GHz"
   #
   # Show brandstring (this helps me to debug stuff).
   #
-  printf "Brandstring '${gBrandString}'\n\n"
+# printf "Brandstring '${gBrandString}'\n\n"
 
   if [[ $modelSpecified -eq 0 ]];
     then
@@ -2521,7 +2594,7 @@ function _getCPUNumberFromBrandString
       # echo "${data[5]}" # @
       # echo "${data[6]}" # 3.30GHz
       #
-      # Restore the default delimiter
+      # Restore the default (0) delimiter.
       #
       IFS=$ifs
 
@@ -2634,6 +2707,11 @@ function _getCPUDataByProcessorNumber
   #
   function __searchList()
   {
+    local data
+    local cpuData
+    #
+    # Save default (0) delimiter.
+    #
     local ifs=$IFS
     let targetType=0
 
@@ -2659,7 +2737,13 @@ function _getCPUDataByProcessorNumber
 
       for cpuData in "${targetCPUList[@]}"
       do
+        #
+        # Change delimiter to comma character.
+        #
         IFS=","
+        #
+        # Split vars.
+        #
         data=($cpuData)
 
         if [[ "${data[0]}" == "${gProcessorNumber}" ]];
@@ -2667,7 +2751,7 @@ function _getCPUDataByProcessorNumber
             gProcessorData="$cpuData"
             let gTypeCPU=$targetType
             #
-            # Is gBridgeType still uninitialised i.e. is argument -c not used?
+            # Is gBridgeType still uninitialised i.e. is argument -target not used?
             #
             if [[ $gBridgeType -eq -1 ]];
               then
@@ -2685,15 +2769,20 @@ function _getCPUDataByProcessorNumber
               then
                 let gBusFrequency="${data[8]}"
             fi
-
+            #
+            # Restore the default (0) delimiter.
+            #
             IFS=$ifs
             _debugPrint "Processor data found for the Intel ${gProcessorNumber}\n"
             return 1
         fi
       done
     done
-
+    #
+    # Restore the default (0) delimiter.
+    #
     IFS=$ifs
+
     return 0
   }
   #
@@ -3372,7 +3461,7 @@ function _showSupportedBoardIDsAndModels()
   #
   local targetList=("${!modelDataList}")
 
-  printf "$1\n"
+  printf "${STYLE_BOLD}$1${STYLE_RESET}\n"
   #
   # Change delimiter to a colon character.
   #
@@ -3389,7 +3478,7 @@ function _showSupportedBoardIDsAndModels()
     echo "${data[0]} / ${data[1]}"
   done
   #
-  # Restore default (0) delimiter.
+  # Restore the default (0) delimiter.
   #
   IFS=$ifs
   #
@@ -3458,6 +3547,20 @@ function _checkLibraryDirectory()
 #--------------------------------------------------------------------------------
 #
 
+function _showSystemData
+{
+  printf "\n${STYLE_BOLD}System information${STYLE_RESET}: $gProductName $gProductVersion ($gBuildVersion)\n"
+  #
+  # Show brandstring (this helps me to debug stuff).
+  #
+  gBrandString=$(echo `sysctl machdep.cpu.brand_string` | sed -e 's/machdep.cpu.brand_string: //')
+  printf "${STYLE_BOLD}Brandstring${STYLE_RESET}: \"${gBrandString}\"\n\n"
+}
+
+#
+#--------------------------------------------------------------------------------
+#
+
 function _getScriptArguments()
 {
   #
@@ -3470,19 +3573,14 @@ function _getScriptArguments()
       #
       local argument=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 
-      if [[ $# -eq 1 && "$argument" == "-h" || "$argument" == "-help" ]];
+      if [[ $# -eq 1 && "$argument" == "-h" || "$argument" == "-help"  ]];
         then
-          printf "${STYLE_BOLD}Usage:${STYLE_RESET} ./ssdtPRGen.sh [-abcdefghiklmnoprsutwx]\n"
+          printf "\n${STYLE_BOLD}Usage:${STYLE_RESET} ./ssdtPRGen.sh [-abcdefghiklmnoprsutwx]\n"
           printf "       -${STYLE_BOLD}a${STYLE_RESET}cpi Processor name (example: CPU0, C000)\n"
           printf "       -${STYLE_BOLD}bclk${STYLE_RESET} frequency (base clock frequency)\n"
           printf "       -${STYLE_BOLD}b${STYLE_RESET}oard-id (example: Mac-F60DEB81FF30ACF6)\n"
-          printf "       -${STYLE_BOLD}c${STYLE_RESET}pu type [0/1/2/3/4]\n"
-          printf "          0 = Sandy Bridge\n"
-          printf "          1 = Ivy Bridge\n"
-          printf "          2 = Haswell\n"
-          printf "          3 = Broadwell\n"
-          printf "          4 = Skylake\n"
-          printf "       -${STYLE_BOLD}d${STYLE_RESET}ebug output [0/1/2/3]\n"
+          printf "       -${STYLE_BOLD}cpus${STYLE_RESET} number of physical processors [1-4]\n"
+          printf "       -${STYLE_BOLD}d${STYLE_RESET}ebug output [0-3]\n"
           printf "          0 = no debug injection/debug output\n"
           printf "          1 = inject debug statements in: ${gSsdtID}.dsl\n"
           printf "          2 = show debug output\n"
@@ -3491,33 +3589,85 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}h${STYLE_RESET}elp info (this)\n"
           printf "       -${STYLE_BOLD}lfm${STYLE_RESET}ode, lowest idle frequency\n"
           printf "       -${STYLE_BOLD}l${STYLE_RESET}ogical processors [2-128]\n"
+          printf "       -${STYLE_BOLD}mode${STYLE_RESET} script mode [normal/custom]:\n"
+          printf "          normal – Use ACPI/IOREG data from the host computer\n"
+          printf "          custom – Use ACPI data from: ${gOverrideDSDT}\n"
           printf "       -${STYLE_BOLD}m${STYLE_RESET}odel (example: MacPro6,1)\n"
-          printf "       -${STYLE_BOLD}number${STYLE_RESET} of processors [2/3/4]\n"
           printf "       -${STYLE_BOLD}o${STYLE_RESET}pen the previously generated SSDT\n"
           printf "       -${STYLE_BOLD}p${STYLE_RESET}rocessor model (example: 'E3-1285L v3')\n"
-          printf "       -${STYLE_BOLD}s${STYLE_RESET}how supported board-id and model combinations:\n"
-          printf "           Broadwell\n"
-          printf "           Haswell\n"
-          printf "           Ivy Bridge\n"
-          printf "           Sandy Bridge\n"
+          printf "       -${STYLE_BOLD}show${STYLE_RESET} supported board-id and model combinations:\n"
+          printf "          Sandy Bridge\n"
+          printf "          Ivy Bridge\n"
+          printf "          Haswell\n"
+          printf "          Broadwell\n"
+          printf "          Skylake\n"
+          printf "       -${STYLE_BOLD}target${STYLE_RESET} CPU type:\n"
+          printf "          0 = Sandy Bridge\n"
+          printf "          1 = Ivy Bridge\n"
+          printf "          2 = Haswell\n"
+          printf "          3 = Broadwell\n"
+          printf "          4 = Skylake\n"
           printf "       -${STYLE_BOLD}turbo${STYLE_RESET} maximum (turbo) frequency:\n"
           printf "          6300 for Sandy Bridge and Ivy Bridge\n"
           printf "          8000 for Haswell and Broadwell\n"
           printf "       -${STYLE_BOLD}t${STYLE_RESET}dp [11.5 - 150]\n"
-          printf "       -${STYLE_BOLD}w${STYLE_RESET}orkarounds for Ivy Bridge [0/1/2/3]\n"
+          printf "       -${STYLE_BOLD}w${STYLE_RESET}orkarounds for Ivy Bridge:\n"
           printf "          0 = no workarounds\n"
           printf "          1 = inject extra (turbo) P-State at the top with maximum (turbo) frequency + 1 MHz\n"
           printf "          2 = inject extra P-States at the bottom\n"
           printf "          3 = both\n"
-          printf "       -${STYLE_BOLD}x${STYLE_RESET}cpm mode [0/1]\n"
+          printf "       -${STYLE_BOLD}x${STYLE_RESET}cpm mode:\n"
           printf "          0 = XCPM mode disabled\n"
           printf "          1 = XCPM mode enabled\n\n"
+          #
+          # Stop script (success).
+          #
+          exit 0
+      fi
+
+      if [[ $# -eq 1 && "$argument" == "-show" ]];
+        then
+          printf "\nSupported board-id / model combinations for:\n"
+          echo -e "--------------------------------------------\n"
+
+          _showSupportedBoardIDsAndModels "Skylake"
+          _showSupportedBoardIDsAndModels "Broadwell"
+          _showSupportedBoardIDsAndModels "Haswell"
+          _showSupportedBoardIDsAndModels "Ivy Bridge"
+          _showSupportedBoardIDsAndModels "Sandy Bridge"
+          #
+          # Stop script (success).
+          #
+          exit 0
+      fi
+
+      if [[ $# -eq 2 && "$argument" == "-show" ]];
+        then
+          printf "\nSupported board-id / model combinations for:\n"
+          echo -e "--------------------------------------------\n"
+
+          case "$(echo $2 | tr '[:lower:]' '[:upper:]')" in
+            SANDY*   ) _showSupportedBoardIDsAndModels "Sandy Bridge"
+                       ;;
+            IVY*     ) _showSupportedBoardIDsAndModels "Ivy Bridge"
+                       ;;
+            HASWELL  ) _showSupportedBoardIDsAndModels "Haswell"
+                       ;;
+            BROADWELL) _showSupportedBoardIDsAndModels "Broadwell"
+                       ;;
+              SKYLAKE)   _showSupportedBoardIDsAndModels "Skylake"
+                       ;;
+          esac
+          #
+          # Stop script (success).
+          #
           exit 0
         else
+          _showSystemData
           #
           # Figure out what arguments are used.
           #
-          while [ "$1" ];	
+          while [ "$1" ];
           do
             #
             # Store lowercase value of $1 in $flag
@@ -3541,8 +3691,7 @@ function _getScriptArguments()
                                 if [ ${#1} -eq 4 ];
                                   then
                                     gProcLabel=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-                                    _PRINT_MSG "Override value: (-a) label for ACPI Processors, now using '${gProcLabel}'!"
-                                    _updateProcessorNames "${#gProcessorNames[@]}"
+                                    _PRINT_MSG "Override value: (-acpi) label for ACPI Processors, now using '${gProcLabel}'!"
                                   else
                                     _exitWithError $PROCESSOR_LABEL_LENGTH_ERROR
                                 fi
@@ -3567,40 +3716,6 @@ function _getScriptArguments()
                          fi
                          ;;
 
-                  -target) shift
-
-                      if [[ "$1" =~ ^[01234]+$ ]];
-                        then
-                          local detectedBridgeType=$gBridgeType
-
-                          case "$1" in
-                              0) local bridgeType=$SANDY_BRIDGE
-                                 local bridgeTypeString="Sandy Bridge"
-                                 ;;
-                              1) local bridgeType=$IVY_BRIDGE
-                                 local bridgeTypeString="Ivy Bridge"
-                                 ;;
-                              2) local bridgeType=$HASWELL
-                                 local bridgeTypeString="Haswell"
-                                 ;;
-                              3) local bridgeType=$BROADWELL
-                                 local bridgeTypeString="Broadwell"
-                                 ;;
-                              4) local bridgeType=$SKYLAKE
-                                 local bridgeTypeString="Skylake"
-                                 ;;
-                          esac
-
-                          if [[ $detectedBridgeType -ne $((2 << $1)) ]];
-                            then
-                              let gBridgeType=$bridgeType
-                              _PRINT_MSG "Override value: (-target) CPU, now using: ${bridgeTypeString}!"
-                          fi
-                        else
-                          _exitWithError $TARGET_CPU_ERROR
-                      fi
-                      ;;
-
                   -b) shift
 
                       if [[ "$1" =~ ^Mac-[0-9A-F]+$ ]];
@@ -3617,17 +3732,17 @@ function _getScriptArguments()
 
                   -cpus) shift
 
-                      if [[ "$1" =~ ^[2-4]+$ ]];
+                      if [[ "$1" =~ ^[1-4]+$ ]];
                         then
                           #
                           # Sanity checking.
                           #
-                          if [[ $1 -gt 1 && $1 -lt 5 ]];
+                          if [[ $1 -gt 0 && $1 -lt 5 ]];
                             then
                               let gPhysicalCPUs=$1
                               _PRINT_MSG "Override value: (-cpus) number of processors, now using: ${1}!"
                             else
-                             _invalidArgumentError "-cpus $1"
+                              _invalidArgumentError "-cpus $1"
                           fi
                         else
                           _invalidArgumentError "-cpus $1"
@@ -3675,7 +3790,7 @@ function _getScriptArguments()
                           if [[ $1 -gt 1 && $1 -lt 129 ]];
                             then
                               let gLogicalCPUs=$1
-                              _PRINT_MSG "Override value: (-l) number of logical cores, now using: ${gLogicalCPUs}!"
+                              _PRINT_MSG "Override value: (-l) number of logical processors, now using: ${gLogicalCPUs}!"
                             else
                               _invalidArgumentError "-l $1"
                           fi
@@ -3683,6 +3798,33 @@ function _getScriptArguments()
                           _invalidArgumentError "-l $1"
                       fi
                       ;;
+
+                  -mode) shift
+
+                         argument=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+
+                         if [[ "$argument" == "normal" ]];
+                           then
+                             if [[ $gCustomMode -eq 0 ]];
+                               then
+                                 _PRINT_MSG "Override value: (-mode) ignored, script mode is already set to normal!"
+                               else
+                                 _PRINT_MSG "Override value: (-mode) script mode changed to normal!"
+                                 let gCustomMode=0
+                             fi
+                         elif [[ "$argument" == "custom" ]];
+                             then
+                               if [[ $gCustomMode -eq 1 ]];
+                                 then
+                                   _PRINT_MSG "Override value: (-mode) ignored, script mode is already set to custom!"
+                                 else
+                                   _PRINT_MSG "Override value: (-mode) script mode changed to custom!"
+                                   let gCustomMode=1
+                               fi
+                           else
+                             _invalidArgumentError "-mode $1"
+                         fi
+                         ;;
 
                   -m) shift
 
@@ -3767,41 +3909,38 @@ function _getScriptArguments()
                       fi
                       ;;
 
-                  -s|-show) shift
+                  -target) shift
 
-                            printf "\nSupported board-id / model combinations for:\n\n"
+                            if [[ "$1" =~ ^[01234]+$ ]];
+                              then
+                                local detectedBridgeType=$gBridgeType
 
-                            case "$(echo $1 | tr '[:lower:]' '[:upper:]')" in
-                              SANDY*   ) _showSupportedBoardIDsAndModels "Sandy Bridge"
-                                         ;;
+                                case "$1" in
+                                  0) local bridgeType=$SANDY_BRIDGE
+                                     local bridgeTypeString="Sandy Bridge"
+                                     ;;
+                                  1) local bridgeType=$IVY_BRIDGE
+                                     local bridgeTypeString="Ivy Bridge"
+                                     ;;
+                                  2) local bridgeType=$HASWELL
+                                     local bridgeTypeString="Haswell"
+                                     ;;
+                                  3) local bridgeType=$BROADWELL
+                                     local bridgeTypeString="Broadwell"
+                                     ;;
+                                  4) local bridgeType=$SKYLAKE
+                                     local bridgeTypeString="Skylake"
+                                     ;;
+                                esac
 
-                              IVY*     ) _showSupportedBoardIDsAndModels "Ivy Bridge"
-                                         ;;
-
-                              HASWELL  ) _showSupportedBoardIDsAndModels "Haswell"
-                                         ;;
-
-                              BROADWELL) _showSupportedBoardIDsAndModels "Broadwell"
-                                         ;;
-
-                              SKYLAKE)   _showSupportedBoardIDsAndModels "Skylake"
-                                         ;;
-
-                                      *) if [ "$1" == "" ];
-                                           then
-#                                            _showSupportedBoardIDsAndModels "Skylake"
-                                             _showSupportedBoardIDsAndModels "Broadwell"
-                                             _showSupportedBoardIDsAndModels "Haswell"
-                                             _showSupportedBoardIDsAndModels "Ivy Bridge"
-                                             _showSupportedBoardIDsAndModels "Sandy Bridge"
-                                           else
-                                             _invalidArgumentError "-s(how) $1"
-                                         fi
-                            esac
-                            #
-                            # Stop script (success).
-                            #
-                            exit 0
+                                if [[ $detectedBridgeType -ne $((2 << $1)) ]];
+                                  then
+                                    let gBridgeType=$bridgeType
+                                    _PRINT_MSG "Override value: (-target) CPU, now using: ${bridgeTypeString}!"
+                                fi
+                              else
+                                _exitWithError $TARGET_CPU_ERROR
+                            fi
                             ;;
 
                   -turbo) shift
@@ -3902,6 +4041,8 @@ function _getScriptArguments()
       fi
 
       echo ''
+    else
+      _showSystemData
   fi
 }
 
@@ -3922,22 +4063,21 @@ function main()
   let assumedTDP=0
   let maxTurboFrequency=0
 
-  printf "\nssdtPRGen.sh v0.9 Copyright (c) 2011-2012 by † RevoGirl\n"
-  echo   '             v6.6 Copyright (c) 2013 by † Jeroen'
+  printf "\n${STYLE_BOLD}ssdtPRGen.sh${STYLE_RESET} v0.9  Copyright (c) 2011-2012 by † RevoGirl\n"
+  echo   '             v6.6  Copyright (c) 2013 by † Jeroen'
   printf "             v$gScriptVersion Copyright (c) 2013-$(date "+%Y") by Pike R. Alpha\n"
   echo   '-----------------------------------------------------------'
-  printf "Bugs > https://github.com/Piker-Alpha/ssdtPRGen.sh/issues <\n\n"
+  printf "${STYLE_BOLD}Bugs${STYLE_RESET} > https://github.com/Piker-Alpha/ssdtPRGen.sh/issues <\n"
 
   _checkLibraryDirectory
   _checkSourceFilename
   _getScriptArguments "$@"
-  _getProcessorNames
+  _getProcessorNames $gFunctionReturn
   #
   # Set local variable from global function variable.
   #
   let modelSpecified=$gFunctionReturn
 
-  printf "System information: $gProductName $gProductVersion ($gBuildVersion)\n"
   #
   # Model override (-m) argument used?
   #
@@ -4008,7 +4148,6 @@ function main()
   fi
 
   _initProcessorScope
-  _extractAcpiTables
 
   case $gBridgeType in
        2) local bridgeTypeString="Sandy Bridge"
@@ -4132,7 +4271,7 @@ function main()
           let gLogicalCPUs=${cpuData[6]}
       fi
       #
-      # Restore default (0) delimiter.
+      # Restore the default (0) delimiter.
       #
       IFS=$ifs
       #
@@ -4267,9 +4406,23 @@ function main()
 
   _printHeader
   #
+  # Check if -cpus argument is used.
+  #
+  if [[ $gPhysicalCPUs -gt 1 ]];
+    then
+      let gLogicalCPUsPerScope=$gLogicalCPUs/$gPhysicalCPUs
+    else
+      let gLogicalCPUsPerScope=$gLogicalCPUs/${#gScope[@]}
+
+      if [[ 0 -eq 1 ]];
+        then
+          exit -1
+      fi
+  fi
+  #
   # Do we need to inject External () objects?
   #
-  if [ $gInjectExternalObjects -eq 1 ];
+  if [[ $gInjectExternalObjects -eq 1 ]];
     then
       #
       # Yes. Inject External () objects for all processor declarations.
@@ -4303,23 +4456,41 @@ function main()
   #
   for scope in "${gScope[@]}"
   do
-    _printScopeStart $scopeIndex $turboStates $packageLength $maxTurboFrequency
-    _printPackages $frequency $turboStates $maxTurboFrequency
-    _printScopeACST 0
-
-    if [ $scopeIndex -eq 0 ];
+    #
+    # Are we done yet?
+    #
+    if [[ $gLogicalCPUsPerScope*$scopeIndex -ge $gLogicalCPUs ]];
       then
-        _printMethodDSM
+        #
+        # Yes. Add closing bracket to the end of the injected data.
+        #
+        echo '}' >> "$gSsdtPR"
+        #
+        # Break out the do loop.
+        #
+        break;
       else
-        if [ $gBridgeType -ge $IVY_BRIDGE ];
+        #
+        # No. Continue.
+        #
+        _printScopeStart $scopeIndex $turboStates $packageLength $maxTurboFrequency
+        _printPackages $frequency $turboStates $maxTurboFrequency
+        _printScopeACST 0
+
+        if [ $scopeIndex -eq 0 ];
           then
-            echo '    }' >> "$gSsdtPR"
+            _printMethodDSM
+          else
+            if [ $gBridgeType -ge $IVY_BRIDGE ];
+              then
+                echo '    }' >> "$gSsdtPR"
+            fi
         fi
+
+        _printScopeCPUn $scopeIndex
+
+        let scopeIndex+=1
     fi
-
-    _printScopeCPUn $scopeIndex
-
-    let scopeIndex+=1
   done
 
   #
@@ -4369,8 +4540,9 @@ function main()
   if [[ $gCallIasl -eq 1 && -f "$gSsdtPR" ]];
     then
       #
-      # Compile ssdt.dsl
+      # Compile ssdt_pr.dsl
       #
+      printf "\n${STYLE_BOLD}Compiling:${STYLE_RESET} ssdt_pr.dsl"
       "$iasl" "$gSsdtPR"
 
       #
