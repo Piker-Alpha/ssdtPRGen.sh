@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 17.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 17.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=17.1
+gScriptVersion=17.2
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -43,8 +43,8 @@ unset GREP_COLOR
 #
 # Change this to 1 if you want to enable custom mode by default:
 #
-# Note: Custom mode will look for ~/Desktop/DSDT.aml and use that instead of
-#       the ACPI tables (extracted during normal mode) from the host computer.
+# Note: Custom mode will look for ~/Desktop/DSDT/APIC.aml and use that instead
+#       of the ACPI tables (extracted during normal mode) from the host computer.
 #
 # _getProcessorNames - will use hardcoded processor names (not ioreg extracted).
 # _extractAcpiTables – will not extract ACPI tables.
@@ -119,7 +119,16 @@ let gBaseFrequency=1600
 #
 # Custom ACPI processor label (initialised by _updateProcessorNames).
 #
-gProcLabel="CPU"
+gProcLabel=""
+
+gProcessorNames=“”
+#
+# Uncomment/change this for dry runs.
+#
+# gProcessorNames=("C000" "C001" "C002" "C003" "C100" "C101" "C102" "C103")
+# gProcessorNames=("C000" "C001" "C002" "C003" "C004" "C005" "C006" "C007" "C008" "C009" "C00A" "C00B")
+# gProcessorNames=("C000" "C001" "C002" "C003" "C004" "C005" "C006" "C007" "C008" "C009" "C00A" "C00B" "C00C" "C00D" "C00E" "C00F" \
+#                  "C100" "C101" "C102" "C103" "C104" "C105" "C106" "C107" "C108" "C109" "C10A" "C10B" "C10C" "C10D" "C10E" "C10F")
 
 #
 # The Processor scope will be initialised by _initProcessorScope).
@@ -160,6 +169,11 @@ let gLogicalCPUs=0
 # Number of physical processors.
 #
 let gPhysicalCPUs=1
+
+#
+# Initialised in _getScriptArguments and used in .
+#
+let gTargetProcessorType=0
 
 #
 # Number of logical cores per ACPI processor scope (initialised in main).
@@ -206,9 +220,11 @@ gSsdtID="ssdt"
 gSsdtPR="${gPath}/${gSsdtID}.dsl"
 
 #
-# The default override DSDT.aml (for custom mode).
+# Default override path for -mode custom
 #
-gOverrideDSDT="${gHome}/Desktop/DSDT.aml"
+# Note: Path used to convert APIC/DSDT.aml to data format.
+#
+gOverridePath="${gHome}/Desktop"
 
 let gDesktopCPU=1
 let gMobileCPU=2
@@ -227,6 +243,11 @@ let IVY_BRIDGE=4
 let HASWELL=8
 let BROADWELL=16
 let SKYLAKE=32
+
+#
+# Array with configuration files (used to show version information).
+#
+gProcessorDataConfigFiles=("User Defined.cfg" "Sandy Bridge.cfg" "Ivy Bridge.cfg" "Haswell.cfg" "Broadwell.cfg" "Skylake.cfg")
 
 #
 # Global variable used as target cpu/bridge type.
@@ -432,7 +453,7 @@ function _printExternalObjects()
 function _getPBlockAddress()
 {
   #
-  # Get Processor Control Block (P_BLK) address from offset: 152/0x98 in facp.aml
+  # Get Processor Control Block (P_BLK) address from offset: 152/0x98 in FACP.aml
   #
   local data=$(xxd -s 152 -l 4 -ps "${gPath}/facp.aml")
   #
@@ -552,8 +573,10 @@ function _injectDebugInfo()
   echo '        Method (_INI, 0, NotSerialized)'                                      >> "$gSsdtPR"
   echo '        {'                                                                    >> "$gSsdtPR"
   echo '            Store ("ssdtPRGen version....: '$gScriptVersion' / '$gProductName' '$gProductVersion' ('$gBuildVersion')", Debug)'  >> "$gSsdtPR"
+  echo '            Store ("custom mode..........: '$gCustomMode'", Debug)'           >> "$gSsdtPR"
+  echo '            Store ("host processor.......: '$gBrandString'", Debug)'          >> "$gSsdtPR"
   echo '            Store ("target processor.....: '$gProcessorNumber'", Debug)'      >> "$gSsdtPR"
-  echo '            Store ("source processor.....: '$gBrandString'", Debug)'          >> "$gSsdtPR"
+  echo '            Store ("number of processors.: '$gPhysicalCPUs'", Debug)'         >> "$gSsdtPR"
   echo '            Store ("baseFrequency........: '$gBaseFrequency'", Debug)'        >> "$gSsdtPR"
   echo '            Store ("frequency............: '$frequency'", Debug)'             >> "$gSsdtPR"
   echo '            Store ("busFrequency.........: '$gBusFrequency'", Debug)'         >> "$gSsdtPR"
@@ -1320,24 +1343,118 @@ function _getProcessorNames()
   #
   # Local variable definition/initialisation.
   #
-  # Note: -k clock-frequency filters out the inactive cores.
+  local threadCount
+  local processorLabels
+  local processorModelSpecified=$1
+
+  if [[ $gCustomMode -eq 0 ]];
+    then
+      #
+      # Note: -k clock-frequency filters out the inactive cores.
+      #
+      local acpiNames=$(ioreg -p IODeviceTree -c IOACPIPlatformDevice -k cpu-type -k clock-frequency | egrep name | sed -e 's/ *[-|="<a-z>]//g')
+      processorLabels=($acpiNames)
+  fi
   #
-  local acpiNames=$(ioreg -p IODeviceTree -c IOACPIPlatformDevice -k cpu-type -k clock-frequency | egrep name  | sed -e 's/ *[-|="<a-z>]//g')
+  # Target processor model specified with -p argument?
   #
-  # Global variable initialisation.
+  if [[ $gTargetProcessorType -eq 0 ]];
+    then
+      #
+      # No. Get processor model from the host computer.
+      #
+      _getCPUNumberFromBrandString $gTargetProcessorType
+      #
+      # Get CPU data of the host computer.
+      #
+      _getCPUDataByProcessorNumber
+      #
+      # Set thread count to that of the host computer.
+      #
+      let threadCount=${#processorLabels[@]}
+    else
+      #
+      # Yes. Get CPU data based on the specified processor model.
+      #
+      _getCPUDataByProcessorNumber
+      #
+      # Target processor model located?
+      #
+      if [[ $gTypeCPU -gt 0 ]];
+        then
+          #
+          # Set thread count to that of the target processor.
+          #
+          let threadCount=${gProcessorData[6]}
+#         let gLogicalCPUs=$threadCount*$gPhysicalCPUs
+      fi
+  fi
   #
-  # Note: Comment this out for dry runs.
+  # Check if -l argument is used.
   #
-  gProcessorNames=($acpiNames)
+  if [[ $gLogicalCPUs -eq 0 ]];
+    then
+      let gLogicalCPUs=$threadCount*$gPhysicalCPUs
+    else
+      let threadCount=$gLogicalCPUs/$gPhysicalCPUs
+  fi
   #
-  # Uncomment/change this for dry runs.
+  # Check if -cpus argument is used.
   #
-  # gProcessorNames=("C000" "C001" "C002" "C003" "C100" "C101" "C102" "C103")
-  # gProcessorNames=("C000" "C001" "C002" "C003" "C004" "C005" "C006" "C007" "C008" "C009" "C00A" "C00B")
-  # gProcessorNames=("C000" "C001" "C002" "C003" "C004" "C005" "C006" "C007" "C008" "C009" "C00A" "C00B" "C00C" "C00D" "C00E" "C00F" \
-  #                  "C100" "C101" "C102" "C103" "C104" "C105" "C106" "C107" "C108" "C109" "C10A" "C10B" "C10C" "C10D" "C10E" "C10F")
+#if [[ $gPhysicalCPUs -gt 1 ]];
+#  then
+     let gLogicalCPUsPerScope=$threadCount
+#  else
+#    let gLogicalCPUsPerScope=$threadCount/${#gScope[@]}
+# fi
+
+  _initProcessorScope
   #
-  # Do we have two logical processor cores?
+  # Custom ACPI Processor labels defined?
+  #
+  if [[ ${#gProcessorNames[@]} -eq 0 ]];
+    then
+      #
+      # No. Is argument -mode custom used?
+      #
+      if [[ $gCustomMode -eq 0 ]];
+        then
+          #
+          # No. Is argument -acpi used?
+          #
+          if [[ ${#gProcLabel} -eq 0 ]];
+            then
+              #
+              # No. Use the ACPI Processor declarations from the host computer.
+              #
+              gProcessorNames=($acpiNames)
+              gProcLabel=${gProcessorNames[0]}
+            else
+              #
+              #
+              #
+              printf "YES-1\n"
+          fi
+        else
+          #
+          # Yes. Argument -mode custom is used.
+
+          printf "YES-2\n"
+#         _initProcessorScope
+      fi
+  fi
+
+# _updateProcessorNames $gLogicalCPUs
+
+_debugPrint "Number of Scopes: ${#gScope[@]}\n"
+
+  if [[ $gPhysicalCPUs -lt ${#gScope[@]} ]];
+    then
+	  let gPhysicalCPUs+=1
+  fi
+
+  #
+  # Do we have two or more logical processor cores?
   #
   if [[ ${#gProcessorNames[@]} -lt 2 ]];
     then
@@ -1346,76 +1463,6 @@ function _getProcessorNames()
       #
       _exitWithError $PROCESSOR_NAMES_ERROR
   fi
-}
-
-
-#
-#--------------------------------------------------------------------------------
-#
-
-function _updateProcessorNames()
-{
-  #
-  # Local variable definition.
-  #
-  local currentCPU
-  local numberOfLogicalCores
-  #
-  # Local variable initialisation.
-  #
-  let currentCPU=0
-  let numberOfLogicalCores=$1
-  #
-  # Do we have less than/equal 15 logical processor cores?
-  #
-  if [[ $gLogicalCPUs -le 0x0f ]];
-    then
-      #
-      # Yes. Use the first three characters 'CPU' of the processor label 'CPU0'.
-      #
-      local label=${gProcLabel:0:3}
-    else
-      #
-      # No. Use the first two characters 'CP' of the processor label 'CP00'.
-      #
-      local label=${gProcLabel:0:2}
-  fi
-  #
-  # Target processor with more logical cores than the running system?
-  #
-  if [[ $numberOfLogicalCores -gt ${#gProcessorNames[@]} ]];
-    then
-      printf "${STYLE_BOLD}Warning:${STYLE_RESET} Target CPU"
-
-      if [[ $gPhysicalCPUs -eq 1 ]];
-        then
-          printf " has"
-        else
-          printf "s have"
-      fi
-
-      echo    " gLogicalCPUs logical cores, the running system only ${#gProcessorNames[@]}"
-      echo    "         Now using '$label' to extent the current range to $gLogicalCPUs..."
-      echo -e "         Check/fix the generated $gSsdtID.dsl in case of a failure!\n"
-  fi
-
-  while [ $currentCPU -lt $numberOfLogicalCores ];
-  do
-    if [[ $numberOfLogicalCores -gt 0x0f && $currentCPU -le 0x0f ]];
-      then
-        local filler='0'
-      else
-        local filler=''
-    fi
-    #
-    # Re-initialisation of a global variable.
-    #
-    gProcessorNames[$currentCPU]=${label}${filler}$(echo "obase=16; ${currentCPU}" | bc)
-    #
-    # Next.
-    #
-    let currentCPU+=1
-  done
 }
 
 
@@ -1492,200 +1539,130 @@ function _getPackageLength()
 #--------------------------------------------------------------------------------
 #
 
-function _checkProcessorDeclarationsforAP()
-{
-  #
-  # Local variable definitions/initialisation.
-  #
-  local targetData="$1"
-  local deviceName=$2
-  local typeEncoding=$3
-  local processorScopes
-
-  let targetCPUs=($gLogicalCPUs/$gPhysicalCPUs)
-  let processorScopes=0
-  #
-  # Loop through all ACPI processor names extracted from the ioreg.
-  #
-  for logicalCore in "${gProcessorNames[@]}"
-  do
-    #
-    # Convert (example) 'C000' to '43303030'
-    #
-    local processorNameBytes=$(echo -n ${gProcessorNames[$gProcessorStartIndex]} | xxd -ps)
-    #
-    # Search for a Processor {} declaration in targetData for the application processor.
-    #
-    # Examples (single/dual byte encoding):
-    #          5b831a4330303000 (C000)
-    #          0123456789 12345
-    #
-    #          5b834a044330303000 (C200)
-    #          0123456789 1234567
-    #
-    local processorObjectData=$(echo "${targetData}" | egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{$typeEncoding}${processorNameBytes}")
-    #
-    # ACPI processor declaration name found?
-    #
-    if [[ $gProcessorStartIndex -lt ${#gProcessorNames[@]} ]];
-      then
-        #
-        # Up
-        #
-        if [[ $processorScopes -lt $targetCPUs ]];
-          then
-            _debugPrint "logicalCore: ${gProcessorStartIndex} ${gProcessorNames[$gProcessorStartIndex]}\n"
-            let gProcessorStartIndex+=1
-            let processorScopes+=1
-          else
-            return $gProcessorStartIndex
-        fi
-      else
-        return $gProcessorStartIndex
-    fi
-
-    if [[ $gProcessorStartIndex -eq ${#gProcessorNames[@]} ]];
-      then
-        return $gProcessorStartIndex
-    fi
-  done
-  #
-  # Do we have all ACPI processor declarations?
-  #
-  if [[ $gProcessorStartIndex -eq ${#gProcessorNames[@]} ]];
-    then
-      #
-      # Yes. Return number of ACPI processor declarations.
-      #
-      return $gProcessorStartIndex
-    else
-      #
-      # No. Was a deviceName given?
-      #
-      if [[ $deviceName == "" ]];
-        then
-          #
-          # No. Don't display a deviceName in the warning.
-          #
-          local deviceText=""
-        else
-          #
-          # Yes. Display the deviceName in the warning.
-          #
-          local deviceText=" in Device(${deviceName}) {}"
-      fi
-
-      if [[ $gProcessorStartIndex -lt ${#gProcessorNames[@]} ]];
-        then
-          _debugPrint "Warning: only ${gProcessorStartIndex} of ${#gProcessorNames[@]} ACPI Processor declarations found${deviceText}"
-      fi
-  fi
-  #
-  # Return number of ACPI processor declarations that we found (so far).
-  #
-  # Note: This number should match the number of logical cores (single processor setups) but can
-  #       be lower when a deviceName was given (multi-processor setups may use multiple devices).
-  #
-  return $gProcessorStartIndex
-}
-
-
-#
-#--------------------------------------------------------------------------------
-#
-
 function _checkForProcessorDeclarations()
 {
   #
   # Local variable definitions/initialisation.
   #
+  local status=0
   local targetData=$1
   local deviceName=$2
-
   local isACPI10Compliant=$3
-  local status=0
-  #
-  # Convert (example) 'C000' to '43303030'
-  #
-  local processorNameBytes=$(echo -n ${gProcessorNames[$gProcessorStartIndex]} | xxd -ps)
-  #
-  # Search for the first ACPI Processor {} declaration in $objectData.
-  #
-  # Example:
-  #          5b831a4330303000 (C000)
-  #          0123456789 12345
-  #
-  local processorObjectData=$(echo "${targetData}" | egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{2}${processorNameBytes}")
-  #
-  # Do we have a match for the first ACPI processor declaration?
-  #
-  if [[ $processorObjectData ]];
-    then
-      #
-      # Yes. Print the result.
-      #
-      _debugPrint "ACPI Processor declaration (${gProcessorNames[0]}) {0x${processorObjectData:4:2} bytes} found in "
-      #
-      # Do we have a device name?
-      #
-      if [[ ${#deviceName} -gt 1 ]];
-        then
-          _debugPrint "Device (${deviceName}) (non ACPI 1.0 compliant)\n"
-        else
-          _debugPrint 'the DSDT '
+  local processorID
+  local processorLabel
+  local processorIsEnabled
+  local processorDeclarationLenth
+  local overrideProcessorEnableState
 
-          if [[ $isACPI10Compliant ]];
+  local variableList=(6,8,10,12,14,20 8,10,12,14,16,22)
+
+  let overrideProcessorEnableState=0
+  let enabledProcessorsPerScope=0
+
+  for varList in "${variableList[@]}"
+  do
+    #
+    # Save default (0) delimiter.
+    #
+    local ifs=$IFS
+    #
+    # Change delimiter to a comma character.
+    #
+    IFS=","
+    #
+    # Split vars.
+    #
+    local vars=(${varList})
+    #
+    # Restore the default (0) delimiter.
+    #
+    IFS=$ifs
+    #
+    #
+    #
+    local deviceObjectData=($(echo "${targetData}" | egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{${vars[5]}}06"))
+
+    if [[ $deviceObjectData ]];
+      then
+        #
+        #
+        #
+        if [[ $deviceName ]];
+          then
+#          _debugPrint "Device ($gScope/$deviceName): \n"
+           _debugPrint "Device ($deviceName): \n"
+        fi
+
+        for processorDeclaration in "${deviceObjectData[@]}"
+        do
+          #
+          # Get ProcessorID.
+          #
+          processorID="${processorDeclaration:${vars[4]}:2}"
+          #
+          # Check APIC data to see if this (logical) processor is enabled.
+          #
+          _isEnabledProcessor "${processorID}"
+          #
+          # Assign local variable with the return value.
+          #
+          processorIsEnabled=$?
+          #
+          # Processor enabled (first check)?
+          #
+          if [[ $processorIsEnabled -eq 0 && $enabledProcessorsPerScope -lt $gLogicalCPUsPerScope ]];
             then
-              _debugPrint '(ACPI 1.0 compliant)\n'
+              #
+              # Override the enabled state.
+              #
+              overrideProcessorEnableState=1
+              _debugPrint "Overriding processor enable state (now enabled)!\n"
             else
-              _debugPrint '(not ACPI 1.0 compliant)\n'
+              overrideProcessorEnableState=0
           fi
-      fi
-      #
-      # The ACPI processor declaration for the first logical core (bootstrap processor / BSP) is found,
-      # now check the targetData for processor declaration for the application processors (AP).
-      #
-      _checkProcessorDeclarationsforAP $targetData "$deviceName" $AML_SINGLE_BYTE_ENCODING
-      #
-      # Return number of ACPI processor declarations that we found (so far).
-      #
-      return $?
-    else
-      #
-      # No. Search for the first ACPI Processor {...} declaration with enclosed child objects.
-      #
-      # Example:
-      #          5b834a044330303000 (C200)
-      #          0123456789 1234567
-      #
-      processorObjectData=$(echo "$targetData" | egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{4}${processorNameBytes}")
+#printf "overrideProcessorEnableState: $overrideProcessorEnableState\n"
+          #
+          # Is the (logical) processor enabled?
+          #
+          if [[ $processorIsEnabled -eq 1 || $overrideProcessorEnableState -eq 1 ]];
+            then
+              #
+              # Yes it is (may be overriden).
+              #
+              processorLabel=$(echo -e "\x${processorDeclaration:${vars[0]}:2}\x${processorDeclaration:${vars[1]}:2}\x${processorDeclaration:${vars[2]}:2}\x${processorDeclaration:${vars[3]}:2}")
 
-      if [[ $processorObjectData ]];
-        then
-          _debugPrint "ACPI Processor declaration (${gProcessorNames[$gProcessorStartIndex]}) found in Device (${deviceName}) {...} (non ACPI 1.0 compliant)\n"
-          #
-          # The ACPI processor declaration for the first logical core (bootstrap processor / BSP) is found,
-          # now check the targetData for processor declaration for the application processors (AP).
-          #
-          _checkProcessorDeclarationsforAP $targetData "$deviceName" $AML_DUAL_BYTE_ENCODING
-          #
-          # Return number of ACPI processor declarations that we found (so far).
-          #
-          return $?
-      fi
-  fi
+              _debugPrint "processorID: ${processorID} $processorLabel\n"
 
-  #
-  # Free up some memory.
-  #
-  unset processorObjectData
-  #
-  # Return ERROR.
-  #
-  # Note: The return value can be anything between 0 and 255 and thus -1 is actually 255
-  #       but we use -1 here to make it clear (obviously) that something went wrong.
-  #
-  return -1
+              gProcessorNames[$gProcessorStartIndex]=$processorLabel
+              #
+              #
+              #
+              let gProcessorStartIndex+=1
+              #
+              # Keep track of the number of enabled (logical) processors.
+              #
+#printf "enabledProcessorsPerScope: ${enabledProcessorsPerScope}\n"
+              let enabledProcessorsPerScope+=1
+#printf "enabledProcessorsPerScope: ${enabledProcessorsPerScope}\n"
+          fi
+          #
+          # Did we collact all the required (logical) processors?
+          #
+          if [[ $enabledProcessorsPerScope -eq $gLogicalCPUsPerScope ]];
+            then
+              #
+              # Yes. We're done here.
+              #
+              #printf "break\n"
+              break;
+          fi
+        done
+
+        printf "\n"
+    fi
+  done
+
+  return $gProcessorStartIndex
 }
 
 
@@ -1698,7 +1675,7 @@ function _getACPIProcessorScope()
   #
   # Local variable definitions/initialisation.
   #
-  local filename=$1
+  local filename="/tmp/DSDT.dat"
   local variableList=(10,6,4,40 12,8,6,42)
   local varList
   local scopeLength
@@ -1754,6 +1731,7 @@ function _getACPIProcessorScope()
 
         if [ $objectCount -gt 0 ];
           then
+            _debugPrint "${objectCount} Name (_HID, \"ACPI0004\") object(s) found in the DSDT\n"
             _debugPrint "${objectCount} Name (_HID, \"ACPI0004\") object(s) found in the DSDT\n"
             _debugPrint "matchingData:\n$matchingData\n"
         fi
@@ -1825,7 +1803,8 @@ function _getACPIProcessorScope()
           #
           # Check return status.
           #
-          if [[ $? -eq ${#gProcessorNames[@]} ]];
+#         if [[ $? -eq ${#gProcessorNames[@]} ]];
+          if [[ $? -eq $gLogicalCPUs ]];
             then
               #
               # Update the global processor scope.
@@ -1854,6 +1833,7 @@ function _getACPIProcessorScope()
                   #
                   let scopeIndex+=1
 
+                  _debugPrint "gScope              : ${#gScope[@]}\n"
                   _debugPrint "gProcessorStartIndex: $gProcessorStartIndex\n"
                   _debugPrint "gLogicalCPUs        : $gLogicalCPUs\n"
                   _debugPrint "gProcessorNames     : ${#gProcessorNames[@]}\n"
@@ -1878,7 +1858,7 @@ function _getProcessorScope()
   # Local variable definitions/initialisation.
   #
   local index=0
-  local filename=$1
+  local filename="/tmp/DSDT.dat"
   local scopeLength=0
   #
   # Target Scopes ('\_PR_', '\_PR', '_PR_', '_PR', '\_SB_', '\_SB', '_SB_', '_SB')
@@ -1958,12 +1938,13 @@ function _getProcessorScope()
             #
             # Get number of characters in grep pattern.
             #
-            let grepPatternLength="${#AML_SCOPE_OPCODE}+$typeEncoding+${#grepPattern}"
+#           let grepPatternLength="${#AML_SCOPE_OPCODE}+$typeEncoding+${#grepPattern}"
+            let grepPatternLength="${#AML_SCOPE_OPCODE}+$typeEncoding+${#grepPattern}-2"
             #
             # Lower scopeLength with the number of characters that we used for the match.
             #
             let scopeLength-=$grepPatternLength
-            _debugPrint "scopeLength: $scopeLength (egrep pattern length)\n"
+            _debugPrint "scopeLength: $scopeLength (egrep pattern length: $grepPatternLength)\n"
             #
             # Initialise string.
             #
@@ -1993,13 +1974,15 @@ function _getProcessorScope()
               then
                 #
                 # Check for target scope in $scopeObjectData, there is no device name ("")
-                # and $(($index < 5)) informs it about the ACPI 1.0 compliance (trye/false).
+                # and $(($index < 5)) informs it about the ACPI 1.0 compliance (true/false).
                 #
                 _checkForProcessorDeclarations $scopeObjectData "" $(($index < 5))
                 #
                 # Check return status (0 is SUCCESS).
                 #
-                if [[ $? -eq 0 ]];
+#               if [[ $? -eq 0 ]];
+#               if [[ $? -eq ${#gProcessorNames[@]} ]];
+                if [[ $? -eq $gLogicalCPUs ]];
                   then
                     #
                     # Reinitialise scopeLength (lowered for the repetitionString).
@@ -2039,50 +2022,155 @@ function _getProcessorScope()
 #--------------------------------------------------------------------------------
 #
 
+function _getEnabledProcessors()
+{
+  #
+  # Check APIC structure type 00 for enabled processors.
+  #
+  gEnabledProcessors=($(egrep -o '0008[0-9a-f]{4}01000000' "/tmp/APIC.dat"))
+  #
+  # Note: Here is an explanation of the data:
+  #
+  # 0008000001000000
+  # ^^ = APIC structure type (Processor Local APIC).
+  #
+  # 0008000001000000
+  #   ^^ = APIC structure length (8).
+  #
+  # 0008000001000000
+  #     ^^ = ACPI Processor ID.
+  #
+  # 0008000001000000
+  #       ^^ = APIC ID.
+  #
+  # 0008000001000000
+  #         ^^^^^^^^ = APIC flags (enabled processors = 01 / disabled = 00).
+  #
+  # Do we have the minimum number (2) of logical processors?
+  #
+  if [[ ${#gEnabledProcessors[@]} -lt 2 ]];
+    then
+      #
+      # No. Error out.
+      #
+      _PRINT_MSG "Error: Not enough enabled processors found in: ${gOverridePath}/APIC.aml!"
+      _ABORT
+  fi
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
+
+function _isEnabledProcessor()
+{
+  local processorID
+  local targetProcessorID=$1
+  #
+  # Loop through the array with enabled processors.
+  #
+  for processorID in "${gEnabledProcessors[@]}"
+  do
+    #
+    # Is this the processorID we are looking for?
+    #
+    if [[ ${processorID:4:2} == $targetProcessorID ]];
+      then
+        #
+        # Yes. Check APIC flags to see if the processor is enabled.
+        #
+        if [[ ${processorID:8:8} == "01000000" ]];
+          then
+            #
+            # Processor enabled.
+            #
+            return 1
+        fi
+    fi
+  done
+  #
+  # ProcessorID not found, or procesor not enabled.
+  #
+  return 0
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
+
+function _convertACPIFiles()
+{
+  #
+  # Is argument -mode custom used?
+  #
+  if [[ $gCustomMode -eq 1 ]];
+    then
+      #
+      # Yes. Use override path for ACPI files.
+      #
+      local path="${gOverridePath}"
+    else
+      #
+      # No. Use default path (~/Library/ssdtPRGen)
+      #
+      local path="${gPath}"
+  fi
+  #
+  # Check if APIC.aml is available.
+  #
+  if [[ -f "${path}/APIC.aml" ]];
+    then
+      #
+      # Convert the override DSDT.aml file to postscript format.
+      #
+      xxd -c 256 -ps "${path}/DSDT.aml" | tr -d '\n' > "/tmp/DSDT.dat"
+    else
+      #
+      #
+      #
+      _PRINT_MSG "Error: ${path}/APIC.aml not found!"
+      _ABORT
+  fi
+  #
+  # Check if APIC.aml is available.
+  #
+  if [[ -f "${path}/APIC.aml" ]];
+    then
+      #
+      #
+      #
+      xxd -c 256 -ps "${path}/APIC.aml" | tr -d '\n' > "/tmp/APIC.dat"
+    else
+      #
+      #
+      #
+      _PRINT_MSG "Error: ${path}/APIC.aml not found!"
+      _ABORT
+  fi
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
+
 function _initProcessorScope()
 {
   #
   # Local variable declarations.
   #
-  local filename="${gPath}/dsdt.dat"
+  local filename="/tmp/DSDT.dat"
   local processorDeclarationsFound
   #
   # Local variable initialisation.
   #
   let processorDeclarationsFound=0
   #
-  # Custom mode?
-  #
-  if [[ $gCustomMode -eq 1 ]];
-    then
-      #
-      # Yes. Notify user about it.
-      #
-      _PRINT_MSG "\nNotice: Custom mode enabled"
-      printf "\tSkipping ACPI table extraction from host computer!\n\tUsing Processor declaration from: ${gOverrideDSDT}!\n"
-      printf "\tUsing ACPI processor labels: "
-
-      if [[ ${#gProcessorNames[@]} -lt 8 ]];
-        then
-          echo -e "${gProcessorNames[@]}\n"
-        else
-          echo -e "\n\t– ${gProcessorNames[@]}\n"
-      fi
-      #
-      # Convert extracted DSDT.aml file to postscript format.
-      #
-      xxd -c 256 -ps "$gOverrideDSDT" | tr -d '\n' > "$filename"
-    else
-      #
-      # No. Proceed normally.
-      #
-      _extractAcpiTables
-      xxd -ps "${gPath}/DSDT.aml" | tr -d '\n' > "$filename"
-  fi
-  #
   # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects.
   #
-  _getACPIProcessorScope "$filename"
+  _getACPIProcessorScope
   #
   # Did we find any with Processor declarations?
   #
@@ -2093,14 +2181,17 @@ function _initProcessorScope()
       #
       return
     else
+      #
+      # Note: This is not necessarily an error!
+      #
       _debugPrint "Name (_HID, \"ACPI0004\") NOT found in the DSDT\n"
   fi
   #
-  # Search for Scope (_PR) and the like.
+  # Search for ACPI v1.0 compliant scopes (like _PR and _PR_).
   #
-  _getProcessorScope "$filename"
+  _getProcessorScope
   #
-  # Do we have a processor scope with processor declarations?
+  # Do we have a scope with processor declarations in it?
   #
   if [[ $gScope != "" ]];
     then
@@ -2377,22 +2468,8 @@ function _findIasl()
 function _extractAcpiTables()
 {
   #
-  # Check for custom mode.
+  # Check target path.
   #
-  if [[ $gCustomMode -eq 1 ]];
-    then
-      #
-      # Check if -l argument used.
-      #
-      if [[ $gLogicalCPUs -gt 0 && $gLogicalCPUs -ne ${#gProcessorNames[@]} ]];
-        then
-          printf "\tUsing ${gLogicalCPUs} instead of ${#gProcessorNames[@]} logical processor cores\n"
-      fi
-
-      printf "\n"
-      return
-  fi
-
   if [ ! -f "${gToolPath}/extractACPITables" ];
     then
       _debugPrint 'Downloading extractACPITables.zip ...'
@@ -2540,131 +2617,117 @@ function _setDestinationPath
 
 function _getCPUNumberFromBrandString
 {
-  local modelSpecified=$1
   #
-  # Get CPU brandstring
+  # Save default (0) delimiter
   #
-# gBrandString=$(echo `sysctl machdep.cpu.brand_string` | sed -e 's/machdep.cpu.brand_string: //')
-# gBrandString="Intel(R) Xeon(R) CPU X5560 @ 2.80GHz"
+  local ifs=$IFS
   #
-  # Show brandstring (this helps me to debug stuff).
+  # Change delimiter to a space character
   #
-# printf "Brandstring '${gBrandString}'\n\n"
+  IFS=" "
+  #
+  # Split brandstring into array (data)
+  #
+  local data=($gBrandString)
+  #
+  # Teststrings
+  #
+  # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "@" "2.5GHz")
+  # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "v2" "@" "2.5GHz")
+  # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "v3" "@" "2.5GHz")
+  # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "0" "@" "2.5GHz")
+  # local data=("Intel(R)" "Core(TM)" "i5-4670K" "CPU" "@" "3.40GHz")
+  #
+  #
+  # Example from a MacBookPro10,2
+  #
+  # echo "${data[0]}" # Intel(R)
+  # echo "${data[1]}" # Core(TM)
+  # echo "${data[2]}" # i5-3210M
+  # echo "${data[3]}" # CPU
+  # echo "${data[4]}" # @
+  # echo "${data[5]}" # 2.50GHz
+  #
+  # or: "Intel(R) Xeon(R) CPU E3-1230 V2 @ 3.30GHz"
+  #
+  # echo "${data[0]}" # Intel(R)
+  # echo "${data[1]}" # Xeon(R)
+  # echo "${data[2]}" # CPU
+  # echo "${data[3]}" # E3-12XX
+  # echo "${data[4]}" # V2
+  # echo "${data[5]}" # @
+  # echo "${data[6]}" # 3.30GHz
+  #
+  # Restore the default (0) delimiter.
+  #
+  IFS=$ifs
 
-  if [[ $modelSpecified -eq 0 ]];
+  let length=${#data[@]}
+
+  if (( length > 7 ));
+    then
+      echo 'Warning: The brandstring has an unexpected length!'
+  fi
+  #
+  # Is this a Xeon processor model?
+  #
+  if [[ "${data[1]}" == "Xeon(R)" ]];
     then
       #
-      # Save default (0) delimiter
+      # Yes. Check for lower/upper case 'v' or '0' for OEM processors.
       #
-      local ifs=$IFS
-      #
-      # Change delimiter to a space character
-      #
-      IFS=" "
-      #
-      # Split brandstring into array (data)
-      #
-      local data=($gBrandString)
-      #
-      # Teststrings
-      #
-      # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "@" "2.5GHz")
-      # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "v2" "@" "2.5GHz")
-      # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "v3" "@" "2.5GHz")
-      # local data=("Intel(R)" "Xeon(R)" "CPU" "E3-1220" "0" "@" "2.5GHz")
-      # local data=("Intel(R)" "Core(TM)" "i5-4670K" "CPU" "@" "3.40GHz")
-
-      #
-      # Example from a MacBookPro10,2
-      #
-      # echo "${data[0]}" # Intel(R)
-      # echo "${data[1]}" # Core(TM)
-      # echo "${data[2]}" # i5-3210M
-      # echo "${data[3]}" # CPU
-      # echo "${data[4]}" # @
-      # echo "${data[5]}" # 2.50GHz
-      #
-      # or: "Intel(R) Xeon(R) CPU E3-1230 V2 @ 3.30GHz"
-      #
-      # echo "${data[0]}" # Intel(R)
-      # echo "${data[1]}" # Xeon(R)
-      # echo "${data[2]}" # CPU
-      # echo "${data[3]}" # E3-12XX
-      # echo "${data[4]}" # V2
-      # echo "${data[5]}" # @
-      # echo "${data[6]}" # 3.30GHz
-      #
-      # Restore the default (0) delimiter.
-      #
-      IFS=$ifs
-
-      let length=${#data[@]}
-
-      if (( length > 7 ));
-        then
-          echo 'Warning: The brandstring has an unexpected length!'
-      fi
-      #
-      # Is this a Xeon processor model?
-      #
-      if [[ "${data[1]}" == "Xeon(R)" ]];
+      if [[ "${data[4]}" =~ "v" || "${data[4]}" =~ "V" ]];
         then
           #
-          # Yes. Check for lower/upper case 'v' or '0' for OEM processors.
+          # Use a lowercase 'v' because that is what we use in our data.
           #
-          if [[ "${data[4]}" =~ "v" || "${data[4]}" =~ "V" ]];
-            then
-                #
-                # Use a lowercase 'v' because that is what we use in our data.
-                #
-                gProcessorNumber="${data[3]} v${data[4]:1:1}"
-            elif [[ "${data[4]}" == "0" ]];
+          gProcessorNumber="${data[3]} v${data[4]:1:1}"
+        elif [[ "${data[4]}" == "0" ]];
+          then
+            #
+            # OEM CPU's have been reported to use a "0" instead of "v2"
+            # and thus let's use that to make our data match the CPU.
+            #
+            # -target argument used?
+            #
+            if [[ $gBridgeType -gt 0 ]];
               then
                 #
-                # OEM CPU's have been reported to use a "0" instead of "v2"
-                # and thus let's use that to make our data match the CPU.
+                # Yes. Check target processor model (represented here as 'gBridgeType').
                 #
-                # -c argument used?
+                case "$gBridgeType" in
+                  $SANDY_BRIDGE) gProcessorNumber="${data[3]}"
+                                 ;;
+                  $IVY_BRIDGE)   gProcessorNumber="${data[3]} v2"
+                                 ;;
+                esac
+              else
                 #
-                if [[ $gBridgeType -gt 0 ]];
-                  then
-                    #
-                    # Yes. Check target CPU model (represented here as 'gBridgeType').
-                    #
-                    case "$gBridgeType" in
-                      $SANDY_BRIDGE) gProcessorNumber="${data[3]}"
-                                     ;;
-                      $IVY_BRIDGE)   gProcessorNumber="${data[3]} v2"
-                                     ;;
-                    esac
-                  else
-                    #
-                    # No. Check CPU model.
-                    #
-                    case $(_getCPUModel) in
-                      0x2A|0x2C|0x2D) gProcessorNumber="${data[3]}"
-                                      ;;
-                      0x3A|0x3B|0x3E) gProcessorNumber="${data[3]} v2"
-                                      ;;
-                    esac
-                fi
-          fi
+                # No. Check Processor model.
+                #
+                case $(_getCPUModel) in
+                  0x2A|0x2C|0x2D) gProcessorNumber="${data[3]}"
+                                  ;;
+                  0x3A|0x3B|0x3E) gProcessorNumber="${data[3]} v2"
+                                  ;;
+                esac
+            fi
+      fi
+   else
+      #
+      # Is this a Pentium processor model?
+      #
+      if [[ "${data[1]}" == "Pentium(R)" ]];
+        then
+          #
+          # Yes. Use fourth value from brandstring ("Intel(R) Pentium(R) CPU G3420 @ 3.20GHz")
+          #
+          gProcessorNumber="${data[3]}"
         else
           #
-          # Is this a Pentium processor model?
+          # No. Use third value from brandstring for all other processor models.
           #
-          if [[ "${data[1]}" == "Pentium(R)" ]];
-            then
-              #
-              # Yes. Use fourth value from brandstring ("Intel(R) Pentium(R) CPU G3420 @ 3.20GHz")
-              #
-              gProcessorNumber="${data[3]}"
-            else
-              #
-              # No. Use third value from brandstring for all other processor models.
-              #
-              gProcessorNumber="${data[2]}"
-          fi
+          gProcessorNumber="${data[2]}"
       fi
   fi
 }
@@ -2748,7 +2811,10 @@ function _getCPUDataByProcessorNumber
 
         if [[ "${data[0]}" == "${gProcessorNumber}" ]];
           then
-            gProcessorData="$cpuData"
+            #
+            # Make processor data globally available.
+            #
+            gProcessorData=($cpuData)
             let gTypeCPU=$targetType
             #
             # Is gBridgeType still uninitialised i.e. is argument -target not used?
@@ -2875,15 +2941,20 @@ function _getCPUDataByProcessorNumber
     else
       let gCPUDataVersion=gSandyBridgeCPUDataVersion
   fi
-
-  printf "gModelDataVersion: ${gModelDataVersion} / gCPUDataVersion: ${gCPUDataVersion}\n"
-
+  #
+  # Have we founds the processor?
+  #
   if (!(($gTypeCPU)));
     then
-    #
-    # Bail out with error if we failed to locate the processor data.
-    #
-    _exitWithError $PROCESSOR_NUMBER_ERROR $2
+      #
+      # No. Error out if we failed to locate the processor data.
+      #
+      _exitWithError $PROCESSOR_NUMBER_ERROR $2
+    else
+      #
+      # Yes. Show version information (helping me to debug stuff).
+      #
+      _PRINT_MSG "Version: model.cfg v${gModelDataVersion} / ${gProcessorDataConfigFiles[$gTypeCPU]} v${gCPUDataVersion}\n"
   fi
 }
 
@@ -2949,15 +3020,12 @@ function _checkPlatformSupport()
   function __searchList()
   {
     local data=`awk '/<key>'${1}'<\/key>.*/,/<\/array>/' /System/Library/CoreServices/PlatformSupport.plist`
-    local targetList=(`echo $data | egrep -o '(<string>.*</string>)' | sed -e 's/<\/*string>//g'`)
+    local matched=`echo $data | egrep -o $2`
 
-    for item in "${targetList[@]}"
-    do
-      if [ "$item" == "$2" ];
-        then
-          return 1
-      fi
-    done
+    if [ ${#matched} -gt 1 ];
+      then
+        return 1
+    fi
 
     return 0
   }
@@ -2970,12 +3038,14 @@ function _checkPlatformSupport()
 
       if [ $? == 0 ];
         then
-          __searchList 'SupportedBoardIds' $gBoardID
+          _PRINT_MSG 'Warning: Model identifier ('$gModelID') not found in..: /S*/L*/CoreServices/PlatformSupport.plist\n'
+      fi
 
-          if [ $? == 0 ];
-            then
-              _PRINT_MSG '\nWarning: Model identifier ['$gModelID'] and board-id ['$gBoardID'] \n\t are missing in: /S*/L*/CoreServices/PlatformSupport.plist'
-          fi
+      __searchList 'SupportedBoardIds' $gBoardID
+
+      if [ $? == 0 ];
+        then
+          _PRINT_MSG 'Warning: board-id ('$gBoardID') not found in: /S*/L*/CoreServices/PlatformSupport.plist\n'
       fi
     else
        _PRINT_MSG 'Warning: /S*/L*/C*/PlatformSupport.plist not found (normal for Snow Leopard)!'
@@ -2983,7 +3053,7 @@ function _checkPlatformSupport()
   #
   # Check for FrequencyVectors in plist.
   #
-  if [ $gBridgeType == $HASWELL ];
+  if [ $gBridgeType -ge $HASWELL ];
     then
        local plist="/System/Library/Extensions/IOPlatformPluginFamily.kext/Contents/PlugIns/X86PlatformPlugin.kext/Contents/Resources/${gBoardID}.plist"
 
@@ -3069,7 +3139,7 @@ function _checkForXCPM()
               if [[ $gBridgeType == $IVY_BRIDGE ]];
                 then
                   #
-                  # Yes. inform the user about the change.
+                  # Yes. Inform the user about the change.
                   #
                   printf "\nXCPM mode detected (Ivy Bridge workarounds disabled)\n\n"
               fi
@@ -3385,7 +3455,7 @@ function _exitWithError()
       6)  _PRINT_MSG "\nError: Processor label length is less than 3 ..."
           _ABORT 6
           ;;
-      7)  _PRINT_MSG "\nError: Processor label not found ..."
+      7)  _PRINT_MSG "\nError: Processor name(s) not found ..."
           _ABORT 7
           ;;
       8)  _PRINT_MSG "\nError: Processor Declarations not found ..."
@@ -3474,7 +3544,7 @@ function _showSupportedBoardIDsAndModels()
     #
     # Split 'modelData' into array.
     #
-    data=($modelData)
+    local data=($modelData)
     echo "${data[0]} / ${data[1]}"
   done
   #
@@ -3591,7 +3661,8 @@ function _getScriptArguments()
           printf "       -${STYLE_BOLD}l${STYLE_RESET}ogical processors [2-128]\n"
           printf "       -${STYLE_BOLD}mode${STYLE_RESET} script mode [normal/custom]:\n"
           printf "          normal – Use ACPI/IOREG data from the host computer\n"
-          printf "          custom – Use ACPI data from: ${gOverrideDSDT}\n"
+          printf "          custom – Use ACPI data from: ${gOverridePath/APIC.aml}\n"
+          printf "                 –                   : ${gOverridePath/DSDT.aml}\n"
           printf "       -${STYLE_BOLD}m${STYLE_RESET}odel (example: MacPro6,1)\n"
           printf "       -${STYLE_BOLD}o${STYLE_RESET}pen the previously generated SSDT\n"
           printf "       -${STYLE_BOLD}p${STYLE_RESET}rocessor model (example: 'E3-1285L v3')\n"
@@ -3857,51 +3928,51 @@ function _getScriptArguments()
                         then
                           if [ "$gProcessorNumber" != "$1" ];
                             then
-                              let gFunctionReturn=1
+                              let gTargetProcessorType=1
                               #
                               # Sandy Bridge checks.
                               #
                               if [[ ${1:0:4} == "i3-2" || ${1:0:4} == "i5-2" || ${1:0:4} == "i7-2" ]];
                                 then
-                                  let gFunctionReturn=2
+                                  let gTargetProcessorType=2
                               fi
                               #
                               # Ivy Bridge checks.
                               #
                               if [[ ${1:0:4} == "i3-3" || ${1:0:4} == "i5-3" || ${1:0:4} == "i7-3" ]];
                                 then
-                                  let gFunctionReturn=4
+                                  let gTargetProcessorType=4
                               fi
                               #
                               # Haswell/Haswell-E checks.
                               #
                               if [[ ${1:0:4} == "i3-4" || ${1:0:4} == "i5-4" || ${1:0:4} == "i7-4" || ${1:0:4} == "i7-5" ]];
                                 then
-                                  let gFunctionReturn=5
+                                  let gTargetProcessorType=5
                               fi
                               #
                               # Skylake checks.
                               #
                               if [[ ${1:0:4} == "i5-6" || ${1:0:4} == "i7-6" ]];
                                 then
-                                  let gFunctionReturn=5
+                                  let gTargetProcessorType=5
                               fi
                               #
                               # Xeon check.
                               #
                               if [[ ${1:0:1} == "E" ]];
                                 then
-                                  let gFunctionReturn=7
+                                  let gTargetProcessorType=7
                               fi
                               #
                               # Set processor model override and inform user about the change.
                               #
-                              if [ $gFunctionReturn -gt 0 ];
+                              if [ $gTargetProcessorType -gt 0 ];
                                 then
                                   gProcessorNumber=$1
                                   _PRINT_MSG "Override value: (-p) processor model, now using: ${gProcessorNumber}!"
                                 else
-                                  gProcessorNumber=$1
+                                  gProcessorNumber=""
                               fi
                           fi
                         else
@@ -4072,12 +4143,72 @@ function main()
   _checkLibraryDirectory
   _checkSourceFilename
   _getScriptArguments "$@"
-  _getProcessorNames $gFunctionReturn
+  #
+  # Fired up with -mode custom?
+  #
+  if [[ $gCustomMode -eq 1 ]];
+    then
+      #
+      # Yes. Extract ACPI data from host computer.
+      #
+      _extractAcpiTables
+  fi
+  #
+  # Convert APIC.aml and DSDT.aml into data files.
+  #
+  _convertACPIFiles
+  _getEnabledProcessors
+  _getProcessorNames
+  #
+  #
+  #
+  if [[ $gCustomMode -eq 1 ]];
+    then
+      #
+      # Yes. Show some basic info (in case we need the log).
+      #
+      _PRINT_MSG "\nNotice: Custom mode enabled"
+      printf "\tSkipping ACPI table extraction from host computer!\n\tGetting enabled Processors from...: ${gOverridePath}/APIC.aml\n"
+      printf "\tGetting Processor declaration from: ${gOverridePath}/DSDT.aml\n"
+      printf "\tUsed ACPI processor labels: "
+      #
+      # Check number of logical processors. Less/equal than 8?
+      #
+      if [[ ${#gProcessorNames[@]} -le 8 ]];
+        then
+          #
+          # Yes. Use the same line.
+          #
+          echo -e "${gProcessorNames[@]}\n"
+        else
+          #
+          # No. Use (a) new line(s) to show the processor names.
+          #
+          let nameCount=0
+          #
+          # Use (a) new line(s) to show the processor names.
+          #
+          printf "\n\t–"
+          #
+          # loop through all processorNames.
+          #
+          for processorName in "${gProcessorNames[@]}"
+          do
+            if [[ $nameCount -eq $gLogicalCPUsPerScope ]];
+              then
+                printf "\n\t–"
+            fi
+
+            printf " ${processorName}"
+            let nameCount+=1
+          done
+      fi
+      printf "\n\n"
+  fi
   #
   # Set local variable from global function variable.
   #
-  let modelSpecified=$gFunctionReturn
-
+  let modelSpecified=$gTargetProcessorType
   #
   # Model override (-m) argument used?
   #
@@ -4088,9 +4219,6 @@ function main()
       #
       _getModelID
   fi
-
-  _getCPUNumberFromBrandString $modelSpecified
-  _getCPUDataByProcessorNumber
   #
   # Check if -c argument wasn't used.
   #
@@ -4147,8 +4275,6 @@ function main()
       _getBoardID
   fi
 
-  _initProcessorScope
-
   case $gBridgeType in
        2) local bridgeTypeString="Sandy Bridge"
           ;;
@@ -4183,19 +4309,6 @@ function main()
   #
   if [ $gTypeCPU -gt 0 ];
     then
-      printf "Processor matched!\n"
-      #
-      # Save default (0) delimiter.
-      #
-      local ifs=$IFS
-      #
-      # Change delimiter to a comma character.
-      #
-      IFS=","
-      #
-      # Convert processor data into array.
-      #
-      local cpuData=($gProcessorData)
       #
       # -t argument used?
       #
@@ -4206,7 +4319,7 @@ function main()
           #
           # No. Get TDP from CPU data.
           #
-          gTdp=${cpuData[1]}
+          gTdp=${gProcessorData[1]}
           echo 'With a maximum TDP of '$gTdp' Watt, as specified by Intel'
 
           if [[ $assumedTDP -eq 1 ]];
@@ -4227,7 +4340,7 @@ function main()
           #
           # No. Get LFM from CPU data.
           #
-          let lfm=${cpuData[2]}
+          let lfm=${gProcessorData[2]}
       fi
       #
       # Check if -f argument is used.
@@ -4242,7 +4355,7 @@ function main()
           #
           # No. Get clock frequency from CPU data.
           #
-          let frequency=${cpuData[3]}
+          let frequency=${gProcessorData[3]}
       fi
       #
       # Check if -turbo argument is used.
@@ -4251,7 +4364,7 @@ function main()
         then
           let maxTurboFrequency=$gMaxTurboFrequency
         else
-          let maxTurboFrequency=${cpuData[4]}
+          let maxTurboFrequency=${gProcessorData[4]}
       fi
       #
       # Sanity check.
@@ -4268,7 +4381,7 @@ function main()
           #
           # No. Get thread count (logical cores) from CPU data.
           #
-          let gLogicalCPUs=${cpuData[6]}
+          let gLogicalCPUs=${gProcessorData[6]}
       fi
       #
       # Restore the default (0) delimiter.
@@ -4365,10 +4478,10 @@ function main()
 
   echo "Number logical CPU's: $gLogicalCPUs (Core Frequency: $frequency MHz)"
 
-  if [ $gLogicalCPUs -gt "${#gProcessorNames[@]}" ];
-    then
-      _updateProcessorNames $gLogicalCPUs
-  fi
+# if [ $gLogicalCPUs -gt "${#gProcessorNames[@]}" ];
+#   then
+#     _updateProcessorNames $gLogicalCPUs
+# fi
   #
   # Check maxTurboFrequency
   #
