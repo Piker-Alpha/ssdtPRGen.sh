@@ -2954,7 +2954,7 @@ function _getCPUDataByProcessorNumber
       #
       # Yes. Show version information (helping me to debug stuff).
       #
-      _PRINT_MSG "Version: model.cfg v${gModelDataVersion} / ${gProcessorDataConfigFiles[$gTypeCPU]} v${gCPUDataVersion}\n"
+      _PRINT_MSG "Version: models.cfg v${gModelDataVersion} / ${gProcessorDataConfigFiles[$gTypeCPU]} v${gCPUDataVersion}\n"
   fi
 }
 
