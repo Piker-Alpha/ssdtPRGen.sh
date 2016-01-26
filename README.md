@@ -7,6 +7,15 @@ You can download the latest Beta of ssdtPRGen.sh by entering the following comma
 curl -o ~/ssdtPRGen.sh https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/ssdtPRGen.sh
 ```
 
+You can verify the size of the downloaded file with:
+
+``` sh
+wc -c ssdtPRGen.sh
+```
+
+That should match with what you see [here] (https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/Beta/ssdtPRGen.sh). Right now that is 142Kb.
+
+
 This will download ssdtPRGen.sh to your home directory (~) and the next step is to change the permissions of the file (add +x) so that it can be run.
  
 ``` sh
@@ -74,9 +83,7 @@ Usage: ./ssdtPRGen.sh [-abcdfhlmptwx]
 Bugs
 ----
 
-All possible bugs (so called 'issues') should be filed at:
-
-https://github.com/Piker-Alpha/ssdtPRGen.sh/issues
+All possible bugs (so called 'issues') should be filed [here] (https://github.com/Piker-Alpha/ssdtPRGen.sh/issues).
 
 Please do **not** use my blog for this. Thank you!
 
