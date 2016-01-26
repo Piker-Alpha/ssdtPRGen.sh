@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 17.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 17.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=17.2
+gScriptVersion=17.3
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -3067,7 +3067,7 @@ function _checkPlatformSupport()
                printf "\t Download https://github.com/Piker-Alpha/freqVectorsEdit.sh to fix this\n"
            fi
          else
-          _PRINT_MSG "Warning: File ${gBoardID}.plist Not Found!"
+           _PRINT_MSG "Warning: File ${gBoardID}.plist Not Found!"
        fi
   fi
 }
@@ -4146,10 +4146,10 @@ function main()
   #
   # Fired up with -mode custom?
   #
-  if [[ $gCustomMode -eq 1 ]];
+  if [[ $gCustomMode -eq 0 ]];
     then
       #
-      # Yes. Extract ACPI data from host computer.
+      # No. Extract ACPI data from host computer.
       #
       _extractAcpiTables
   fi
