@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 17.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 17.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=17.3
+gScriptVersion=17.4
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -4121,6 +4121,34 @@ function _getScriptArguments()
 #--------------------------------------------------------------------------------
 #
 
+function _checkLFMCompatibility()
+{
+  _checkForConfigFile "Restrictions.cfg"
+
+  if [[ $? -eq 1 ]];
+    then
+      curl -o "${gDataPath}/Restrictions.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Restrictions.cfg
+  fi
+
+  source "${gDataPath}/Restrictions.cfg"
+
+  for boardID in "${gBoardIDsWithLFMRestrictions[@]}"
+  do
+
+    if [[ $boardID -eq $gBoardID ]];
+      then
+        _PRINT_MSG "\nNotice: The LFM frequency in $gBoardID.plist is set to 1300MHz!"
+        printf "\tThis problem can be fixed with help of freqVectorsEdit.sh from:\n"
+        printf "\thttps://github.com/Piker-Alpha/freqVectorsEdit.sh\n\n"
+        return
+    fi
+  done
+}
+
+#
+#--------------------------------------------------------------------------------
+#
+
 function main()
 {
   #
@@ -4274,6 +4302,8 @@ function main()
       #
       _getBoardID
   fi
+
+  _checkLFMCompatibility
 
   case $gBridgeType in
        2) local bridgeTypeString="Sandy Bridge"
