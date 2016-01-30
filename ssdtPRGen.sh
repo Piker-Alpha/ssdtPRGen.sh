@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 17.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 17.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=17.4
+gScriptVersion=17.5
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -2427,7 +2427,7 @@ function _findIasl()
       #
       if [ ! -f "${gToolPath}/iasl" ];
         then
-          _debugPrint 'Downloading iasl.zip ...'
+          _PRINT_MSG "Notice: Downloading iasl.zip ..."
           curl -o "${gPath}/iasl.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/iasl.zip
           #
           # Unzip command line tool.
@@ -2472,7 +2472,7 @@ function _extractAcpiTables()
   #
   if [ ! -f "${gToolPath}/extractACPITables" ];
     then
-      _debugPrint 'Downloading extractACPITables.zip ...'
+      _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
       curl -o "${gPath}/extractACPITables.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
       #
       # Unzip command line tool.
@@ -2739,16 +2739,32 @@ function _getCPUNumberFromBrandString
 
 function _checkForConfigFile
 {
+  #
+  # Check given file.
+  #
   if [ ! -f "${gDataPath}/${1}" ];
     then
+      #
+      # Not there.
+      #
       return 1
   fi
-
-  if [[ $(cmp "${gDataPath}/${1}" "Data/${1}") ]];
+  #
+  # Do we have a local Data directory?
+  #
+  if [ -d "Data" ];
     then
-      return 2
+      #
+      # Yes. Compare the files.
+      #
+      if [[ $(cmp "${gDataPath}/${1}" "Data/${1}") ]];
+        then
+          return 2
+      fi
   fi
-
+  #
+  # Check file length.
+  #
   if [[ $(wc -c "${gDataPath}/${1}" | awk '{print $1}') -lt 100 ]];
     then
       rm "${gDataPath}/$1"
@@ -2870,6 +2886,7 @@ function _getCPUDataByProcessorNumber
 
   if [[ $? -eq 1 ]];
     then
+      _PRINT_MSG "Notice: Downloading Sandy Bridge.cfg ..."
       curl -o "${gDataPath}/Sandy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Sandy%20Bridge.cfg
   fi
 
@@ -2883,6 +2900,7 @@ function _getCPUDataByProcessorNumber
 
       if [[ $? -eq 1 ]];
         then
+          _PRINT_MSG "Notice: Downloading Ivy Bridge.cfg ..."
           curl -o "${gDataPath}/Ivy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Ivy%20Bridge.cfg
       fi
 
@@ -2896,6 +2914,7 @@ function _getCPUDataByProcessorNumber
 
           if [[ $? -eq 1  ]];
             then
+              _PRINT_MSG "Notice: Downloading Haswell.cfg ..."
               curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Haswell.cfg
           fi
 
@@ -2909,6 +2928,7 @@ function _getCPUDataByProcessorNumber
 
               if [[ $? -eq 1  ]];
                 then
+                  _PRINT_MSG "Notice: Downloading Broadwell.cfg ..."
                   curl -o "${gDataPath}/Broadwell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Broadwell.cfg
               fi
 
@@ -2922,6 +2942,7 @@ function _getCPUDataByProcessorNumber
 
                   if [[ $? -eq 1  ]];
                     then
+                      _PRINT_MSG "Notice: Downloading Skylake.cfg ..."
                       curl -o "${gDataPath}/Skylake.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Skylake.cfg
                   fi
 
@@ -4127,6 +4148,7 @@ function _checkLFMCompatibility()
 
   if [[ $? -eq 1 ]];
     then
+      _PRINT_MSG "Notice: Downloading Restrictions.cfg ..."
       curl -o "${gDataPath}/Restrictions.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Restrictions.cfg
   fi
 
@@ -4135,7 +4157,7 @@ function _checkLFMCompatibility()
   for boardID in "${gBoardIDsWithLFMRestrictions[@]}"
   do
 
-    if [[ $boardID -eq $gBoardID ]];
+    if [[ "$boardID" == "$gBoardID" ]];
       then
         _PRINT_MSG "\nNotice: The LFM frequency in $gBoardID.plist is set to 1300MHz!"
         printf "\tThis problem can be fixed with help of freqVectorsEdit.sh from:\n"
