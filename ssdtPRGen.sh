@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 17.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 17.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=17.5
+gScriptVersion=17.6
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -193,7 +193,7 @@ let gScopePRFound=0
 #
 # For future use!
 #
-# Note: Set this to 0 when you want to inject ACPI Processor (...) {} declarations intead of External () objects.
+# Note: Set this to 0 if you want to inject ACPI Processor (...) {} declarations intead of External () objects.
 #
 let gInjectExternalObjects=1
 
@@ -508,8 +508,8 @@ function _printProcessorDefinitions()
         echo '        {'                                                              >> "$gSsdtPR"
         echo '            Name (_HID, "ACPI0004")'                                    >> "$gSsdtPR"
       else
-        echo '    {'                                                                  >> "$gSsdtPR"
         echo '    Scope('$scope')'                                                    >> "$gSsdtPR"
+        echo '    {'                                                                  >> "$gSsdtPR"
     fi
     #
     # Inject Processor () object for each logical processor in this processor scope.
@@ -525,7 +525,7 @@ function _printProcessorDefinitions()
           echo '                Name (_STA, 0x0F)'                                    >> "$gSsdtPR"
           echo '            }'                                                        >> "$gSsdtPR"
         else
-          echo '    Processor ('${gProcessorNames[$index]}', '$index', '$pBlockAddress', 0x06) {}' >> "$gSsdtPR"
+          echo "        Processor ("${gProcessorNames[$index]}", "$index", "$pBlockAddress", 0x06) {}" >> "$gSsdtPR"
       fi
       #
       # Next logical processor.
