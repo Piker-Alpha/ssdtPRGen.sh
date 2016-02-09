@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 17.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 17.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=17.6
+gScriptVersion=17.7
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -2118,9 +2118,9 @@ function _convertACPIFiles()
       local path="${gPath}"
   fi
   #
-  # Check if APIC.aml is available.
+  # Check for required file DSDT.aml
   #
-  if [[ -f "${path}/APIC.aml" ]];
+  if [[ -f "${path}/DSDT.aml" ]];
     then
       #
       # Convert the override DSDT.aml file to postscript format.
@@ -2130,11 +2130,11 @@ function _convertACPIFiles()
       #
       #
       #
-      _PRINT_MSG "Error: ${path}/APIC.aml not found!"
+      _PRINT_MSG "Error: ${path}/DSDT.aml not found!"
       _ABORT
   fi
   #
-  # Check if APIC.aml is available.
+  # Check for required file APIC.aml
   #
   if [[ -f "${path}/APIC.aml" ]];
     then
