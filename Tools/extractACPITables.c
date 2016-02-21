@@ -95,7 +95,6 @@ int main(int argc, char * argv[])
 					if (allTables || (strncasecmp(argv[1], (char *)tableName, strlen(argv[1])) == 0))
 					{
 						sprintf(dirspec, "%s/%s.aml", targetDirectory, tableName);
-
 						if ((filedesc = open(dirspec, O_WRONLY|O_CREAT|O_TRUNC, 0644)) != -1)
 						{
 							write(filedesc, buffer, numBytes);
