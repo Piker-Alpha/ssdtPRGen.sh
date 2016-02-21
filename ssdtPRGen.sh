@@ -209,8 +209,6 @@ STYLE_UNDERLINED="[4m"
 #
 gRevision='0x000'${gScriptVersion:0:2}${gScriptVersion:3:1}'00'
 
-curl () { echo "failed: tried to execute curl $*"; exit 1; }
-
 #
 # Path and filename setup.
 #
