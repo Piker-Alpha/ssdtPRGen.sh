@@ -2503,7 +2503,7 @@ function _extractAcpiTables()
   # Extracting ACPI tables.
   #
   _debugPrint 'Extracting ACPI tables ... '
-  "${gToolPath}/extractACPITables"
+  (cd "${gPath}" && "${gToolPath}/extractACPITables")
 
   _debugPrint 'Done.\n'
 }
