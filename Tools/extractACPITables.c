@@ -40,11 +40,22 @@ int main(int argc, char * argv[])
 	int filedesc, status = 0;
 
 	bool allTables = true;
+	bool currentDirectory = false;
 
 	io_service_t	service;
 	CFDictionaryRef	tableDictionary;
 
 	//==================================================================================
+
+	if (argc >= 2)
+	{
+		if (strcmp(argv[1], "-c") == 0)
+		{
+			currentDirectory = true;
+			argc--;
+			argv++;
+		}
+	}
 
 	if (argc == 2)
 	{
