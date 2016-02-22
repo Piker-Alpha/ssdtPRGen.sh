@@ -18,7 +18,7 @@
 #			    of the script (the log data) and the resulting SSDT.dsl Thank you!
 #
 
-# set -x # Used for tracing errors (can be used anywhere in the script).
+#set -x # Used for tracing errors (can be used anywhere in the script).
 
 #================================= GLOBAL VARS ==================================
 
@@ -213,7 +213,15 @@ gRevision='0x000'${gScriptVersion:0:2}${gScriptVersion:3:1}'00'
 # Path and filename setup.
 #
 gHome=$(echo $HOME)
-gPath="${gHome}/Library/ssdtPRGen"
+# If we're running in a full directory, we don't need ~/Library/ssdtPRGen
+if [ -d Data ] && [ -d Tools ] && [ -f Data/Models.cfg ] ; # && [ ! -d "${gHome}/Library/ssdtPRGen" ]
+  then
+    # This has to be a full path because we run tools from here while in other directories
+    gPath="$(pwd)"
+    echo "Looks like a complete directory. Using ${gPath} for paths."
+  else
+    gPath="${gHome}/Library/ssdtPRGen"
+fi
 gDataPath="${gPath}/Data"
 gToolPath="${gPath}/Tools"
 gSsdtID="ssdt"
@@ -2425,15 +2433,25 @@ function _findIasl()
       #
       # Yes. Do a quick lookup of iasl (should also be there after the first run).
       #
+      # If there is a system iasl, use it.
+      iasl="$(type -p iasl)"
+      if [ -x "${iasl}" ] ;
+        then
+          return 0
+      fi
       if [ ! -f "${gToolPath}/iasl" ];
         then
-          _PRINT_MSG "Notice: Downloading iasl.zip ..."
-          curl -o "${gPath}/iasl.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/iasl.zip
+          iaslZipPath="${gToolPath}/iasl.zip"
+          if [ ! -f "$iaslZipPath" ] ;
+            then
+              _PRINT_MSG "Notice: Downloading iasl.zip ..."
+              curl -o "${iaslZipPath}" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/iasl.zip
+          fi
           #
           # Unzip command line tool.
           #
           _debugPrint 'Unzipping iasl.zip ...'
-          unzip -qu "${gPath}/iasl.zip" -d "${gToolPath}/"
+          unzip -qu "${iaslZipPath}" -d "${gToolPath}/"
           #
           #  Checking/setting executing bit.
           #
@@ -2452,7 +2470,7 @@ function _findIasl()
           # Remove downloaded zip file.
           #
           _debugPrint 'Cleanups ...'
-          rm "${gPath}/iasl.zip"
+          rm "${iaslZipPath}"
           _debugPrint 'Done.'
       fi
 
@@ -2472,13 +2490,17 @@ function _extractAcpiTables()
   #
   if [ ! -f "${gToolPath}/extractACPITables" ];
     then
-      _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
-      curl -o "${gPath}/extractACPITables.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
+      extractACPIZipPath="${gToolPath}/extractACPITables.zip"
+      if [ ! -f "${extractACPIZipPath}" ] ;
+        then
+          _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
+          curl -o "${extractACPIZipPath}" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
+      fi
       #
       # Unzip command line tool.
       #
       _debugPrint 'Unzipping extractACPITables.zip ...'
-      unzip -qu "${gPath}/extractACPITables.zip" -d "${gToolPath}/"
+      unzip -qu "${extractACPIZipPath}" -d "${gToolPath}/"
       #
       # Checking/setting executing bit.
       #
@@ -2497,13 +2519,13 @@ function _extractAcpiTables()
       # Remove downloaded zip file.
       #
       _debugPrint 'Cleanups ...'
-      rm "${gPath}/extractACPITables.zip"
+      rm "${extractACPIZipPath}"
   fi
   #
   # Extracting ACPI tables.
   #
   _debugPrint 'Extracting ACPI tables ... '
-  "${gToolPath}/extractACPITables"
+  (cd "${gPath}" && "${gToolPath}/extractACPITables" -c)
 
   _debugPrint 'Done.\n'
 }
