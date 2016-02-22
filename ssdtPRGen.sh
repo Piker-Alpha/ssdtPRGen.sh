@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 17.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 17.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=17.7
+gScriptVersion=17.8
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -3392,6 +3392,12 @@ function _initBroadwellSetup()
                           ;;
 
     Mac-937CB26E2E02BB01) gTargetMacModel="MacBookAir7,2"
+                          ;;
+
+    Mac-BE0E8AC46FE800CC) gTargetMacModel="MacBook8,1"
+                          ;;
+
+    Mac-F305150B0C7DEEEF) gTargetMacModel="MacBook8,2"
                           ;;
 
     Mac-A369DDC4E67F1C45) gSystemType=1
