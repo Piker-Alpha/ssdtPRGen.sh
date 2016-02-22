@@ -1,6 +1,6 @@
 /*
  * Name			: extractACPITables.c
- * Version		: 0.5
+ * Version		: 0.6
  * Type			: Command line tool
  * Copyright	: Pike R. Alpha (c) September 2014
  * Description	: ACPI table extractor.
@@ -18,6 +18,7 @@
  *			v0.3	check arguments, use argv[1] as target table.
  *			v0.4	changed output path from /tmp/ to ~/Library/ssdtPRGen
  *			v0.5	fix segmentation fault (thanks to theracermaster).
+ *			v0.6	target directory support added for ssdtPRGen.sh
  */
 
 #include <stdio.h>
@@ -31,7 +32,9 @@ int main(int argc, char * argv[])
 {
 	char tableName[8];
 	char dirspec[1024];
+	char targetDirectory[512];
 
+	char * targetPath = NULL;
 	char * homeDirectory = NULL;
 
 	int filedesc, status = 0;
@@ -48,10 +51,28 @@ int main(int argc, char * argv[])
 		allTables = false;
 	}
 
-	setlocale(LC_ALL, "en_US"); // Many thanks to theracermaster!
-	homeDirectory = getenv("HOME");
+	bzero(dirspec, 1024);
+	bzero(targetDirectory, 512);
 
-	if (homeDirectory)
+	setlocale(LC_ALL, "en_US"); // Many thanks to theracermaster!
+
+	targetPath = getenv("SSDTPRGEN_EXTRACTION_PATH");
+
+	if (targetPath && strlen(targetPath) < 477)
+	{
+		sprintf(targetDirectory, "%s", targetPath);
+	}
+	else
+	{
+		homeDirectory = getenv("HOME");
+		
+		if (homeDirectory && strlen(homeDirectory) < 977)
+		{
+			sprintf(targetDirectory, "%s/Library/ssdtPRGen", homeDirectory);
+		}
+	}
+
+	if (targetDirectory)
 	{
 		if ((service = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("AppleACPIPlatformExpert"))))
 		{
@@ -73,7 +94,7 @@ int main(int argc, char * argv[])
 
 					if (allTables || (strncasecmp(argv[1], (char *)tableName, strlen(argv[1])) == 0))
 					{
-						sprintf(dirspec, "%s/Library/ssdtPRGen/%s.aml", homeDirectory, tableName);
+						sprintf(dirspec, "%s/%s.aml", targetDirectory, tableName);
 
 						if ((filedesc = open(dirspec, O_WRONLY|O_CREAT|O_TRUNC, 0644)) != -1)
 						{
@@ -107,5 +128,5 @@ int main(int argc, char * argv[])
 		exit(status);
 	}
 
-	exit(-1); // homeDirectory is NULL
+	exit(-1); // targetDirectory is NULL
 }
