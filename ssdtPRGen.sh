@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 17.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 17.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=17.8
+gScriptVersion=17.9
 
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
@@ -2499,6 +2499,14 @@ function _extractAcpiTables()
       _debugPrint 'Cleanups ...'
       rm "${gPath}/extractACPITables.zip"
   fi
+
+  if [[ $gExtractionPath ]];
+    then
+      #
+      # Export target path for extractACPITables v0.6 and greater.
+      #
+      export SSDTPRGEN_EXTRACTION_PATH="${gExtractionPath}"
+  fi
   #
   # Extracting ACPI tables.
   #
@@ -3682,6 +3690,7 @@ function _getScriptArguments()
           printf "          1 = inject debug statements in: ${gSsdtID}.dsl\n"
           printf "          2 = show debug output\n"
           printf "          3 = both\n"
+          printf "       -${STYLE_BOLD}extract${STYLE_RESET} ACPI tables to [target path]\n"
           printf "       -${STYLE_BOLD}f${STYLE_RESET}requency (clock frequency)\n"
           printf "       -${STYLE_BOLD}h${STYLE_RESET}elp info (this)\n"
           printf "       -${STYLE_BOLD}lfm${STYLE_RESET}ode, lowest idle frequency\n"
@@ -3858,6 +3867,23 @@ function _getScriptArguments()
                           fi
                         else
                           _invalidArgumentError "-d $1"
+                      fi
+                      ;;
+
+                  -extract) shift
+
+                      if [[ "$1" == "." || "$1" == " " ]];
+                        then
+                          #
+                          # Get current path for extractACPITables v0.6 and greater.
+                          #
+                          local currentPath=$(pwd)
+                          gExtractionPath="${currentPath}"
+                        else
+                          #
+                          # Use given path for extractACPITables v0.6 and greater.
+                          #
+                          gExtractionPath="${1}"
                       fi
                       ;;
 
