@@ -1,0 +1,7 @@
+.DS_Store
+Backup
+acpiTableExtract.zip
+Tools/extractACPITables
+Tools/iasl
+*.aml
+*.dsl

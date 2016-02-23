@@ -27,6 +27,10 @@
 #
 gScriptVersion=17.9
 
+# GitHub branch to pull data from
+# "master" or "Beta"
+gGitHubBranch="Beta"
+
 #
 # The script expects '0.5' but non-US localizations use '0,5' so we export
 # LC_NUMERIC here (for the duration of the ssdtPRGen.sh) to prevent errors.
@@ -213,11 +217,38 @@ gRevision='0x000'${gScriptVersion:0:2}${gScriptVersion:3:1}'00'
 # Path and filename setup.
 #
 gHome=$(echo $HOME)
-gPath="${gHome}/Library/ssdtPRGen"
+
+# If ~/Library/sstdPRGen exists, use it as our sandbox.
+#
+# If we are not in a full github checkout, use ~/Library/sstdPRGen as sandbox.
+# 
+# But if ~/Library/sstdPRGen doesn't exist *and* the current directory looks
+# like it has files we need, use the current directory as sandbox.
+
+if  [ ! -d "${gHome}/Library/ssdtPRGen" ] &&
+    [ -d Data ] &&
+    [ -d Tools ] &&
+    [ -f Data/Models.cfg ] ;
+  then
+    # Although "." works, set gPath to our full path in case we want to
+    # use tools while in other directories.
+    gPath="$(pwd)"
+    echo "Looks like this is a complete directory, and you don't have  an"
+    echo "existing ~/Library/ssdtPRGen."
+    echo "Using ${gPath} for paths."
+  else
+    gPath="${gHome}/Library/ssdtPRGen"
+    echo "Either ${gPath} exists, or this directory is missing Tools/ or"
+    echo "Data/Models.cfg."
+    echo "Using ${gPath} for paths."
+fi
 gDataPath="${gPath}/Data"
 gToolPath="${gPath}/Tools"
 gSsdtID="ssdt"
 gSsdtPR="${gPath}/${gSsdtID}.dsl"
+
+# Default in case user has not specified path
+gExtractionPath="${gPath}"
 
 #
 # Default override path for -mode custom
@@ -2417,6 +2448,7 @@ function _getSystemType()
 
 function _findIasl()
 {
+  local downloadedIASL=0
   #
   # Do we have to call IASL?
   #
@@ -2425,15 +2457,27 @@ function _findIasl()
       #
       # Yes. Do a quick lookup of iasl (should also be there after the first run).
       #
+      # If there is a system iasl, use it.
+      iasl="$(type -p iasl)"
+      if [ -x "${iasl}" ] ;
+        then
+          return 0
+      fi
       if [ ! -f "${gToolPath}/iasl" ];
         then
-          _PRINT_MSG "Notice: Downloading iasl.zip ..."
-          curl -o "${gPath}/iasl.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/iasl.zip
+          mkdir -p "${gToolPath}"
+          iaslZipPath="${gToolPath}/iasl.zip"
+          if [ ! -f "$iaslZipPath" ] ;
+            then
+              _PRINT_MSG "Notice: Downloading iasl.zip ..."
+              curl -o "${iaslZipPath}" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/${gGitHubBranch}/Tools/iasl.zip
+              downloadedIASL=1
+          fi
           #
           # Unzip command line tool.
           #
           _debugPrint 'Unzipping iasl.zip ...'
-          unzip -qu "${gPath}/iasl.zip" -d "${gToolPath}/"
+          unzip -qu "${iaslZipPath}" -d "${gToolPath}/"
           #
           #  Checking/setting executing bit.
           #
@@ -2451,9 +2495,12 @@ function _findIasl()
           #
           # Remove downloaded zip file.
           #
-          _debugPrint 'Cleanups ...'
-          rm "${gPath}/iasl.zip"
-          _debugPrint 'Done.'
+          if [ $downloadedIASL -eq 1 ];
+            then
+              _debugPrint 'Cleanups ...'
+              rm "${iaslZipPath}"
+              _debugPrint 'Done.'
+          fi
       fi
 
       iasl="${gToolPath}/iasl"
@@ -2467,18 +2514,25 @@ function _findIasl()
 
 function _extractAcpiTables()
 {
+  local downloadedACPI=0
   #
   # Check target path.
   #
   if [ ! -f "${gToolPath}/extractACPITables" ];
     then
-      _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
-      curl -o "${gPath}/extractACPITables.zip" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/master/Tools/extractACPITables.zip
+      mkdir -p "${gToolPath}"
+      extractACPIZipPath="${gToolPath}/extractACPITables.zip"
+      if [ ! -f "${extractACPIZipPath}" ] ;
+        then
+          _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
+          curl -o "${extractACPIZipPath}" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/${gGitHubBranch}/Tools/extractACPITables.zip
+          downloadedACPI=1
+      fi
       #
       # Unzip command line tool.
       #
       _debugPrint 'Unzipping extractACPITables.zip ...'
-      unzip -qu "${gPath}/extractACPITables.zip" -d "${gToolPath}/"
+      unzip -qu "${extractACPIZipPath}" -d "${gToolPath}/"
       #
       # Checking/setting executing bit.
       #
@@ -2497,7 +2551,10 @@ function _extractAcpiTables()
       # Remove downloaded zip file.
       #
       _debugPrint 'Cleanups ...'
-      rm "${gPath}/extractACPITables.zip"
+      if [ $downloadedACPI -ne 0 ];
+         then
+           rm "${extractACPIZipPath}"
+      fi
   fi
 
   if [[ $gExtractionPath ]];
@@ -2895,7 +2952,7 @@ function _getCPUDataByProcessorNumber
   if [[ $? -eq 1 ]];
     then
       _PRINT_MSG "Notice: Downloading Sandy Bridge.cfg ..."
-      curl -o "${gDataPath}/Sandy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Sandy%20Bridge.cfg
+      curl -o "${gDataPath}/Sandy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/${gGitHubBranch}/Data/Sandy%20Bridge.cfg
   fi
 
   source "${gDataPath}/Sandy Bridge.cfg"
@@ -2909,7 +2966,7 @@ function _getCPUDataByProcessorNumber
       if [[ $? -eq 1 ]];
         then
           _PRINT_MSG "Notice: Downloading Ivy Bridge.cfg ..."
-          curl -o "${gDataPath}/Ivy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Ivy%20Bridge.cfg
+          curl -o "${gDataPath}/Ivy Bridge.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/${gGitHubBranch}/Data/Ivy%20Bridge.cfg
       fi
 
       source "${gDataPath}/Ivy Bridge.cfg"
@@ -2923,7 +2980,7 @@ function _getCPUDataByProcessorNumber
           if [[ $? -eq 1  ]];
             then
               _PRINT_MSG "Notice: Downloading Haswell.cfg ..."
-              curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Haswell.cfg
+              curl -o "${gDataPath}/Haswell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/${gGitHubBranch}/Data/Haswell.cfg
           fi
 
           source "${gDataPath}/Haswell.cfg"
@@ -2937,7 +2994,7 @@ function _getCPUDataByProcessorNumber
               if [[ $? -eq 1  ]];
                 then
                   _PRINT_MSG "Notice: Downloading Broadwell.cfg ..."
-                  curl -o "${gDataPath}/Broadwell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Broadwell.cfg
+                  curl -o "${gDataPath}/Broadwell.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/${gGitHubBranch}/Data/Broadwell.cfg
               fi
 
               source "${gDataPath}/Broadwell.cfg"
@@ -2951,7 +3008,7 @@ function _getCPUDataByProcessorNumber
                   if [[ $? -eq 1  ]];
                     then
                       _PRINT_MSG "Notice: Downloading Skylake.cfg ..."
-                      curl -o "${gDataPath}/Skylake.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Skylake.cfg
+                      curl -o "${gDataPath}/Skylake.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/${gGitHubBranch}/Data/Skylake.cfg
                   fi
 
                   source "${gDataPath}/Skylake.cfg"
@@ -3633,11 +3690,11 @@ function _checkLibraryDirectory()
     then
 #     if [ -w "${gDataPath}" ];
 #       then
-          curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Models.cfg
+          curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/${gGitHubBranch}/Data/Models.cfg
 #       else
 #         printf "Missing write-permission(3)\n"
 #         exit -1
-#         sudo curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Models.cfg
+#         sudo curl -o "${gDataPath}/Models.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/${gGitHubBranch}/Data/Models.cfg
 #     fi
   fi
   #
@@ -4181,7 +4238,7 @@ function _checkLFMCompatibility()
   if [[ $? -eq 1 ]];
     then
       _PRINT_MSG "Notice: Downloading Restrictions.cfg ..."
-      curl -o "${gDataPath}/Restrictions.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/Beta/Data/Restrictions.cfg
+      curl -o "${gDataPath}/Restrictions.cfg" --silent https://raw.githubusercontent.com/Piker-Alpha/ssdtPRGen.sh/${gGitHubBranch}/Data/Restrictions.cfg
   fi
 
   source "${gDataPath}/Restrictions.cfg"
