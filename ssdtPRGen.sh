@@ -2947,7 +2947,7 @@ function _getCPUDataByProcessorNumber
   _debugPrint "Checking Sandy Bridge processor data ...\n"
   __searchList $SANDY_BRIDGE
 
-  if (!(( $gTypeCPU )));
+  if (! (( $gTypeCPU )));
     then
       _checkForConfigFile "Ivy Bridge.cfg"
 
@@ -2961,7 +2961,7 @@ function _getCPUDataByProcessorNumber
       _debugPrint "Checking Ivy Bridge processor data ...\n"
       __searchList $IVY_BRIDGE
 
-      if (!(( $gTypeCPU )));
+      if (! (( $gTypeCPU )));
         then
           _checkForConfigFile "Haswell.cfg"
 
@@ -2975,7 +2975,7 @@ function _getCPUDataByProcessorNumber
           _debugPrint "Checking Haswell processor data ...\n"
           __searchList $HASWELL
 
-          if (!(( $gTypeCPU )));
+          if (! (( $gTypeCPU )));
             then
               _checkForConfigFile "Broadwell.cfg"
 
@@ -2989,7 +2989,7 @@ function _getCPUDataByProcessorNumber
               _debugPrint "Checking Broadwell processor data ...\n"
               __searchList $BROADWELL
 
-              if (!(( $gTypeCPU )));
+              if (! (( $gTypeCPU )));
                 then
                   _checkForConfigFile "Skylake.cfg"
 
@@ -3018,7 +3018,7 @@ function _getCPUDataByProcessorNumber
   #
   # Have we founds the processor?
   #
-  if (!(($gTypeCPU)));
+  if (! (( $gTypeCPU )));
     then
       #
       # No. Error out if we failed to locate the processor data.
