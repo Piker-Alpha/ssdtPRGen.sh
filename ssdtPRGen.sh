@@ -422,7 +422,7 @@ function _printExternalObjects()
   #
   for scope in "${gScope[@]}"
   do
-    let maxCoresPerScope=($gLogicalCPUsPerScope*$scopeIndex)
+    let maxCoresPerScope="($gLogicalCPUsPerScope*$scopeIndex)"
     #
     # Are we done yet?
     #
@@ -510,7 +510,7 @@ function _printProcessorDefinitions()
   #
   for scope in "${gScope[@]}"
   do
-    let maxCoresPerScope=($gLogicalCPUsPerScope*$scopeIndex)
+    let maxCoresPerScope="($gLogicalCPUsPerScope*$scopeIndex)"
     #
     # Do we have a device name?
     #
@@ -653,7 +653,7 @@ function _printScopeStart()
   let packageLength=$3
   let maxTurboFrequency=$4
   let useWorkArounds=0
-  let index=($gLogicalCPUsPerScope*$scopeIndex)
+  let index="($gLogicalCPUsPerScope*$scopeIndex)"
   #
   # Have we injected External () objects?
   #
@@ -684,7 +684,7 @@ function _printScopeStart()
       #
       if (( $gBridgeType == $IVY_BRIDGE && $gIvyWorkAround & 2 ));
         then
-          let lowFrequencyPStates=($gBaseFrequency/100)-8
+          let lowFrequencyPStates="($gBaseFrequency/100)-8"
 
           if [[ $lowFrequencyPStates -lt 0 ]];
             then
@@ -693,7 +693,7 @@ function _printScopeStart()
           fi
       fi
 
-      let packageLength=($packageLength+$lowFrequencyPStates)
+      let packageLength="($packageLength+$lowFrequencyPStates)"
 
       if [[ $lowFrequencyPStates -gt 0 ]];
         then
@@ -748,7 +748,7 @@ function _printScopeStart()
   # TODO: Remove this when CPUPM for IB works properly!
   if (( $useWorkArounds ));
     then
-      let extraF=($maxTurboFrequency+1)
+      let extraF="($maxTurboFrequency+1)"
       #
       # Is the global TDP a floating-point number?
       #
@@ -758,15 +758,15 @@ function _printScopeStart()
           # Yes, convert it and calculate maximum TDP.
           #
           let tdp=$(echo "$gTdp" | sed -e 's/\.//g')
-          let maxTDP=($tdp*100)
+          let maxTDP="($tdp*100)"
         else
           #
           # No. Calculate maximum TDP.
           #
-          let maxTDP=($gTdp*1000)
+          let maxTDP="($gTdp*1000)"
       fi
 
-      let extraR=($maxTurboFrequency/100)+1
+      let extraR="($maxTurboFrequency/100)+1"
       echo "            /* Workaround for the Ivy Bridge PM 'bug' */"                 >> "$gSsdtPR"
       printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x%02X00, 0x%02X00 },\n" $extraF $maxTDP $extraR $extraR >> "$gSsdtPR"
   fi
@@ -804,22 +804,22 @@ function _printPackages()
       # Yes, convert it and calculate maximum TDP.
       #
       let tdp=$(echo "$gTdp" | sed -e 's/\.//g')
-      let maxTDP=($tdp*100)
+      let maxTDP="($tdp*100)"
     else
       #
       # No. Calculate maximum TDP.
       #
       let tdp=$gTdp
-      let maxTDP=(tdp*1000)
+      let maxTDP="(tdp*1000)"
   fi
   #
   # Local variable initialisation.
   #
-  let minRatio=($gBaseFrequency/$gBusFrequency)
-  let p0Ratio=($maxNonTurboFrequency/$gBusFrequency)
-  let ratio=($frequency/$gBusFrequency)
-  let powerRatio=($p0Ratio-1)
-  let multipliedBusFrequency=($gBusFrequency*10)
+  let minRatio="($gBaseFrequency/$gBusFrequency)"
+  let p0Ratio="($maxNonTurboFrequency/$gBusFrequency)"
+  let ratio="($frequency/$gBusFrequency)"
+  let powerRatio="($p0Ratio-1)"
+  let multipliedBusFrequency="($gBusFrequency*10)"
 
   case "$gBusFrequency" in
     133) let multipliedBusFrequency+=3
@@ -862,7 +862,7 @@ function _printPackages()
             power=$(echo "scale=6;m=((1.1-(($p0Ratio-$powerRatio)*0.00625))/1.1);(($powerRatio/$p0Ratio)*(m*m)*$maxTDP);" | bc | sed -e 's/.[0-9A-F]*$//')
             let powerRatio-=1
           else
-            let ratioFactor=($ratio*30)/$p0Ratio;
+            let ratioFactor="($ratio*30)/$p0Ratio";
             power=$(echo "scale=6;(($ratioFactor*$ratioFactor*$ratioFactor*$maxTDP)/27000);" | bc | sed -e 's/.[0-9A-F]*$//')
             let powerRatio-=1
         fi
@@ -2297,7 +2297,7 @@ function _initProcessorScope()
         then
           printf "ACPI Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
 
-          let scopeLength=("0x"${data:8:2})*4*2
+          let scopeLength="('0x'${data:8:2})*4*2"
           local data=$(egrep -o '5b83[0-9a-f]{2}2f[0-9a-f]{'$scopeLength'}' "$filename")
           partOne=$(echo ${data:10:8} | xxd -r -p)
           partTwo=$(echo ${data:18:8} | xxd -r -p)
@@ -2324,7 +2324,7 @@ function _initProcessorScope()
         then
           printf "ACPI Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
 
-          let scopeLength=("0x"${data:10:2})*4*2
+          let scopeLength="('0x'${data:10:2})*4*2"
           local data=$(egrep -o '5b83[0-9a-f]{2}5c2f[0-9a-f]{'$scopeLength'}' "$filename")
           partOne=$(echo ${data:12:8} | xxd -r -p)
           partTwo=$(echo ${data:20:8} | xxd -r -p)
@@ -2947,7 +2947,7 @@ function _getCPUDataByProcessorNumber
   _debugPrint "Checking Sandy Bridge processor data ...\n"
   __searchList $SANDY_BRIDGE
 
-  if (!(( $gTypeCPU )));
+  if (! (( $gTypeCPU )));
     then
       _checkForConfigFile "Ivy Bridge.cfg"
 
@@ -2961,7 +2961,7 @@ function _getCPUDataByProcessorNumber
       _debugPrint "Checking Ivy Bridge processor data ...\n"
       __searchList $IVY_BRIDGE
 
-      if (!(( $gTypeCPU )));
+      if (! (( $gTypeCPU )));
         then
           _checkForConfigFile "Haswell.cfg"
 
@@ -2975,7 +2975,7 @@ function _getCPUDataByProcessorNumber
           _debugPrint "Checking Haswell processor data ...\n"
           __searchList $HASWELL
 
-          if (!(( $gTypeCPU )));
+          if (! (( $gTypeCPU )));
             then
               _checkForConfigFile "Broadwell.cfg"
 
@@ -2989,7 +2989,7 @@ function _getCPUDataByProcessorNumber
               _debugPrint "Checking Broadwell processor data ...\n"
               __searchList $BROADWELL
 
-              if (!(( $gTypeCPU )));
+              if (! (( $gTypeCPU )));
                 then
                   _checkForConfigFile "Skylake.cfg"
 
@@ -3018,7 +3018,7 @@ function _getCPUDataByProcessorNumber
   #
   # Have we founds the processor?
   #
-  if (!(($gTypeCPU)));
+  if (! (($gTypeCPU)));
     then
       #
       # No. Error out if we failed to locate the processor data.
@@ -3646,7 +3646,7 @@ function _checkLibraryDirectory()
   #
   # Are we running in the Github project directory?
   #
-  if [ $gDeveloperMode - eq 1 ] &&
+  if [ $gDeveloperMode -eq 1 ] &&
      [ -d .git ] &&
      [ -f .gitIgnore ] &&
      [ -f CHANGELOG.md ] &&
@@ -4638,7 +4638,7 @@ function main()
   #
   if [ $turboStates -gt 0 ];
     then
-      let minTurboFrequency=($frequency+$gBusFrequency)
+      let minTurboFrequency="($frequency+$gBusFrequency)"
       echo "Number of Turbo States: $turboStates ($minTurboFrequency-$maxTurboFrequency MHz)"
     else
       echo "Number of Turbo States: 0"
