@@ -3646,7 +3646,7 @@ function _checkLibraryDirectory()
   #
   # Are we running in the Github project directory?
   #
-  if [ $gDeveloperMode - eq 1 ] &&
+  if [ $gDeveloperMode -eq 1 ] &&
      [ -d .git ] &&
      [ -f .gitIgnore ] &&
      [ -f CHANGELOG.md ] &&
