@@ -3715,6 +3715,7 @@ function _showSystemData
 
 function _getScriptArguments()
 {
+  local currentPath=$(pwd)
   #
   # Are we fired up with arguments?
   #
@@ -3737,6 +3738,9 @@ function _getScriptArguments()
           printf "          1 = inject debug statements in: ${gSsdtID}.dsl\n"
           printf "          2 = show debug output\n"
           printf "          3 = both\n"
+          printf "       -${STYLE_BOLD}developer${STYLE_RESET} mode [0-1]\n"
+          printf "          0 = disabled – Use files from: ${gPath}\n"
+          printf "          1 = enabled  – Use files from: ${currentPath}\n"
           printf "       -${STYLE_BOLD}extract${STYLE_RESET} ACPI tables to [target path]\n"
           printf "       -${STYLE_BOLD}f${STYLE_RESET}requency (clock frequency)\n"
           printf "       -${STYLE_BOLD}h${STYLE_RESET}elp info (this)\n"
@@ -3832,7 +3836,7 @@ function _getScriptArguments()
             #
             # Note 'uro' was only added to support '-turbo'
             #
-            if [[ "${flag}" =~ ^[-abcdefghiklmnoprsutwx]+$ ]];
+            if [[ "${flag}" =~ ^[-abcdefghiklmnoprsutvwx]+$ ]];
               then
                 #
                 # Yes. Figure out what flag it is.
@@ -3903,6 +3907,20 @@ function _getScriptArguments()
                       fi
                       ;;
 
+                  -developer) shift
+
+                      if [[ "$1" =~ ^[01]+$ ]];
+                        then
+                          if [[ $gDeveloperMode -ne $1 ]];
+                            then
+                              let gDeveloperMode=$1
+                              _PRINT_MSG "Override value: (-developer) mode, now using: ${gDebug}!"
+                          fi
+                        else
+                          _invalidArgumentError "-developer $1"
+                      fi
+                      ;;
+
                   -d) shift
 
                       if [[ "$1" =~ ^[0123]+$ ]];
@@ -3924,7 +3942,6 @@ function _getScriptArguments()
                           #
                           # Get current path for extractACPITables v0.6 and greater.
                           #
-                          local currentPath=$(pwd)
                           gExtractionPath="${currentPath}"
                         else
                           #
