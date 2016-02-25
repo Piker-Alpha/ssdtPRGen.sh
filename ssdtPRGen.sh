@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 18.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 18.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=18.0
+gScriptVersion=18.1
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -2468,14 +2468,23 @@ function _findIasl()
           return
       fi
       #
-      # IASL should be there after the first run.
+      # IASL should be there after the first run, but may have been removed since.
       #
       if [ ! -f "${gToolPath}/iasl" ];
         then
-          _PRINT_MSG "Notice: Downloading iasl.zip ..."
-          curl -o "${gPath}/iasl.zip" --silent "${gGitHubContentURL}/Tools/iasl.zip"
           #
-          # Unzip command line tool.
+          # Not there. Do we have the ZIP file?
+          #
+          if [ ! -f "${gToolPath}/iasl.zip" ];
+            then
+              #
+              # No. Download it from the Github repository.
+              #
+              _PRINT_MSG "Notice: Downloading iasl.zip ..."
+              curl -o "${gPath}/iasl.zip" --silent "${gGitHubContentURL}/Tools/iasl.zip"
+          fi
+          #
+          # Unzip the IASL command line tool.
           #
           _debugPrint 'Unzipping iasl.zip ...'
           unzip -qu "${gPath}/iasl.zip" -d "${gToolPath}/"
@@ -2517,8 +2526,17 @@ function _extractAcpiTables()
   #
   if [ ! -f "${gToolPath}/extractACPITables" ];
     then
-      _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
-      curl -o "${gPath}/extractACPITables.zip" --silent "${gGitHubContentURL}/Tools/extractACPITables.zip"
+      #
+      # Not there. Do we have the ZIP file?
+      #
+      if [ ! -f "${gToolPath}/extractACPITables.zip" ];
+        then
+          #
+          # No. Download it from the Github repository.
+          #
+          _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
+          curl -o "${gPath}/extractACPITables.zip" --silent "${gGitHubContentURL}/Tools/extractACPITables.zip"
+      fi
       #
       # Unzip command line tool.
       #
