@@ -20,6 +20,9 @@
 
 # set -x # Used for tracing errors (can be used anywhere in the script).
 
+# In developer mode, this can trace attempts to download things
+#curl () { echo "failing: tried to run curl $*"; exit 1; }
+
 #================================= GLOBAL VARS ==================================
 
 #
@@ -2472,6 +2475,10 @@ function _findIasl()
       #
       if [ ! -f "${gToolPath}/iasl" ];
         then
+	  #
+	  # Remember whether we have downloaded the zip file (so we can remove it later).
+	  #
+	  local downloaded=0
           #
           # Not there. Do we have the ZIP file?
           #
@@ -2480,14 +2487,16 @@ function _findIasl()
               #
               # No. Download it from the Github repository.
               #
+	      mkdir -p "${gToolPath}"
               _PRINT_MSG "Notice: Downloading iasl.zip ..."
-              curl -o "${gPath}/iasl.zip" --silent "${gGitHubContentURL}/Tools/iasl.zip"
+              curl -o "${gToolPath}/iasl.zip" --silent "${gGitHubContentURL}/Tools/iasl.zip"
+	      downloaded=1
           fi
           #
           # Unzip the IASL command line tool.
           #
           _debugPrint 'Unzipping iasl.zip ...'
-          unzip -qu "${gPath}/iasl.zip" -d "${gToolPath}/"
+          unzip -qu "${gToolPath}/iasl.zip" -d "${gToolPath}/"
           #
           #  Checking/setting executing bit.
           #
@@ -2503,11 +2512,14 @@ function _findIasl()
 #             sudo -k
           fi
           #
-          # Remove downloaded zip file.
+          # If we downloaded the zip file, delete it.
           #
-          _debugPrint 'Cleanups ...'
-          rm "${gPath}/iasl.zip"
-          _debugPrint 'Done.'
+	  if [[ $downloaded ]];
+	    then
+              _debugPrint 'Cleanups ...'
+              rm "${gToolPath}/iasl.zip"
+              _debugPrint 'Done.'
+	  fi
       fi
 
       gIasl="${gToolPath}/iasl"
@@ -2527,6 +2539,10 @@ function _extractAcpiTables()
   if [ ! -f "${gToolPath}/extractACPITables" ];
     then
       #
+      # Remember whether we have downloaded the zip file (so we can remove it later).
+      #
+      local downloaded=0
+      #
       # Not there. Do we have the ZIP file?
       #
       if [ ! -f "${gToolPath}/extractACPITables.zip" ];
@@ -2534,14 +2550,16 @@ function _extractAcpiTables()
           #
           # No. Download it from the Github repository.
           #
+	  mkdir -p "${gToolPath}"
           _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
-          curl -o "${gPath}/extractACPITables.zip" --silent "${gGitHubContentURL}/Tools/extractACPITables.zip"
+          curl -o "${gToolPath}/extractACPITables.zip" --silent "${gGitHubContentURL}/Tools/extractACPITables.zip"
+	  downloaded=1
       fi
       #
       # Unzip command line tool.
       #
       _debugPrint 'Unzipping extractACPITables.zip ...'
-      unzip -qu "${gPath}/extractACPITables.zip" -d "${gToolPath}/"
+      unzip -qu "${gToolPath}/extractACPITables.zip" -d "${gToolPath}/"
       #
       # Checking/setting executing bit.
       #
@@ -2557,10 +2575,13 @@ function _extractAcpiTables()
 #         sudo -k
       fi
       #
-      # Remove downloaded zip file.
+      # If we downloaded the zip file, delete it.
       #
-      _debugPrint 'Cleanups ...'
-      rm "${gPath}/extractACPITables.zip"
+      if [[ $downloaded ]];
+	 then
+	   _debugPrint 'Cleanups ...'
+	   rm "${gToolPath}/extractACPITables.zip"
+      fi
   fi
 
   if [[ $gExtractionPath ]];
@@ -3691,6 +3712,21 @@ function _checkLibraryDirectory()
       gDataPath="${gPath}/Data"
       gToolPath="${gPath}/Tools"
       gSsdtPR="${gPath}/${gSsdtID}.dsl"
+      # Pike: pick one of these three ideas:
+      # 1) Use the current directory by default, and ignore the override argument
+      #
+      # gACPITablePath="${gPath}/ACPI"
+      # gExtractionPath="${gPath}/ACPI"
+      #
+      # 2) Use a real temporary directory; ~180k is not worth cleaning up...
+      gACPITablePath="$(mktemp -d)"
+      gExtractionPath="${gACPITablePath}"
+      #
+      # 3) Use the traditional temporary directory
+      # gACPITablePath="${gHome}/Library/ssdtPRGen"
+      #
+      # In any case, we really need to make sure it exists.
+      mkdir -p "${gACPITablePath}"
     else
       #
       # Do we have the required Data directory?
@@ -4304,9 +4340,9 @@ function main()
   echo   '-----------------------------------------------------------'
   printf "${STYLE_BOLD}Bugs${STYLE_RESET} > https://github.com/Piker-Alpha/ssdtPRGen.sh/issues <\n"
 
-  _checkLibraryDirectory
   _checkSourceFilename
   _getScriptArguments "$@"
+  _checkLibraryDirectory
   #
   # Fired up with -mode custom?
   #
