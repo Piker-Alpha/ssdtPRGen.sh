@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 18.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 18.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=18.0
+gScriptVersion=18.1
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -2468,14 +2468,23 @@ function _findIasl()
           return
       fi
       #
-      # IASL should be there after the first run.
+      # IASL should be there after the first run, but may have been removed since.
       #
       if [ ! -f "${gToolPath}/iasl" ];
         then
-          _PRINT_MSG "Notice: Downloading iasl.zip ..."
-          curl -o "${gPath}/iasl.zip" --silent "${gGitHubContentURL}/Tools/iasl.zip"
           #
-          # Unzip command line tool.
+          # Not there. Do we have the ZIP file?
+          #
+          if [ ! -f "${gToolPath}/iasl.zip" ];
+            then
+              #
+              # No. Download it from the Github repository.
+              #
+              _PRINT_MSG "Notice: Downloading iasl.zip ..."
+              curl -o "${gPath}/iasl.zip" --silent "${gGitHubContentURL}/Tools/iasl.zip"
+          fi
+          #
+          # Unzip the IASL command line tool.
           #
           _debugPrint 'Unzipping iasl.zip ...'
           unzip -qu "${gPath}/iasl.zip" -d "${gToolPath}/"
@@ -2517,8 +2526,17 @@ function _extractAcpiTables()
   #
   if [ ! -f "${gToolPath}/extractACPITables" ];
     then
-      _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
-      curl -o "${gPath}/extractACPITables.zip" --silent "${gGitHubContentURL}/Tools/extractACPITables.zip"
+      #
+      # Not there. Do we have the ZIP file?
+      #
+      if [ ! -f "${gToolPath}/extractACPITables.zip" ];
+        then
+          #
+          # No. Download it from the Github repository.
+          #
+          _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
+          curl -o "${gPath}/extractACPITables.zip" --silent "${gGitHubContentURL}/Tools/extractACPITables.zip"
+      fi
       #
       # Unzip command line tool.
       #
@@ -2947,7 +2965,7 @@ function _getCPUDataByProcessorNumber
   _debugPrint "Checking Sandy Bridge processor data ...\n"
   __searchList $SANDY_BRIDGE
 
-  if (!(( $gTypeCPU )));
+  if (! (( $gTypeCPU )));
     then
       _checkForConfigFile "Ivy Bridge.cfg"
 
@@ -2961,7 +2979,7 @@ function _getCPUDataByProcessorNumber
       _debugPrint "Checking Ivy Bridge processor data ...\n"
       __searchList $IVY_BRIDGE
 
-      if (!(( $gTypeCPU )));
+      if (! (( $gTypeCPU )));
         then
           _checkForConfigFile "Haswell.cfg"
 
@@ -2975,7 +2993,7 @@ function _getCPUDataByProcessorNumber
           _debugPrint "Checking Haswell processor data ...\n"
           __searchList $HASWELL
 
-          if (!(( $gTypeCPU )));
+          if (! (( $gTypeCPU )));
             then
               _checkForConfigFile "Broadwell.cfg"
 
@@ -2989,7 +3007,7 @@ function _getCPUDataByProcessorNumber
               _debugPrint "Checking Broadwell processor data ...\n"
               __searchList $BROADWELL
 
-              if (!(( $gTypeCPU )));
+              if (! (( $gTypeCPU )));
                 then
                   _checkForConfigFile "Skylake.cfg"
 
@@ -3018,7 +3036,7 @@ function _getCPUDataByProcessorNumber
   #
   # Have we founds the processor?
   #
-  if (!(($gTypeCPU)));
+  if (! (( $gTypeCPU )));
     then
       #
       # No. Error out if we failed to locate the processor data.
@@ -3646,7 +3664,7 @@ function _checkLibraryDirectory()
   #
   # Are we running in the Github project directory?
   #
-  if [ $gDeveloperMode - eq 1 ] &&
+  if [ $gDeveloperMode -eq 1 ] &&
      [ -d .git ] &&
      [ -f .gitIgnore ] &&
      [ -f CHANGELOG.md ] &&
@@ -3715,6 +3733,7 @@ function _showSystemData
 
 function _getScriptArguments()
 {
+  local currentPath=$(pwd)
   #
   # Are we fired up with arguments?
   #
@@ -3737,6 +3756,9 @@ function _getScriptArguments()
           printf "          1 = inject debug statements in: ${gSsdtID}.dsl\n"
           printf "          2 = show debug output\n"
           printf "          3 = both\n"
+          printf "       -${STYLE_BOLD}developer${STYLE_RESET} mode [0-1]\n"
+          printf "          0 = disabled – Use files from: ${gPath}\n"
+          printf "          1 = enabled  – Use files from: ${currentPath}\n"
           printf "       -${STYLE_BOLD}extract${STYLE_RESET} ACPI tables to [target path]\n"
           printf "       -${STYLE_BOLD}f${STYLE_RESET}requency (clock frequency)\n"
           printf "       -${STYLE_BOLD}h${STYLE_RESET}elp info (this)\n"
@@ -3832,7 +3854,7 @@ function _getScriptArguments()
             #
             # Note 'uro' was only added to support '-turbo'
             #
-            if [[ "${flag}" =~ ^[-abcdefghiklmnoprsutwx]+$ ]];
+            if [[ "${flag}" =~ ^[-abcdefghiklmnoprsutvwx]+$ ]];
               then
                 #
                 # Yes. Figure out what flag it is.
@@ -3903,6 +3925,20 @@ function _getScriptArguments()
                       fi
                       ;;
 
+                  -developer) shift
+
+                      if [[ "$1" =~ ^[01]+$ ]];
+                        then
+                          if [[ $gDeveloperMode -ne $1 ]];
+                            then
+                              let gDeveloperMode=$1
+                              _PRINT_MSG "Override value: (-developer) mode, now using: ${gDebug}!"
+                          fi
+                        else
+                          _invalidArgumentError "-developer $1"
+                      fi
+                      ;;
+
                   -d) shift
 
                       if [[ "$1" =~ ^[0123]+$ ]];
@@ -3924,7 +3960,6 @@ function _getScriptArguments()
                           #
                           # Get current path for extractACPITables v0.6 and greater.
                           #
-                          local currentPath=$(pwd)
                           gExtractionPath="${currentPath}"
                         else
                           #
