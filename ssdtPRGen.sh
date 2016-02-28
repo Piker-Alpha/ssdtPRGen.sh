@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 18.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 18.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=18.1
+gScriptVersion=18.2
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -233,7 +233,7 @@ gDataPath="${gPath}/Data"
 gToolPath="${gPath}/Tools"
 gSsdtID="ssdt"
 gSsdtPR="${gPath}/${gSsdtID}.dsl"
-gACPITablePath="${gPath}"
+gACPITablePath="${gPath}/ACPI"
 
 #
 # Default override path for -mode custom
@@ -2139,10 +2139,21 @@ function _convertACPIFiles()
           local path="${gExtractionPath}"
         else
           #
-          # No. Use default path (~/Library/ssdtPRGen)
+          # No. Use default path (~/Library/ssdtPRGen/ACPI)
           #
           local path="${gACPITablePath}"
       fi
+  fi
+  #
+  # Is argument -developer 1 used, and not -extract [some path]?
+  #
+  if [[ $gDeveloperMode -eq 1 ]] &&
+     [[ ! $gExtractionPath ]];
+    then
+      #
+      # Yes. Fixup ACPI table path.
+      #
+      local path="${gPath}/ACPI"
   fi
   #
   # Check for required file DSDT.aml
@@ -2562,16 +2573,33 @@ function _extractAcpiTables()
       _debugPrint 'Cleanups ...'
       rm "${gPath}/extractACPITables.zip"
   fi
-
+  #
+  # Do we have a given path for ACPI table extraction?
+  #
   if [[ $gExtractionPath ]];
     then
       #
-      # Export target path for extractACPITables v0.6 and greater.
+      # Yes. Use given target path for extractACPITables v0.6 and greater.
       #
       export SSDTPRGEN_EXTRACTION_PATH="${gExtractionPath}"
+    else
+      #
+      # No. Use default ACPI table path.
+      #
+      export SSDTPRGEN_EXTRACTION_PATH="${gPath}/ACPI"
   fi
   #
-  # Extracting ACPI tables.
+  # Does the target directory exist?
+  #
+  if [[ ! -d "${SSDTPRGEN_EXTRACTION_PATH}" ]];
+    then
+      #
+      # No. We need to create it.
+      #
+      mkdir -p "${SSDTPRGEN_EXTRACTION_PATH}"
+  fi
+  #
+  # About to extract the ACPI tables.
   #
   _debugPrint 'Extracting ACPI tables ... '
   "${gToolPath}/extractACPITables"
@@ -3691,6 +3719,11 @@ function _checkLibraryDirectory()
       gDataPath="${gPath}/Data"
       gToolPath="${gPath}/Tools"
       gSsdtPR="${gPath}/${gSsdtID}.dsl"
+      #
+      # Write preferences with path info for extractACPITables v0.7 and greater.
+      #
+      defaults write com.wordpress.pikeralpha ssdtPRGenData $gDataPath
+      defaults write com.wordpress.pikeralpha ssdtPRGenTools $gToolPath
     else
       #
       # Do we have the required Data directory?
@@ -3701,7 +3734,9 @@ function _checkLibraryDirectory()
       fi
 
       _checkForConfigFile "Models.cfg"
-
+      #
+      # Is the return value of _checkForConfigFile 1?
+      #
       if [[ $? -eq 1 ]];
         then
           curl -o "${gDataPath}/Models.cfg" --silent "${gGitHubContentURL}/Data/Models.cfg"
@@ -4304,9 +4339,9 @@ function main()
   echo   '-----------------------------------------------------------'
   printf "${STYLE_BOLD}Bugs${STYLE_RESET} > https://github.com/Piker-Alpha/ssdtPRGen.sh/issues <\n"
 
-  _checkLibraryDirectory
   _checkSourceFilename
   _getScriptArguments "$@"
+  _checkLibraryDirectory
   #
   # Fired up with -mode custom?
   #
