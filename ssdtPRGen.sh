@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 18.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 18.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=18.2
+gScriptVersion=18.3
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -136,7 +136,7 @@ let gBaseFrequency=1600
 #
 gProcLabel=""
 
-gProcessorNames=“”
+gProcessorNames=""
 #
 # Uncomment/change this for dry runs.
 #
@@ -1460,9 +1460,7 @@ function _getProcessorNames()
       fi
   fi
 
-# _updateProcessorNames $gLogicalCPUs
-
-_debugPrint "Number of Scopes: ${#gScope[@]}\n"
+  _debugPrint "Number of Scopes: ${#gScope[@]}\n"
 
   if [[ $gPhysicalCPUs -lt ${#gScope[@]} ]];
     then
@@ -1597,6 +1595,14 @@ function _checkForProcessorDeclarations()
     #
     #
     local deviceObjectData=($(echo "${targetData}" | egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{${vars[5]}}06"))
+    #
+    # The above grep pattern may fail, in which case we fall back to a previously used grep pattern.
+    # See also: https://github.com/Piker-Alpha/ssdtPRGen.sh/issues/215
+    #
+    if [[ ${#deviceObjectData[@]} -eq 1 ]];
+      then
+        local deviceObjectData=($(echo "${targetData}" | egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}[0-9a-f]{${vars[5]}}"))
+    fi
 
     if [[ $deviceObjectData ]];
       then
