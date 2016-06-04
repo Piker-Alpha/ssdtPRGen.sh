@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 18.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 18.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=18.3
+gScriptVersion=18.4
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -708,8 +708,7 @@ function _printScopeStart()
           echo "        Name (APLF, Zero)"                                            >> "$gSsdtPR"
       fi
 
-      # TODO: Remove this when CPUPM for IB works properly!
-      if (( $gBridgeType == $IVY_BRIDGE && $gIvyWorkAround & 1 ));
+      if (( $gIvyWorkAround & 1 ));
         then
           let useWorkArounds=1
       fi
@@ -766,9 +765,15 @@ function _printScopeStart()
           let maxTDP=($gTdp*1000)
       fi
 
-      let extraR=($maxTurboFrequency/100)+1
+      let extraR=($maxTurboFrequency/$gBusFrequency)+1
       echo "            /* Workaround for the Ivy Bridge PM 'bug' */"                 >> "$gSsdtPR"
-      printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x%02X00, 0x%02X00 },\n" $extraF $maxTDP $extraR $extraR >> "$gSsdtPR"
+
+      if [ $gBusFrequency -eq 100 ];
+        then
+          printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x%02X00, 0x%02X00 },\n" $extraF $maxTDP $extraR $extraR >> "$gSsdtPR"
+        else
+          printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x00%02X, 0x00%02X },\n" $extraF $maxTDP $extraR $extraR >> "$gSsdtPR"
+      fi
   fi
 }
 
@@ -3781,7 +3786,7 @@ function _getScriptArguments()
   if [ $# -gt 0 ];
     then
       #
-      # Yes. Do we have a single (-help) argument?
+      # Yes. Do we have a single (-h or -help) argument?
       #
       local argument=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 
