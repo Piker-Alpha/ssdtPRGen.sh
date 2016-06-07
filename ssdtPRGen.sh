@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 18.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 18.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=18.4
+gScriptVersion=18.5
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -708,7 +708,7 @@ function _printScopeStart()
           echo "        Name (APLF, Zero)"                                            >> "$gSsdtPR"
       fi
 
-      if (( $gIvyWorkAround & 1 ));
+      if (( $gBridgeType == $IVY_BRIDGE && $gIvyWorkAround & 1 ));
         then
           let useWorkArounds=1
       fi
