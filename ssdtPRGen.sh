@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 18.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 18.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=18.5
+gScriptVersion=18.6
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -2464,12 +2464,69 @@ function _getSystemType()
 #--------------------------------------------------------------------------------
 #
 
+function _checkForExecutableFile()
+{
+  local targetFile=$1
+  #
+  # Check target file.
+  #
+  if [ ! -f "${gToolPath}/${targetFile}" ];
+    then
+      #
+      # Not there. Do we have the ZIP file?
+      #
+      if [ ! -f "${gToolPath}/${targetFile}.zip" ];
+        then
+          #
+          # No. Download it from the Github repository.
+          #
+          _PRINT_MSG "Notice: Downloading ${targetFile}.zip ..."
+          curl -o "${gPath}/${targetFile}.zip" --silent "${gGitHubContentURL}/Tools/${targetFile}.zip"
+          #
+          # Unzip ZIP file.
+          #
+          _debugPrint "Unzipping ${targetFile}.zip ..."
+          unzip -qu "${gPath}/${targetFile}.zip" -d "${gToolPath}/"
+          #
+          # Remove downloaded ZIP file.
+          #
+          _debugPrint 'Cleanups ..'
+          rm "${gPath}/${targetFile}.zip"
+        else
+          #
+          # Unzip ZIP file.
+          #
+          _debugPrint "Unzipping ${targetFile}.zip ..."
+          unzip -qu "${gToolPath}/${targetFile}.zip" -d "${gToolPath}/"
+      fi
+  fi
+  #
+  #  Check executing bit.
+  #
+  _debugPrint "Setting executing bit of ${targetFile} ..."
+
+  if [ ! -x "${gToolPath}/${targetFile}" ];
+    then
+      #
+      # Set executing bit.
+      #
+      printf "Fixing executing bit of ${targetFile} ...\n"
+      chmod +x "${gToolPath}/${targetFile}"
+  fi
+
+   _debugPrint "_checkForExecutableFile(${targetFile}) Done."
+}
+
+#
+#--------------------------------------------------------------------------------
+#
+
 function _findIasl()
 {
   #
   # Do we have to call IASL?
   #
-  if (( $gCallIasl ));
+  if [[ $gCallIasl -eq 1 ]];
     then
       #
       # Yes. Do a quick lookup of IASL.
@@ -2492,48 +2549,10 @@ function _findIasl()
       #
       # IASL should be there after the first run, but may have been removed since.
       #
-      if [ ! -f "${gToolPath}/iasl" ];
-        then
-          #
-          # Not there. Do we have the ZIP file?
-          #
-          if [ ! -f "${gToolPath}/iasl.zip" ];
-            then
-              #
-              # No. Download it from the Github repository.
-              #
-              _PRINT_MSG "Notice: Downloading iasl.zip ..."
-              curl -o "${gPath}/iasl.zip" --silent "${gGitHubContentURL}/Tools/iasl.zip"
-          fi
-          #
-          # Unzip the IASL command line tool.
-          #
-          _debugPrint 'Unzipping iasl.zip ...'
-          unzip -qu "${gPath}/iasl.zip" -d "${gToolPath}/"
-          #
-          #  Checking/setting executing bit.
-          #
-          _debugPrint 'Setting executing bit of iasl ...'
-
-          if [ ! -x "${gToolPath}/iasl" ];
-            then
-              printf "Fixing executing bit of iasl ...\n"
-              chmod +x "${gToolPath}/iasl"
-#           else
-#             printf "Enter password to set file permissions for: ${gToolPath}/iasl\n"
-#             sudo chmod +x "${gToolPath}/iasl"
-#             sudo -k
-          fi
-          #
-          # Remove downloaded zip file.
-          #
-          _debugPrint 'Cleanups ...'
-          rm "${gPath}/iasl.zip"
-          _debugPrint 'Done.'
-      fi
-
-      gIasl="${gToolPath}/iasl"
+      _checkForExecutableFile "iasl"
   fi
+
+  gIasl="${gToolPath}/iasl"
 }
 
 
@@ -2544,46 +2563,9 @@ function _findIasl()
 function _extractAcpiTables()
 {
   #
-  # Check target path.
+  # extractACPITables should be there after the first run, but may have been removed since.
   #
-  if [ ! -f "${gToolPath}/extractACPITables" ];
-    then
-      #
-      # Not there. Do we have the ZIP file?
-      #
-      if [ ! -f "${gToolPath}/extractACPITables.zip" ];
-        then
-          #
-          # No. Download it from the Github repository.
-          #
-          _PRINT_MSG "Notice: Downloading extractACPITables.zip ..."
-          curl -o "${gPath}/extractACPITables.zip" --silent "${gGitHubContentURL}/Tools/extractACPITables.zip"
-      fi
-      #
-      # Unzip command line tool.
-      #
-      _debugPrint 'Unzipping extractACPITables.zip ...'
-      unzip -qu "${gPath}/extractACPITables.zip" -d "${gToolPath}/"
-      #
-      # Checking/setting executing bit.
-      #
-      _debugPrint 'Checking executing bit of extractACPITables ...'
-
-      if [ ! -x "${gToolPath}/extractACPITables" ];
-        then
-          printf "Fixing executing bit of extractACPITables ...\n"
-          chmod +x "${gToolPath}/extractACPITables"
-#       else
-#         printf "Enter password to set file permissions for: ${gToolPath}/extractACPITables\n"
-#         chmod +x "${gToolPath}/extractACPITables"
-#         sudo -k
-      fi
-      #
-      # Remove downloaded zip file.
-      #
-      _debugPrint 'Cleanups ...'
-      rm "${gPath}/extractACPITables.zip"
-  fi
+  _checkForExecutableFile "extractACPITables"
   #
   # Do we have a given path for ACPI table extraction?
   #
