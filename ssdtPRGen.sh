@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 18.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 18.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=18.7
+gScriptVersion=18.8
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -3521,19 +3521,29 @@ function _initSkylakeSetup()
   # Overrides are set below.
   #
   case $gBoardID in
-    Mac-65CE76090165799A) # Retina 5K, 27-inch, Core i7 4.0GHz
+    Mac-9AE82516C7C6B903) # Retina, 12-inch, Intel Core m3/m3
+                          gTargetMacModel="MacBook9,1"
+                          ;;
+
+
+    Mac-65CE76090165799A) # Retina 5K, 27-inch, Intel Core i7 4.0GHz
                           gSystemType=1
                           gTargetMacModel="iMac17,1"
                           ;;
 
-    Mac-B809C3757DA9BB8D) # Retina 5K, 27-inch, Core i5 3.3GHz
+    Mac-B809C3757DA9BB8D) # Retina 5K, 27-inch, Intel Core i5 3.3GHz
                           gSystemType=1
                           gTargetMacModel="iMac17,1"
                           ;;
 
-    Mac-DB15BD556843C820) # Retina 5K, 27-inch, Core i5 3.2GHz
+    Mac-DB15BD556843C820) # Retina 5K, 27-inch, Intel Core i5 3.2GHz
                           gSystemType=1
                           gTargetMacModel="iMac17,1"
+                          ;;
+
+    Mac-65CE76090165799A) # Retina 5K, 27-inch
+                          gTargetMacModel="iMac17,1"
+                          gSystemType=1
                           ;;
   esac
 }
@@ -4829,7 +4839,7 @@ function main()
         else
           if [ "${gTargetMacModel}" == "" ];
             then
-             _confirmUnsupported "\nError: board-id [${gBoardID}] not supported by ${bridgeTypeString} – check SMBIOS data / use the -c option\n"
+             _confirmUnsupported "\nError: board-id [${gBoardID}] not supported by ${bridgeTypeString} – check SMBIOS data / use the -target option\n"
             elif [ "$gTargetMacModel" != "$gModelID" ];
               then
                 _confirmUnsupported 'Warning: board-id ['$gBoardID'] and model ['$gModelID'] mismatch – check SMBIOS data\n'
