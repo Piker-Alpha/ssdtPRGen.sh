@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 18.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 18.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=18.8
+gScriptVersion=18.9
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -1703,7 +1703,7 @@ function _getACPIProcessorScope()
   # Local variable definitions/initialisation.
   #
   local filename="/tmp/DSDT.dat"
-  local variableList=(10,6,40 12,8,42 24,20,40)
+  local variableList=(10,6,40 12,8,42 24,20,40 14,10,44)
   local varList
   local scopeLength
   local index
