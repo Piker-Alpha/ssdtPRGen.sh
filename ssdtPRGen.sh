@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 18.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 19.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=18.9
+gScriptVersion=19.0
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -3539,11 +3539,6 @@ function _initSkylakeSetup()
     Mac-DB15BD556843C820) # Retina 5K, 27-inch, Intel Core i5 3.2GHz
                           gSystemType=1
                           gTargetMacModel="iMac17,1"
-                          ;;
-
-    Mac-65CE76090165799A) # Retina 5K, 27-inch
-                          gTargetMacModel="iMac17,1"
-                          gSystemType=1
                           ;;
   esac
 }
