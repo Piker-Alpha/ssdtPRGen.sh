@@ -3259,6 +3259,16 @@ function _checkForXCPM()
           fi
       fi
   fi
+  #
+  # Is this a multiprocessor system using XCPM mode?
+  #
+  if [[ $gPhysicalCPUs -gt 1 && $gXcpm -eq 1 ]];
+    then
+      #
+      # Yes. Inform user to use inter-processor interrupt power management.
+      #
+      _PRINT_MSG "\n\nWarning: You must use the -xcpm_ipi flag instead of -xcpm on multiprocessor systems.\n\n\n"
+  fi
 }
 
 
@@ -3499,6 +3509,11 @@ function _initBroadwellSetup()
     Mac-FFE5EF870D7BA81A) # Retina 4K, 21.5-inch, Core i5 3.1GHz
                           gSystemType=1
                           gTargetMacModel="iMac16,2"
+                          ;;
+    Mac-F60DEB81FF30ACF6) gSystemType=3
+                          gTargetMacModel="MacPro6,1"
+                          gACST_CPU0=13   # C1, C3, C6
+                          gACST_CPU1=13   # C1, C3, C6
                           ;;
   esac
 }
