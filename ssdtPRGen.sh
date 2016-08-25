@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 19.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 19.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=19.0
+gScriptVersion=19.2
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -259,11 +259,12 @@ let IVY_BRIDGE=4
 let HASWELL=8
 let BROADWELL=16
 let SKYLAKE=32
+let KABYLAKE=64
 
 #
 # Array with configuration files (used to show version information).
 #
-gProcessorDataConfigFiles=("User Defined.cfg" "Sandy Bridge.cfg" "Ivy Bridge.cfg" "Haswell.cfg" "Broadwell.cfg" "Skylake.cfg")
+gProcessorDataConfigFiles=("User Defined.cfg" "Sandy Bridge.cfg" "Ivy Bridge.cfg" "Haswell.cfg" "Broadwell.cfg" "Skylake.cfg" "Kabylake.cfg")
 
 #
 # Global variable used as target cpu/bridge type.
@@ -2718,7 +2719,7 @@ function _getCPUNumberFromBrandString
   #
   IFS=" "
   #
-  # Split brandstring into array (data)
+  # Split brandstring (pulled in by _showSystemData) into array (data)
   #
   local data=($gBrandString)
   #
@@ -2898,6 +2899,8 @@ function _getCPUDataByProcessorNumber
        16) local cpuSpecLists=("gDesktopBroadwellCPUList[@]" "gMobileBroadwellCPUList[@]" "gServerBroadwellCPUList[@]")
            ;;
        32) local cpuSpecLists=("gDesktopSkylakeCPUList[@]" "gMobileSkylakeCPUList[@]" "gServerSkylakeCPUList[@]")
+           ;;
+       64) local cpuSpecLists=("gDesktopKabylakeCPUList[@]" "gMobileKabylakeCPUList[@]" "gServerKabylakeCPUList[@]")
            ;;
     esac
 
@@ -3264,10 +3267,10 @@ function _checkForXCPM()
   #
   if [[ $gPhysicalCPUs -gt 1 && $gXcpm -eq 1 ]];
     then
-      #
-      # Yes. Inform user to use inter-processor interrupt power management.
-      #
-      _PRINT_MSG "\n\nWarning: You must use the -xcpm_ipi flag instead of -xcpm on multiprocessor systems.\n\n\n"
+    #
+    # Yes. Inform user to use inter-processor interrupt power management.
+    #
+    _PRINT_MSG "\n\nWarning: You must use the -xcpm_ipi flag instead of -xcpm on multiprocessor systems.\n\n\n"
   fi
 }
 
@@ -3510,6 +3513,7 @@ function _initBroadwellSetup()
                           gSystemType=1
                           gTargetMacModel="iMac16,2"
                           ;;
+
     Mac-F60DEB81FF30ACF6) gSystemType=3
                           gTargetMacModel="MacPro6,1"
                           gACST_CPU0=13   # C1, C3, C6
@@ -3554,6 +3558,36 @@ function _initSkylakeSetup()
     Mac-DB15BD556843C820) # Retina 5K, 27-inch, Intel Core i5 3.2GHz
                           gSystemType=1
                           gTargetMacModel="iMac17,1"
+                          ;;
+  esac
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
+
+function _initKabylakeSetup()
+{
+  #
+  # Global variable (re)initialisation.
+  #
+  gSystemType=2
+  gACST_CPU0=253  # C1, C3, C6, C7, C8, C9 and C10
+  gACST_CPU1=31   # C1, C2, C3, C6 and C7
+  #
+  # Overrides are set below.
+  #
+  case $gBoardID in
+    Mac-XXXXXXXXXXXXXXXX) gTargetMacModel="MacBook10,1"
+                          ;;
+
+  case $gBoardID in
+    Mac-XXXXXXXXXXXXXXXX) gTargetMacModel="MacBookPro14,1"
+                          ;;
+
+  case $gBoardID in
+    Mac-XXXXXXXXXXXXXXXX) gTargetMacModel="iMac18,1"
                           ;;
   esac
 }
@@ -3662,8 +3696,10 @@ function _showSupportedBoardIDsAndModels()
                     ;;
          Broadwell) local modelDataList="gBroadwellModelData[@]"
                     ;;
-         Skylake)   local modelDataList="gSkylakeModelData[@]"
+           Skylake) local modelDataList="gSkylakeModelData[@]"
                     ;;
+          Kabylake) local modelDataList="gKabylakeModelData[@]"
+                     ;;
   esac
   #
   # Split 'modelDataList' into array.
@@ -3715,6 +3751,7 @@ function _checkLibraryDirectory()
      [ -f Data/Broadwell.cfg ] &&
      [ -f Data/Haswell.cfg ] &&
      [ -f "Data/Ivy bridge.cfg" ] &&
+     [ -f "Data/Kabylake.cfg" ] &&
      [ -f Data/Models.cfg ] &&
      [ -f Data/Restrictions.cfg ] &&
      [ -f "Data/Sandy Bridge.cfg" ] &&
@@ -3773,6 +3810,12 @@ function _showSystemData
   #
   gBrandString=$(echo `sysctl machdep.cpu.brand_string` | sed -e 's/machdep.cpu.brand_string: //')
   printf "${STYLE_BOLD}Brandstring${STYLE_RESET}: \"${gBrandString}\"\n\n"
+
+  if [[ $gTargetProcessorType -eq 0 && "${gBrandString}" == "Genuine Intel(R) CPU 0000" ]];
+    then
+      _PRINT_MSG "Error:\tUnable to determine CPU model!\n\tUse -p <cpu model> argument for Engineering Samples!"
+      _ABORT
+  fi
 }
 
 #
@@ -3825,15 +3868,17 @@ function _getScriptArguments()
           printf "          Haswell\n"
           printf "          Broadwell\n"
           printf "          Skylake\n"
+          printf "          Kabylake\n"
           printf "       -${STYLE_BOLD}target${STYLE_RESET} CPU type:\n"
           printf "          0 = Sandy Bridge\n"
           printf "          1 = Ivy Bridge\n"
           printf "          2 = Haswell\n"
           printf "          3 = Broadwell\n"
           printf "          4 = Skylake\n"
+          printf "          5 = Kabylake\n"
           printf "       -${STYLE_BOLD}turbo${STYLE_RESET} maximum (turbo) frequency:\n"
           printf "          6300 for Sandy Bridge and Ivy Bridge\n"
-          printf "          8000 for Haswell and Broadwell\n"
+          printf "          8000 for Haswell, Broadwell and greater\n"
           printf "       -${STYLE_BOLD}t${STYLE_RESET}dp [11.5 - 150]\n"
           printf "       -${STYLE_BOLD}w${STYLE_RESET}orkarounds for Ivy Bridge:\n"
           printf "          0 = no workarounds\n"
@@ -3854,6 +3899,7 @@ function _getScriptArguments()
           printf "\nSupported board-id / model combinations for:\n"
           echo -e "--------------------------------------------\n"
 
+          _showSupportedBoardIDsAndModels "Kabylake"
           _showSupportedBoardIDsAndModels "Skylake"
           _showSupportedBoardIDsAndModels "Broadwell"
           _showSupportedBoardIDsAndModels "Haswell"
@@ -3879,7 +3925,9 @@ function _getScriptArguments()
                        ;;
             BROADWELL) _showSupportedBoardIDsAndModels "Broadwell"
                        ;;
-              SKYLAKE)   _showSupportedBoardIDsAndModels "Skylake"
+              SKYLAKE) _showSupportedBoardIDsAndModels "Skylake"
+                       ;;
+             KABYLAKE) _showSupportedBoardIDsAndModels "Kabylake"
                        ;;
           esac
           #
@@ -4165,7 +4213,7 @@ function _getScriptArguments()
 
                   -target) shift
 
-                            if [[ "$1" =~ ^[01234]+$ ]];
+                            if [[ "$1" =~ ^[012345]+$ ]];
                               then
                                 local detectedBridgeType=$gBridgeType
 
@@ -4184,6 +4232,9 @@ function _getScriptArguments()
                                      ;;
                                   4) local bridgeType=$SKYLAKE
                                      local bridgeTypeString="Skylake"
+                                     ;;
+                                  5) local bridgeType=$KABYLAKE
+                                     local bridgeTypeString="Kabylake"
                                      ;;
                                 esac
 
@@ -4500,6 +4551,8 @@ function main()
           ;;
       32) local bridgeTypeString="Skylake"
           ;;
+      64) local bridgeTypeString="Kabylake"
+          ;;
        *) local bridgeTypeString="Unknown"
           ;;
   esac
@@ -4772,9 +4825,12 @@ function main()
        $BROADWELL) local cpuTypeString="09"
                    _initBroadwellSetup
                    ;;
-       $SKYLAKE)   local cpuTypeString="09"
+         $SKYLAKE) local cpuTypeString="09"
                    _initSkylakeSetup
                    ;;
+        $KABYLAKE) local cpuTypeString="09"
+                   _initKabylakeSetup
+;;
   esac
 
   let scopeIndex=0
