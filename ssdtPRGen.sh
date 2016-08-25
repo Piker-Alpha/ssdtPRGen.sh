@@ -3582,11 +3582,9 @@ function _initKabylakeSetup()
     Mac-XXXXXXXXXXXXXXXX) gTargetMacModel="MacBook10,1"
                           ;;
 
-  case $gBoardID in
     Mac-XXXXXXXXXXXXXXXX) gTargetMacModel="MacBookPro14,1"
                           ;;
 
-  case $gBoardID in
     Mac-XXXXXXXXXXXXXXXX) gTargetMacModel="iMac18,1"
                           ;;
   esac
