@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 19.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 19.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=19.3
+gScriptVersion=19.4
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -3795,15 +3795,10 @@ function _checkLibraryDirectory()
         then
           mkdir -p "${gDataPath}"
       fi
-
-      _checkForConfigFile "Versions.cfg"
       #
-      # Is the return value of _checkForConfigFile 1?
+      # Download Versions.cfg so that we can check for new updates.
       #
-      if [[ $? -gt 1 ]];
-        then
-          curl -o "${gDataPath}/Versions.cfg" --silent "${gGitHubContentURL}/Data/Versions.cfg"
-      fi
+      curl -o "${gDataPath}/Versions.cfg" --silent "${gGitHubContentURL}/Data/Versions.cfg"
 
       _checkForConfigFile "Models.cfg"
       #
