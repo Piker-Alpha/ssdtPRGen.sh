@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 19.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 19.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=19.2
+gScriptVersion=19.3
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -264,7 +264,7 @@ let KABYLAKE=64
 #
 # Array with configuration files (used to show version information).
 #
-gProcessorDataConfigFiles=("User Defined.cfg" "Sandy Bridge.cfg" "Ivy Bridge.cfg" "Haswell.cfg" "Broadwell.cfg" "Skylake.cfg" "Kabylake.cfg")
+gProcessorDataConfigFiles=("User Defined" "Sandy Bridge" "Ivy Bridge" "Haswell" "Broadwell" "Skylake" "Kaby Lake")
 
 #
 # Global variable used as target cpu/bridge type.
@@ -2872,6 +2872,69 @@ function _checkForConfigFile
 #--------------------------------------------------------------------------------
 #
 
+function _checkForConfigFileUpdate
+{
+  #
+  # New update available for download?
+  #
+  case $1 in
+      0) if [[ $gLatestDataVersion_Model -gt $gModelDataVersion ]];
+           then
+             return 1
+         fi
+         ;;
+
+      1) return 0
+         ;;
+
+      2) printf "now: ${gSandyBridgeCPUDataVersion}\n"
+         printf "latest: ${gLatestDataVersion_SandyBridge}\n"
+
+         if [[ $gLatestDataVersion_SandyBridge -gt $gSandyBridgeCPUDataVersion ]];
+           then
+             return 1
+         fi
+         ;;
+
+      4) if [[ $gLatestDataVersion_IvyBridge -gt $gIvyBridgeCPUDataVersion ]];
+           then
+             return 1
+         fi
+         ;;
+
+      8) if [[ $gLatestDataVersion_Haswell -gt $gHaswellCPUDataVersion ]];
+           then
+             return 1
+         fi
+         ;;
+
+     16) if [[ $gLatestDataVersion_Broadwell -gt $gBroadwellCPUDataVersion ]];
+           then
+             return 1
+         fi
+         ;;
+
+     32) if [[ $gLatestDataVersion_Skylake -gt $gSkylakeCPUDataVersion ]];
+           then
+             return 1
+         fi
+         ;;
+
+     64) if [[ $gLatestDataVersion_KabyLake -gt $gKabyLakeCPUDataVersion ]];
+           then
+             return 1
+         fi
+         ;;
+  esac
+
+  return 0
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
+
 function _getCPUDataByProcessorNumber
 {
   #
@@ -2900,7 +2963,7 @@ function _getCPUDataByProcessorNumber
            ;;
        32) local cpuSpecLists=("gDesktopSkylakeCPUList[@]" "gMobileSkylakeCPUList[@]" "gServerSkylakeCPUList[@]")
            ;;
-       64) local cpuSpecLists=("gDesktopKabylakeCPUList[@]" "gMobileKabylakeCPUList[@]" "gServerKabylakeCPUList[@]")
+       64) local cpuSpecLists=("gDesktopKabyLakeCPUList[@]" "gMobileKabyLakeCPUList[@]" "gServerKabyLakeCPUList[@]")
            ;;
     esac
 
@@ -2962,116 +3025,63 @@ function _getCPUDataByProcessorNumber
 
     return 0
   }
+
+  let target=1
   #
   # From here on we check/download/load the processor data file(s).
   #
-  if [ -f "${gDataPath}/User Defined.cfg" ];
-    then
-      _debugPrint 'Checking User Defined processor data ...\n'
-      source "${gDataPath}/User Defined.cfg"
-      __searchList $USER_DEFINED
+  for dataFile in "${gProcessorDataConfigFiles[@]}"
+  do
+    _checkForConfigFile "${dataFile}.cfg"
+    #
+    # File not found?
+    #
+    if [[ $? -gt 0 ]];
+      then
+        #
+        # No. Download it.
+        #
+        _PRINT_MSG "Notice: Downloading ${dataFile}.cfg ..."
+		curl -o "${gDataPath}/${dataFile}.cfg" --silent $(echo "${gGitHubContentURL}/Data/${dataFile}.cfg" | sed 's/ /%20/g')
+    fi
 
-      if [[ $? -eq 1 ]];
-        then
-          return
-      fi
-  fi
+    source "${gDataPath}/${dataFile}.cfg"
+    _checkForConfigFileUpdate $target
+    #
+    # New update available?
+    #
+    if [[ $? -gt 0 ]];
+      then
+        #
+        # Yes. Download it.
+        #
+        _PRINT_MSG "Notice: Downloading Update of ${dataFile}.cfg ..."
+        curl -o "${gDataPath}/${dataFile}.cfg" --silent $(echo "${gGitHubContentURL}/Data/${dataFile}.cfg" | sed 's/ /%20/g')
+        source "${gDataPath}/${dataFile}.cfg"
+    fi
 
-  _checkForConfigFile "Sandy Bridge.cfg"
-
-  if [[ $? -eq 1 ]];
-    then
-      _PRINT_MSG "Notice: Downloading Sandy Bridge.cfg ..."
-      curl -o "${gDataPath}/Sandy Bridge.cfg" --silent "${gGitHubContentURL}/Data/Sandy%20Bridge.cfg"
-  fi
-
-  source "${gDataPath}/Sandy Bridge.cfg"
-  _debugPrint "Checking Sandy Bridge processor data ...\n"
-  __searchList $SANDY_BRIDGE
-
-  if (! (( $gTypeCPU )));
-    then
-      _checkForConfigFile "Ivy Bridge.cfg"
-
-      if [[ $? -eq 1 ]];
-        then
-          _PRINT_MSG "Notice: Downloading Ivy Bridge.cfg ..."
-          curl -o "${gDataPath}/Ivy Bridge.cfg" --silent "${gGitHubContentURL}/Data/Ivy%20Bridge.cfg"
-      fi
-
-      source "${gDataPath}/Ivy Bridge.cfg"
-      _debugPrint "Checking Ivy Bridge processor data ...\n"
-      __searchList $IVY_BRIDGE
-
-      if (! (( $gTypeCPU )));
-        then
-          _checkForConfigFile "Haswell.cfg"
-
-          if [[ $? -eq 1  ]];
-            then
-              _PRINT_MSG "Notice: Downloading Haswell.cfg ..."
-              curl -o "${gDataPath}/Haswell.cfg" --silent "${gGitHubContentURL}/Data/Haswell.cfg"
-          fi
-
-          source "${gDataPath}/Haswell.cfg"
-          _debugPrint "Checking Haswell processor data ...\n"
-          __searchList $HASWELL
-
-          if (! (( $gTypeCPU )));
-            then
-              _checkForConfigFile "Broadwell.cfg"
-
-              if [[ $? -eq 1  ]];
-                then
-                  _PRINT_MSG "Notice: Downloading Broadwell.cfg ..."
-                  curl -o "${gDataPath}/Broadwell.cfg" --silent "${gGitHubContentURL}/Data/Broadwell.cfg"
-              fi
-
-              source "${gDataPath}/Broadwell.cfg"
-              _debugPrint "Checking Broadwell processor data ...\n"
-              __searchList $BROADWELL
-
-              if (! (( $gTypeCPU )));
-                then
-                  _checkForConfigFile "Skylake.cfg"
-
-                  if [[ $? -eq 1  ]];
-                    then
-                      _PRINT_MSG "Notice: Downloading Skylake.cfg ..."
-                      curl -o "${gDataPath}/Skylake.cfg" --silent "${gGitHubContentURL}/Data/Skylake.cfg"
-                  fi
-
-                  source "${gDataPath}/Skylake.cfg"
-                  _debugPrint "Checking Skylake processor data ...\n"
-                  __searchList $SKYLAKE
-                  let gCPUDataVersion=gSkylakeCPUDataVersion
-                else
-                  let gCPUDataVersion=gSkylakeCPUDataVersion
-              fi
-            else
-              let gCPUDataVersion=gHaswellCPUDataVersion
-          fi
-        else
-          let gCPUDataVersion=gIvyBridgeCPUDataVersion
-      fi
-    else
-      let gCPUDataVersion=gSandyBridgeCPUDataVersion
-  fi
+    _debugPrint "Checking ${dataFile} processor data ...\n"
+    __searchList $target
+    #
+    # Target processor data located?
+    #
+    if [[ $gTypeCPU -gt 0 ]];
+      then
+        #
+        # Yes. Show version information (helping me to debug issues).
+        #
+        _PRINT_MSG "Version: models.cfg v${gModelDataVersion} / ${gProcessorDataConfigFiles[$gTypeCPU]} v${gCPUDataVersion}\n"
+        return
+    fi
+    #
+    # Next
+    #
+    let target*=2
+  done
   #
-  # Have we founds the processor?
+  # No. The processor data was not found (error out).
   #
-  if (! (( $gTypeCPU )));
-    then
-      #
-      # No. Error out if we failed to locate the processor data.
-      #
-      _exitWithError $PROCESSOR_NUMBER_ERROR $2
-    else
-      #
-      # Yes. Show version information (helping me to debug stuff).
-      #
-      _PRINT_MSG "Version: models.cfg v${gModelDataVersion} / ${gProcessorDataConfigFiles[$gTypeCPU]} v${gCPUDataVersion}\n"
-  fi
+  _exitWithError $PROCESSOR_NUMBER_ERROR $2
 }
 
 
@@ -3567,7 +3577,7 @@ function _initSkylakeSetup()
 #--------------------------------------------------------------------------------
 #
 
-function _initKabylakeSetup()
+function _initKabyLakeSetup()
 {
   #
   # Global variable (re)initialisation.
@@ -3737,6 +3747,10 @@ function _showSupportedBoardIDsAndModels()
 function _checkLibraryDirectory()
 {
   #
+  # Load versions numbers.
+  #
+  source "${gDataPath}/Versions.cfg"
+  #
   # Are we running in the Github project directory?
   #
   if [ $gDeveloperMode -eq 1 ] &&
@@ -3754,6 +3768,7 @@ function _checkLibraryDirectory()
      [ -f Data/Restrictions.cfg ] &&
      [ -f "Data/Sandy Bridge.cfg" ] &&
      [ -f Data/Skylake.cfg ] &&
+     [ -f Data/Versions.cfg ] &&
      [ -d Tools ] &&
      [ -f Tools/extractACPITables.zip ] &&
      [ -f Tools/iasl.zip ] &&
@@ -3779,6 +3794,15 @@ function _checkLibraryDirectory()
       if [ ! -d "${gDataPath}" ];
         then
           mkdir -p "${gDataPath}"
+      fi
+
+      _checkForConfigFile "Versions.cfg"
+      #
+      # Is the return value of _checkForConfigFile 1?
+      #
+      if [[ $? -gt 1 ]];
+        then
+          curl -o "${gDataPath}/Versions.cfg" --silent "${gGitHubContentURL}/Data/Versions.cfg"
       fi
 
       _checkForConfigFile "Models.cfg"
@@ -3897,7 +3921,7 @@ function _getScriptArguments()
           printf "\nSupported board-id / model combinations for:\n"
           echo -e "--------------------------------------------\n"
 
-          _showSupportedBoardIDsAndModels "Kabylake"
+          _showSupportedBoardIDsAndModels "Kaby Lake"
           _showSupportedBoardIDsAndModels "Skylake"
           _showSupportedBoardIDsAndModels "Broadwell"
           _showSupportedBoardIDsAndModels "Haswell"
@@ -3925,7 +3949,7 @@ function _getScriptArguments()
                        ;;
               SKYLAKE) _showSupportedBoardIDsAndModels "Skylake"
                        ;;
-             KABYLAKE) _showSupportedBoardIDsAndModels "Kabylake"
+             KABYLAKE) _showSupportedBoardIDsAndModels "Kaby Lake"
                        ;;
           esac
           #
@@ -4232,7 +4256,7 @@ function _getScriptArguments()
                                      local bridgeTypeString="Skylake"
                                      ;;
                                   5) local bridgeType=$KABYLAKE
-                                     local bridgeTypeString="Kabylake"
+                                     local bridgeTypeString="Kaby Lake"
                                      ;;
                                 esac
 
@@ -4549,7 +4573,7 @@ function main()
           ;;
       32) local bridgeTypeString="Skylake"
           ;;
-      64) local bridgeTypeString="Kabylake"
+      64) local bridgeTypeString="Kaby Lake"
           ;;
        *) local bridgeTypeString="Unknown"
           ;;
@@ -4827,7 +4851,7 @@ function main()
                    _initSkylakeSetup
                    ;;
         $KABYLAKE) local cpuTypeString="09"
-                   _initKabylakeSetup
+                   _initKabyLakeSetup
 ;;
   esac
 
