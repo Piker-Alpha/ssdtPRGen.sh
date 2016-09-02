@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 19.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 19.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=19.4
+gScriptVersion=19.5
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -2850,7 +2850,7 @@ function _checkForConfigFile
       #
       # Yes. Compare the files.
       #
-      if [[ $(cmp "${gDataPath}/${1}" "Data/${1}") ]];
+      if [[ $(cmp -s "${gDataPath}/${1}" "Data/${1}") ]];
         then
           return 2
       fi
@@ -2887,10 +2887,7 @@ function _checkForConfigFileUpdate
       1) return 0
          ;;
 
-      2) printf "now: ${gSandyBridgeCPUDataVersion}\n"
-         printf "latest: ${gLatestDataVersion_SandyBridge}\n"
-
-         if [[ $gLatestDataVersion_SandyBridge -gt $gSandyBridgeCPUDataVersion ]];
+      2) if [[ $gLatestDataVersion_SandyBridge -gt $gSandyBridgeCPUDataVersion ]];
            then
              return 1
          fi
@@ -3046,6 +3043,7 @@ function _getCPUDataByProcessorNumber
     fi
 
     source "${gDataPath}/${dataFile}.cfg"
+
     _checkForConfigFileUpdate $target
     #
     # New update available?
@@ -3747,6 +3745,10 @@ function _showSupportedBoardIDsAndModels()
 function _checkLibraryDirectory()
 {
   #
+  # Download Versions.cfg so that we can check for new updates.
+  #
+  curl -o "${gDataPath}/Versions.cfg" --silent "${gGitHubContentURL}/Data/Versions.cfg"
+  #
   # Load versions numbers.
   #
   source "${gDataPath}/Versions.cfg"
@@ -3796,10 +3798,8 @@ function _checkLibraryDirectory()
           mkdir -p "${gDataPath}"
       fi
       #
-      # Download Versions.cfg so that we can check for new updates.
       #
-      curl -o "${gDataPath}/Versions.cfg" --silent "${gGitHubContentURL}/Data/Versions.cfg"
-
+      #
       _checkForConfigFile "Models.cfg"
       #
       # Is the return value of _checkForConfigFile 1?
