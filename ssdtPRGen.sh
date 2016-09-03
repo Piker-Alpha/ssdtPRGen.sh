@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 19.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 19.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=19.5
+gScriptVersion=19.6
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -2877,49 +2877,61 @@ function _checkForConfigFileUpdate
   #
   # New update available for download?
   #
-  case $1 in
+  case "$1" in
       0) if [[ $gLatestDataVersion_Model -gt $gModelDataVersion ]];
            then
              return 1
          fi
          ;;
 
-      1) return 0
+      1) let gCPUDataVersion=-1
          ;;
 
       2) if [[ $gLatestDataVersion_SandyBridge -gt $gSandyBridgeCPUDataVersion ]];
            then
              return 1
+           else
+             let gCPUDataVersion=$gSandyBridgeCPUDataVersion
          fi
          ;;
 
       4) if [[ $gLatestDataVersion_IvyBridge -gt $gIvyBridgeCPUDataVersion ]];
            then
              return 1
+           else
+             let gCPUDataVersion=$gIvyBridgeCPUDataVersion
          fi
          ;;
 
       8) if [[ $gLatestDataVersion_Haswell -gt $gHaswellCPUDataVersion ]];
            then
              return 1
+           else
+             let gCPUDataVersion=$gHaswellCPUDataVersion
          fi
          ;;
 
      16) if [[ $gLatestDataVersion_Broadwell -gt $gBroadwellCPUDataVersion ]];
            then
              return 1
+           else
+             let gCPUDataVersion=$gBroadwellCPUDataVersion
          fi
          ;;
 
      32) if [[ $gLatestDataVersion_Skylake -gt $gSkylakeCPUDataVersion ]];
            then
              return 1
+           else
+             let gCPUDataVersion=$gSkylakeCPUDataVersion
          fi
          ;;
 
      64) if [[ $gLatestDataVersion_KabyLake -gt $gKabyLakeCPUDataVersion ]];
            then
              return 1
+           else
+             let gCPUDataVersion=$gKabyLakeCPUDataVersion
          fi
          ;;
   esac
@@ -2945,7 +2957,7 @@ function _getCPUDataByProcessorNumber
     # Save default (0) delimiter.
     #
     local ifs=$IFS
-    let targetType=0
+    let cpuType=0
 
     case $1 in
         1) local cpuSpecLists=("gUserDefinedCPUList[@]")
@@ -2966,7 +2978,7 @@ function _getCPUDataByProcessorNumber
 
     for cpuList in "${cpuSpecLists[@]}"
     do
-      let targetType+=1
+      let cpuType+=1
       local targetCPUList=("${!cpuList}")
 
       for cpuData in "${targetCPUList[@]}"
@@ -2986,7 +2998,7 @@ function _getCPUDataByProcessorNumber
             # Make processor data globally available.
             #
             gProcessorData=($cpuData)
-            let gTypeCPU=$targetType
+            let gTypeCPU=$cpuType
             #
             # Is gBridgeType still uninitialised i.e. is argument -target not used?
             #
@@ -3000,7 +3012,7 @@ function _getCPUDataByProcessorNumber
                 fi
             fi
             #
-            # Do we have a custom bclk/bus frequency?
+            # Do we have a custom BCLK/bus frequency?
             #
             if [[ "${#data[@]}" -eq 9 ]];
               then
@@ -3023,7 +3035,8 @@ function _getCPUDataByProcessorNumber
     return 0
   }
 
-  let target=1
+  let arrayIndex=0
+  let targetBridgeType=1
   #
   # From here on we check/download/load the processor data file(s).
   #
@@ -3044,7 +3057,7 @@ function _getCPUDataByProcessorNumber
 
     source "${gDataPath}/${dataFile}.cfg"
 
-    _checkForConfigFileUpdate $target
+    _checkForConfigFileUpdate $targetBridgeType
     #
     # New update available?
     #
@@ -3059,7 +3072,7 @@ function _getCPUDataByProcessorNumber
     fi
 
     _debugPrint "Checking ${dataFile} processor data ...\n"
-    __searchList $target
+    __searchList $targetBridgeType
     #
     # Target processor data located?
     #
@@ -3068,13 +3081,14 @@ function _getCPUDataByProcessorNumber
         #
         # Yes. Show version information (helping me to debug issues).
         #
-        _PRINT_MSG "Version: models.cfg v${gModelDataVersion} / ${gProcessorDataConfigFiles[$gTypeCPU]} v${gCPUDataVersion}\n"
+        _PRINT_MSG "Version: models.cfg v${gModelDataVersion} / ${gProcessorDataConfigFiles[($arrayIndex)]}.cfg v${gCPUDataVersion}\n"
         return
     fi
     #
     # Next
     #
-    let target*=2
+    let arrayIndex+=1
+    let "targetBridgeType <<= 1"
   done
   #
   # No. The processor data was not found (error out).
@@ -4945,10 +4959,16 @@ function main()
       printf "\n${STYLE_BOLD}Compiling:${STYLE_RESET} ssdt_pr.dsl"
       "$gIasl" "$gSsdtPR"
 
+      let iaslStatus=$?
+
+      if [ $iaslStatus -ne 0 ];
+        then
+          _PRINT_MSG "Error: IASL status: ${iaslStatus} (Failed)\n"
+      fi
       #
       # Copy ssdt_pr.aml to /Extra/ssdt.aml (example)
       #
-      if [ $gAutoCopy -eq 1 ];
+      if [[ $iaslStatus -eq 0 && $gAutoCopy -eq 1 ]];
         then
           if [ -f "${gPath}/${gSsdtID}.aml" ];
             then
