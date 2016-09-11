@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 19.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 19.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=19.6
+gScriptVersion=19.7
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -3727,21 +3727,27 @@ function _showSupportedBoardIDsAndModels()
   local targetList=("${!modelDataList}")
 
   printf "${STYLE_BOLD}$1${STYLE_RESET}\n"
-  #
-  # Change delimiter to a colon character.
-  #
-  IFS=":"
-  #
-  # Loop through target list.
-  #
-  for modelData in "${targetList[@]}"
-  do
-    #
-    # Split 'modelData' into array.
-    #
-    local data=($modelData)
-    echo "${data[0]} / ${data[1]}"
-  done
+
+  if [[ "${#targetList[@]}" -gt 1 ]];
+    then
+      #
+      # Change delimiter to a colon character.
+      #
+      IFS=":"
+      #
+      # Loop through target list.
+      #
+      for modelData in "${targetList[@]}"
+      do
+        #
+        # Split 'modelData' into array.
+        #
+        local data=($modelData)
+        echo "${data[0]} / ${data[1]}"
+      done
+    else
+      echo "Mac-XXXXXXXXXXXXXXXX / Undefined"
+  fi
   #
   # Restore the default (0) delimiter.
   #
@@ -4435,8 +4441,8 @@ function main()
   printf "${STYLE_BOLD}Bugs${STYLE_RESET} > https://github.com/Piker-Alpha/ssdtPRGen.sh/issues <\n"
 
   _checkSourceFilename
-  _getScriptArguments "$@"
   _checkLibraryDirectory
+  _getScriptArguments "$@"
   #
   # Fired up with -mode custom?
   #
