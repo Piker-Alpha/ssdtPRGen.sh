@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 19.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 19.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=19.7
+gScriptVersion=19.8
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -4934,6 +4934,7 @@ function main()
       if [[ ${cpu_type:0:2} != $cpuTypeString ]];
         then
           _PRINT_MSG "Warning: 'cpu-type' may be set improperly (0x${cpu_type} instead of 0x${cpuTypeString}${cpu_type:2:2})"
+          printf "\t - Clover users should read https://clover-wiki.zetam.org/Configuration/CPU#cpu_type"
       fi
 
       if [[ $gSystemType -eq 0 ]];
@@ -4953,6 +4954,7 @@ function main()
   if [ $currentSystemType -ne $gSystemType ];
     then
       _PRINT_MSG "Warning: 'system-type' may be set improperly ($currentSystemType instead of $gSystemType)"
+      printf "\t - Clover users should read https://clover-wiki.zetam.org/Configuration/ACPI#acpi_smartups"
   fi
 
   _findIasl
