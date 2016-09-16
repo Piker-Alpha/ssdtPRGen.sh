@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 19.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 19.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=19.8
+gScriptVersion=19.9
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -1704,6 +1704,7 @@ function _getACPIProcessorScope()
   # Local variable definitions/initialisation.
   #
   local filename="/tmp/DSDT.dat"
+  local basename=$(basename "${filename%.*}")
   local variableList=(10,6,40 12,8,42 24,20,40 14,10,44)
   local varList
   local scopeLength
@@ -1759,8 +1760,7 @@ function _getACPIProcessorScope()
 
         if [ $objectCount -gt 0 ];
           then
-            _debugPrint "${objectCount} Name (_HID, \"ACPI0004\") object(s) found in the DSDT\n"
-            _debugPrint "${objectCount} Name (_HID, \"ACPI0004\") object(s) found in the DSDT\n"
+            _debugPrint "${objectCount} Name (_HID, \"ACPI0004\") object(s) found in ${basename}\n"
             _debugPrint "matchingData:\n$matchingData\n"
         fi
         #
@@ -1886,8 +1886,9 @@ function _getProcessorScope()
   # Local variable definitions/initialisation.
   #
   local index=0
-  local filename="/tmp/DSDT.dat"
+  local filename="$1"
   local scopeLength=0
+  local basename=$(basename "${filename%.*}")
   #
   # Target Scopes ('\_PR_', '\_PR', '_PR_', '_PR', '\_SB_', '\_SB', '_SB_', '_SB')
   #
@@ -1938,7 +1939,7 @@ function _getProcessorScope()
                   local scopeDots="..";
               fi
 
-              _debugPrint $objectCount' Scope ('$scopeName') {'$scopeDots'} object(s) found in the DSDT\n'
+              _debugPrint $objectCount" Scope ("$scopeName") {"$scopeDots"} object(s) found in ${basename}\n"
 
               if [[ $index -lt 5 && $scopeName =~ "PR" ]];
                 then
@@ -2017,7 +2018,7 @@ function _getProcessorScope()
                     #
                     let scopeLength="${#scopeObjectData}"
 
-                    printf 'Scope ('$scopeName') {'$scopeLength' bytes} with ACPI Processor declarations found in the DSDT (ACPI 1.0 compliant)\n'
+                    printf "Scope ("$scopeName") {"$scopeLength" bytes} with ACPI Processor declarations found in ${basename} (ACPI 1.0 compliant)\n"
                     #
                     # Construct processor scope name.
                     #
@@ -2212,6 +2213,7 @@ function _initProcessorScope()
   # Local variable declarations.
   #
   local filename="/tmp/DSDT.dat"
+  local basename=$(basename "${filename%.*}")
   local processorDeclarationsFound
   #
   # Local variable initialisation.
@@ -2234,12 +2236,12 @@ function _initProcessorScope()
       #
       # Note: This is not necessarily an error!
       #
-      _debugPrint "Name (_HID, \"ACPI0004\") NOT found in the DSDT\n"
+      _debugPrint "Name (_HID, \"ACPI0004\") NOT found in ${basename}\n"
   fi
   #
   # Search for ACPI v1.0 compliant scopes (like _PR and _PR_).
   #
-  _getProcessorScope
+  _getProcessorScope "${filename}"
   #
   # Do we have a scope with processor declarations in it?
   #
@@ -2255,7 +2257,7 @@ function _initProcessorScope()
       #
       if [[ $(egrep -o '5b83[0-9a-f]{2}04' "$filename") ]];
         then
-          printf 'ACPI Processor {.} Declaration(s) found in DSDT\n'
+          printf 'ACPI Processor {.} Declaration(s) found in ${basename}\n'
           let processorDeclarationsFound=1
         else
           #
@@ -2263,7 +2265,7 @@ function _initProcessorScope()
           #
           if [[ $(egrep -o '5b830b' "$filename") ]];
             then
-              printf 'ACPI Processor {} Declaration(s) found in DSDT\n'
+              printf 'ACPI Processor {} Declaration(s) found in ${basename}\n'
               let processorDeclarationsFound=1
           fi
       fi
@@ -2274,7 +2276,7 @@ function _initProcessorScope()
 
       if [[ $data ]];
         then
-          printf "ACPI Processor {...} Declaration(s) with RootChar ('\\\') found in DSDT"
+          printf "ACPI Processor {...} Declaration(s) with RootChar ('\\\') found in ${basename}"
           gScope="\\"$(echo ${data:10:8} | xxd -r -p)
 
           if [[ $gScope == "\_PR_" ]];
@@ -2296,7 +2298,7 @@ function _initProcessorScope()
 
       if [[ $data ]];
         then
-          printf "ACPI Processor {...} Declaration(s) with DualNamePrefix ('.') found in DSDT"
+          printf "ACPI Processor {...} Declaration(s) with DualNamePrefix ('.') found in ${basename}"
           gScope="\\"$(echo ${data:8:8} | xxd -r -p)
 
           if [[ $gScope == "\_PR_" ]];
@@ -2318,7 +2320,7 @@ function _initProcessorScope()
 
       if [[ $data ]];
         then
-          printf "ACPI Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
+          printf "ACPI Processor {...} Declaration(s) with MultiNamePrefix ('/') found in ${basename}"
 
           let scopeLength=("0x"${data:8:2})*4*2
           local data=$(egrep -o '5b83[0-9a-f]{2}2f[0-9a-f]{'$scopeLength'}' "$filename")
@@ -2345,7 +2347,7 @@ function _initProcessorScope()
 
       if [[ $data ]];
         then
-          printf "ACPI Processor {...} Declaration(s) with MultiNamePrefix ('/') found in DSDT"
+          printf "ACPI Processor {...} Declaration(s) with MultiNamePrefix ('/') found in ${basename}"
 
           let scopeLength=("0x"${data:10:2})*4*2
           local data=$(egrep -o '5b83[0-9a-f]{2}5c2f[0-9a-f]{'$scopeLength'}' "$filename")
@@ -2372,7 +2374,7 @@ function _initProcessorScope()
 
       if [[ $data ]];
         then
-          printf "ACPI Processor {...} Declaration(s) with ParentPrefixChar ('^') found in DSDT\n"
+          printf "ACPI Processor {...} Declaration(s) with ParentPrefixChar ('^') found in ${basename}\n"
           gScope=$(echo ${data:6:2} | xxd -r -p)
 
           # ioreg -w0 -p IOACPIPlane -c IOACPIPlatformDevice -n _SB -r > ~/Library/ssdtPRGen/dsdt2.txt
@@ -2399,7 +2401,7 @@ function _initProcessorScope()
       gScope="\_SB"
   fi
 
-  _PRINT_MSG '\nWarning: No ACPI Processor declarations found in the DSDT!\n\t Using assumed Scope ('$gScope') {}\n'
+  _PRINT_MSG "\nWarning: No ACPI Processor declarations found in ${basename}!\n\t Using assumed Scope ("$gScope") {}\n"
 }
 
 
