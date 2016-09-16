@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 19.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 20.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=19.9
+gScriptVersion=20.0
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -1703,7 +1703,7 @@ function _getACPIProcessorScope()
   #
   # Local variable definitions/initialisation.
   #
-  local filename="/tmp/DSDT.dat"
+  local filename="$1"
   local basename=$(basename "${filename%.*}")
   local variableList=(10,6,40 12,8,42 24,20,40 14,10,44)
   local varList
@@ -1845,7 +1845,7 @@ function _getACPIProcessorScope()
               #
               # Done.
               #
-              return
+              return 1
             else
               #
               #
@@ -1873,6 +1873,8 @@ function _getACPIProcessorScope()
         done
     fi
   done
+
+  return 0
 }
 
 
@@ -2169,6 +2171,22 @@ function _convertACPIFiles()
       local path="${gPath}/ACPI"
   fi
   #
+  # Check SSDT(-n).AML files for scope SCK0.
+  #
+  targetDataFiles=(`grep -l SCK0 ${gPath}/ACPI/SSDT*.aml`)
+  #
+  # Loop through all matchingFilenames.
+  #
+  for match in "${targetDataFiles[@]}"
+  do
+    _debugPrint "matchingFilename: ${match[@]}\n"
+    #
+    # Convert AML file to postscript format.
+    #
+    local filename=$(basename $match)
+    xxd -c 256 -ps "${match}" | tr -d '\n' > "/tmp/${filename%.*}.dat"
+  done
+  #
   # Check for required file DSDT.aml
   #
   if [[ -f "${path}/DSDT.aml" ]];
@@ -2220,9 +2238,28 @@ function _initProcessorScope()
   #
   let processorDeclarationsFound=0
   #
-  # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects.
+  # Loop through all matching files.
   #
-  _getACPIProcessorScope
+  for filename in "${targetDataFiles[@]}"
+    do
+    #
+    # Setup file- and basename.
+    #
+    basename=$(basename "${filename}")
+    filename="/tmp/${basename%.*}.dat"
+
+    _debugPrint "_getACPIProcessorScope: ${filename}\n"
+    #
+    # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects.
+    #
+    _getACPIProcessorScope "${filename}"
+
+    if [ $? -eq 1 ];
+      then
+        _debugPrint "_getACPIProcessorScope: Done.\n"
+        break
+    fi
+  done
   #
   # Did we find any with Processor declarations?
   #
