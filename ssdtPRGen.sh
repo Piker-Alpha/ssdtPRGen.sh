@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 20.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 20.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=20.0
+gScriptVersion=20.1
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -2230,7 +2230,7 @@ function _initProcessorScope()
   #
   # Local variable declarations.
   #
-  local filename="/tmp/DSDT.dat"
+  local filename
   local basename=$(basename "${filename%.*}")
   local processorDeclarationsFound
   #
@@ -2250,7 +2250,7 @@ function _initProcessorScope()
 
     _debugPrint "_getACPIProcessorScope: ${filename}\n"
     #
-    # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects.
+    # Check for Device()s with enclosed Name (_HID, "ACPI0004") objects in SSDT(-*).dat
     #
     _getACPIProcessorScope "${filename}"
 
@@ -2260,6 +2260,16 @@ function _initProcessorScope()
         break
     fi
   done
+  #
+  # Processor declarationsa found?
+  #
+  if [[ $gScope == "" ]];
+    then
+      #
+      # No. Check for Device()s with enclosed Name (_HID, "ACPI0004") objects in DSDT.dat
+      #
+      _getACPIProcessorScope "/tmp/DSDT.dat"
+  fi
   #
   # Did we find any with Processor declarations?
   #
@@ -2543,7 +2553,7 @@ function _checkForExecutableFile()
   #
   #  Check executing bit.
   #
-  _debugPrint "Setting executing bit of ${targetFile} ..."
+  _debugPrint "Setting executing bit of ${targetFile} ...\n"
 
   if [ ! -x "${gToolPath}/${targetFile}" ];
     then
@@ -2554,7 +2564,7 @@ function _checkForExecutableFile()
       chmod +x "${gToolPath}/${targetFile}"
   fi
 
-   _debugPrint "_checkForExecutableFile(${targetFile}) Done."
+   _debugPrint "_checkForExecutableFile(${targetFile}) Done.\n"
 }
 
 #
