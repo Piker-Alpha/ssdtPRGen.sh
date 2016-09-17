@@ -2230,7 +2230,7 @@ function _initProcessorScope()
   #
   # Local variable declarations.
   #
-  local filename "/tmp/DSDT.dat"
+  local filename="/tmp/DSDT.dat"
   local basename=$(basename "${filename%.*}")
   local processorDeclarationsFound
   #
@@ -2268,7 +2268,9 @@ function _initProcessorScope()
       #
       # No. Check for Device()s with enclosed Name (_HID, "ACPI0004") objects in DSDT.dat
       #
-      _getACPIProcessorScope "/tmp/DSDT.dat"
+      filename="/tmp/DSDT.dat"
+      basename=$(basename "${filename%.*}")
+      _getACPIProcessorScope "$filename"
   fi
   #
   # Did we find any with Processor declarations?
