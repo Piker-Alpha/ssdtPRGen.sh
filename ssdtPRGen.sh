@@ -2230,7 +2230,7 @@ function _initProcessorScope()
   #
   # Local variable declarations.
   #
-  local filename
+  local filename "/tmp/DSDT.dat"
   local basename=$(basename "${filename%.*}")
   local processorDeclarationsFound
   #
