@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 20.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 20.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=20.1
+gScriptVersion=20.2
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -80,7 +80,7 @@ let gXcpm=-1
 #
 # Note: Will be changed to 0 in _checkForXCPM() when XCPM mode is detected.
 #
-let gIvyWorkAround=-1
+let gCPUWorkArounds=-1
 
 #
 # Ask for confirmation before copying the new SSDT to the target location.
@@ -587,45 +587,45 @@ function _injectDebugInfo()
   local maxTurboFrequency=$2
   local packageLength=$3
 
-  echo '        Method (_INI, 0, NotSerialized)'                                      >> "$gSsdtPR"
-  echo '        {'                                                                    >> "$gSsdtPR"
-  echo '            Store ("ssdtPRGen version....: '$gScriptVersion' / '$gProductName' '$gProductVersion' ('$gBuildVersion')", Debug)'  >> "$gSsdtPR"
-  echo '            Store ("custom mode..........: '$gCustomMode'", Debug)'           >> "$gSsdtPR"
-  echo '            Store ("host processor.......: '$gBrandString'", Debug)'          >> "$gSsdtPR"
-  echo '            Store ("target processor.....: '$gProcessorNumber'", Debug)'      >> "$gSsdtPR"
-  echo '            Store ("number of processors.: '$gPhysicalCPUs'", Debug)'         >> "$gSsdtPR"
-  echo '            Store ("baseFrequency........: '$gBaseFrequency'", Debug)'        >> "$gSsdtPR"
-  echo '            Store ("frequency............: '$frequency'", Debug)'             >> "$gSsdtPR"
-  echo '            Store ("busFrequency.........: '$gBusFrequency'", Debug)'         >> "$gSsdtPR"
-  echo '            Store ("logicalCPUs..........: '$gLogicalCPUs'", Debug)'          >> "$gSsdtPR"
-  echo '            Store ("maximum TDP..........: '$gTdp'", Debug)'                  >> "$gSsdtPR"
-  echo '            Store ("packageLength........: '$packageLength'", Debug)'         >> "$gSsdtPR"
-  echo '            Store ("turboStates..........: '$turboStates'", Debug)'           >> "$gSsdtPR"
-  echo '            Store ("maxTurboFrequency....: '$maxTurboFrequency'", Debug)'     >> "$gSsdtPR"
+  echo '        Method (_INI, 0, NotSerialized)'                                       >> "$gSsdtPR"
+  echo '        {'                                                                     >> "$gSsdtPR"
+  echo '            Store ("ssdtPRGen version.....: '$gScriptVersion' / '$gProductName' '$gProductVersion' ('$gBuildVersion')", Debug)'  >> "$gSsdtPR"
+  echo '            Store ("custom mode...........: '$gCustomMode'", Debug)'            >> "$gSsdtPR"
+  echo '            Store ("host processor........: '$gBrandString'", Debug)'           >> "$gSsdtPR"
+  echo '            Store ("target processor......: '$gProcessorNumber'", Debug)'       >> "$gSsdtPR"
+  echo '            Store ("number of processors..: '$gPhysicalCPUs'", Debug)'          >> "$gSsdtPR"
+  echo '            Store ("baseFrequency.........: '$gBaseFrequency'", Debug)'         >> "$gSsdtPR"
+  echo '            Store ("frequency.............: '$frequency'", Debug)'              >> "$gSsdtPR"
+  echo '            Store ("busFrequency..........: '$gBusFrequency'", Debug)'          >> "$gSsdtPR"
+  echo '            Store ("logicalCPUs...........: '$gLogicalCPUs'", Debug)'           >> "$gSsdtPR"
+  echo '            Store ("maximum TDP...........: '$gTdp'", Debug)'                   >> "$gSsdtPR"
+  echo '            Store ("packageLength.........: '$packageLength'", Debug)'          >> "$gSsdtPR"
+  echo '            Store ("turboStates...........: '$turboStates'", Debug)'            >> "$gSsdtPR"
+  echo '            Store ("maxTurboFrequency.....: '$maxTurboFrequency'", Debug)'      >> "$gSsdtPR"
   #
-  # Ivy Bridge workarounds requested?
+  # CPU workarounds requested?
   #
-  if [[ $gIvyWorkAround -gt 0 ]];
+  if [[ $gCPUWorkArounds -gt 0 ]];
     then
-       echo '            Store ("IvyWorkArounds.......: '$gIvyWorkAround'", Debug)'   >> "$gSsdtPR"
+          echo '            Store ("CPU Workarounds.......: '$gCPUWorkArounds'", Debug)' >> "$gSsdtPR"
   fi
   #
   # XCPM mode initialised?
   #
   if [[ $gXcpm -ne -1 ]];
     then
-       echo '            Store ("machdep.xcpm.mode....: '$gXcpm'", Debug)'            >> "$gSsdtPR"
+       echo '            Store ("machdep.xcpm.mode.....: '$gXcpm'", Debug)'             >> "$gSsdtPR"
   fi
   #
   # Do we have more than one ACPI processor scope?
   #
   if [[ "${#gScope[@]}" -gt 1 ]];
    then
-      echo '            Store ("number of ACPI scopes: '${#gScope[@]}'", Debug)'      >> "$gSsdtPR"
+      echo '            Store ("number of ACPI scopes.: '${#gScope[@]}'", Debug)'       >> "$gSsdtPR"
   fi
 
-  echo '        }'                                                                    >> "$gSsdtPR"
-  echo ''                                                                             >> "$gSsdtPR"
+  echo '        }'                                                                     >> "$gSsdtPR"
+  echo ''                                                                              >> "$gSsdtPR"
 }
 
 
@@ -683,7 +683,7 @@ function _printScopeStart()
       #
       # Do we need to add additional (Low Frequency) P-States for Ivy Bridge?
       #
-      if (( $gBridgeType == $IVY_BRIDGE && $gIvyWorkAround & 2 ));
+      if (( $gBridgeType == $IVY_BRIDGE && $gCPUWorkArounds & 2 ));
         then
           let lowFrequencyPStates=($gBaseFrequency/100)-8
 
@@ -709,7 +709,7 @@ function _printScopeStart()
           echo "        Name (APLF, Zero)"                                            >> "$gSsdtPR"
       fi
 
-      if (( $gBridgeType == $IVY_BRIDGE && $gIvyWorkAround & 1 ));
+      if (( $gBridgeType == $IVY_BRIDGE && $gCPUWorkArounds & 1 ));
         then
           let useWorkArounds=1
       fi
@@ -767,12 +767,13 @@ function _printScopeStart()
       fi
 
       let extraR=($maxTurboFrequency/$gBusFrequency)+1
-      echo "            /* Workaround for the Ivy Bridge PM 'bug' */"                 >> "$gSsdtPR"
 
       if [ $gBusFrequency -eq 100 ];
         then
+          echo "            /* Workaround for the Ivy Bridge PM 'bug' */"               >> "$gSsdtPR"
           printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x%02X00, 0x%02X00 },\n" $extraF $maxTDP $extraR $extraR >> "$gSsdtPR"
         else
+          echo "            /* Workaround for AppleIntelCPUPowerManagement mode */"     >> "$gSsdtPR"
           printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x00%02X, 0x00%02X },\n" $extraF $maxTDP $extraR $extraR >> "$gSsdtPR"
       fi
   fi
@@ -837,7 +838,7 @@ function _printPackages()
   #
   # Do we need to add additional (Low Frequency) P-States for Ivy Bridge?
   #
-  if (( $gBridgeType == $IVY_BRIDGE && $gIvyWorkAround & 2 ));
+  if (( $gBridgeType == $IVY_BRIDGE && $gCPUWorkArounds & 2 ));
     then
       let minRatio=8
   fi
@@ -912,7 +913,7 @@ function _printPackages()
 
 function _printMethodDSM()
 {
-  if [[ $gBridgeType -ge $IVY_BRIDGE || $gXcpm -eq 1 ]];
+  if [[ ($gBridgeType -ge $IVY_BRIDGE && $gBusFrequency -eq 100) || $gXcpm -eq 1 ]];
     then
       #
       # New stand-alone version of Method _DSM - Copyright (c) 2009 by Master Chief
@@ -946,8 +947,10 @@ function _printMethodDSM()
       echo '                One'                                                          >> "$gSsdtPR"
       echo '            })'                                                               >> "$gSsdtPR"
       echo '        }'                                                                    >> "$gSsdtPR"
-      echo '    }'                                                                        >> "$gSsdtPR"
   fi
+
+  echo '    }'                                                                            >> "$gSsdtPR"
+
 }
 
 
@@ -3316,12 +3319,12 @@ function _checkForXCPM()
           #
           # Is XCPM mode active/ -x 1 argument used?
           #
-          if [[ $gXcpm -eq 1 && $gIvyWorkAround -gt 0 ]];
+          if [[ $gXcpm -eq 1 && $gCPUWorkArounds -gt 0 ]];
             then
               #
               # Yes. Disable Ivy Bridge workarounds.
               #
-              let gIvyWorkAround=-1
+              let gCPUWorkArounds=-1
               #
               # Is the target processor an Ivy Bridge one?
               #
@@ -3968,7 +3971,7 @@ function _getScriptArguments()
           printf "          6300 for Sandy Bridge and Ivy Bridge\n"
           printf "          8000 for Haswell, Broadwell and greater\n"
           printf "       -${STYLE_BOLD}t${STYLE_RESET}dp [11.5 - 150]\n"
-          printf "       -${STYLE_BOLD}w${STYLE_RESET}orkarounds for Ivy Bridge:\n"
+          printf "       -${STYLE_BOLD}c${STYLE_RESET}ompatibility workarounds:\n"
           printf "          0 = no workarounds\n"
           printf "          1 = inject extra (turbo) P-State at the top with maximum (turbo) frequency + 1 MHz\n"
           printf "          2 = inject extra P-States at the bottom\n"
@@ -4387,14 +4390,14 @@ function _getScriptArguments()
                       fi
                       ;;
 
-                  -w) shift
+                  -c) shift
 
                       if [[ "$1" =~ ^[0123]+$ ]];
                         then
-                          if [[ $gIvyWorkAround -ne $1 ]];
+                          if [[ $gCPUWorkArounds -ne $1 ]];
                             then
-                              let gIvyWorkAround=$1
-                              _PRINT_MSG "Override value: (-w) Ivy Bridge workarounds, now set to: ${1}!"
+                              let gCPUWorkArounds=$1
+                              _PRINT_MSG "Override value: (-c) CPU workarounds, now set to: ${1}!"
                           fi
                           #
                           # Running on Sandy Bridge platform?
@@ -4408,7 +4411,7 @@ function _getScriptArguments()
                               _PRINT_MSG "Override value: CPU type changed, now using: Ivy Bridge!"
                           fi
                         else
-                          _invalidArgumentError "-w $1"
+                          _invalidArgumentError "-c $1"
                       fi
                       ;;
 
@@ -4763,13 +4766,13 @@ function main()
       #
       # Check Ivy Bridge, XCPM mode and if -w argument is used.
       #
-      if [[ $gBridgeType -eq $IVY_BRIDGE && $gXcpm -eq -1 && $gIvyWorkAround -eq -1 ]];
+      if [[ $gBridgeType -eq $IVY_BRIDGE && $gXcpm -eq -1 && $gCPUWorkArounds -eq -1 ]];
         then
           if [[ $gOSVersion -gt 10100 ]];
             then
-              let gIvyWorkAround=3;
+              let gCPUWorkArounds=3;
             else
-              let gIvyWorkAround=2;
+              let gCPUWorkArounds=2;
           fi
       fi
     else
