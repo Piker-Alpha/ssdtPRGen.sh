@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 20.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 20.3 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=20.2
+gScriptVersion=20.3
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -685,7 +685,7 @@ function _printScopeStart()
       #
       if (( $gBridgeType == $IVY_BRIDGE && $gCPUWorkArounds & 2 ));
         then
-          let lowFrequencyPStates=($gBaseFrequency/100)-8
+          let lowFrequencyPStates=($gBaseFrequency/100)-7
 
           if [[ $lowFrequencyPStates -lt 0 ]];
             then
@@ -770,7 +770,7 @@ function _printScopeStart()
 
       if [ $gBusFrequency -eq 100 ];
         then
-          echo "            /* Workaround for the Ivy Bridge PM 'bug' */"               >> "$gSsdtPR"
+          echo '            /* CPU Workaround #1 */'                                  >> "$gSsdtPR"
           printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x%02X00, 0x%02X00 },\n" $extraF $maxTDP $extraR $extraR >> "$gSsdtPR"
         else
           echo "            /* Workaround for AppleIntelCPUPowerManagement mode */"     >> "$gSsdtPR"
@@ -840,7 +840,7 @@ function _printPackages()
   #
   if (( $gBridgeType == $IVY_BRIDGE && $gCPUWorkArounds & 2 ));
     then
-      let minRatio=8
+      let minRatio=7
   fi
 
   if (( $turboStates ));
@@ -858,6 +858,11 @@ function _printPackages()
     if [ $frequency -eq $maxNonTurboFrequency ];
       then
         echo '            /* High Frequency Modes (non-turbo) */'                     >> "$gSsdtPR"
+    fi
+
+    if (( $ratio == $minRatio && $gBridgeType == $IVY_BRIDGE && $gCPUWorkArounds & 2 ));
+      then
+        echo '            /* CPU Workaround #2 */'                                    >> "$gSsdtPR"
     fi
 
     printf "            Package (0x06) { 0x%04X, " $frequency                         >> "$gSsdtPR"
@@ -4764,7 +4769,7 @@ function main()
           fi
       fi
       #
-      # Check Ivy Bridge, XCPM mode and if -w argument is used.
+      # Check Ivy Bridge, XCPM mode and if -c argument is used.
       #
       if [[ $gBridgeType -eq $IVY_BRIDGE && $gXcpm -eq -1 && $gCPUWorkArounds -eq -1 ]];
         then
