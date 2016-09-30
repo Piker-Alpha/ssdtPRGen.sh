@@ -3842,7 +3842,7 @@ function _checkLibraryDirectory()
      [ -f Data/Broadwell.cfg ] &&
      [ -f Data/Haswell.cfg ] &&
      [ -f "Data/Ivy bridge.cfg" ] &&
-     [ -f "Data/Kabylake.cfg" ] &&
+     [ -f "Data/Kaby lake.cfg" ] &&
      [ -f Data/Models.cfg ] &&
      [ -f Data/Restrictions.cfg ] &&
      [ -f "Data/Sandy Bridge.cfg" ] &&
