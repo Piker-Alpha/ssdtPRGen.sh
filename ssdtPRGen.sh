@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 20.4 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 20.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=20.4
+gScriptVersion=20.5
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -1661,9 +1661,14 @@ function _checkForProcessorDeclarations()
           if [[ $processorIsEnabled -eq 1 || $overrideProcessorEnableState -eq 1 ]];
             then
               #
-              # Yes it is (may be overriden).
+              # Yes it is (may be overriden). Check shell for invocation of sh ssdtPRGen.sh (see issue #279).
               #
-              processorLabel=$(echo -e "\x${processorDeclaration:${vars[0]}:2}\x${processorDeclaration:${vars[1]}:2}\x${processorDeclaration:${vars[2]}:2}\x${processorDeclaration:${vars[3]}:2}")
+              if [[ $BASH =~ "/bin/bash" ]];
+                then
+                  processorLabel=$(echo -e "\x${processorDeclaration:${vars[0]}:2}\x${processorDeclaration:${vars[1]}:2}\x${processorDeclaration:${vars[2]}:2}\x${processorDeclaration:${vars[3]}:2}")
+                else
+                  processorLabel=$(echo "\x${processorDeclaration:${vars[0]}:2}\x${processorDeclaration:${vars[1]}:2}\x${processorDeclaration:${vars[2]}:2}\x${processorDeclaration:${vars[3]}:2}")
+              fi
 
               _debugPrint "processorID: ${processorID} $processorLabel\n"
 
@@ -5037,7 +5042,7 @@ function main()
         then
           if [ -f "${gPath}/${gSsdtID}.aml" ];
             then
-              echo -e
+              echo ""
               read -p "Do you want to copy ${gPath}/${gSsdtID}.aml to ${gDestinationPath}${gDestinationFile}? (y/n)? " choice
               case "$choice" in
                   y|Y ) if [[ $gIsLegacyRevoBoot -eq 0 ]];
