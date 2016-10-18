@@ -114,7 +114,7 @@ The processor data for your processor may not (yet) be available, and this is â€
 Bugs
 ----
 
-All bugs, so called 'issues', should be filed [here] (https://github.com/Piker-Alpha/ssdtPRGen.sh/issues). If the script fails to generate a SSDT then please attach the output of: ./ssdtPRGen.sh -d 2 and compressed: ~/Library/ssdtPRGen/ACPI folder.
+All bugs, so called 'issues', should be filed [here] (https://github.com/Piker-Alpha/ssdtPRGen.sh/issues). If the script fails to generate a SSDT then please attach the output of: ./ssdtPRGen.sh -d 2 and compressed: ~/Library/ssdtPRGen/ACPI folder. If you are using processor data from Data/User Defined.cfg then I also need to know what that data is. 
 
 Please do **not** use my blog for this. Thank you!
 
