@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 20.5 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 20.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=20.5
+gScriptVersion=20.6
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -1580,7 +1580,7 @@ function _checkForProcessorDeclarations()
   local processorDeclarationLenth
   local overrideProcessorEnableState
 
-  local variableList=(6,8,10,12,14,20 8,10,12,14,16,22)
+  local variableList=(16,18,20,22,24,30 6,8,10,12,14,20 8,10,12,14,16,22)
 
   let overrideProcessorEnableState=0
   let enabledProcessorsPerScope=0
@@ -1621,7 +1621,7 @@ function _checkForProcessorDeclarations()
         #
         #
         #
-        if [[ $deviceName ]];
+        if [[ ${#deviceName} -gt 0 ]];
           then
 #          _debugPrint "Device ($gScope/$deviceName): \n"
            _debugPrint "Device ($deviceName): \n"
