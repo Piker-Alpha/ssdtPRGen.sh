@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 20.6 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 20.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=20.6
+gScriptVersion=20.7
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -3984,7 +3984,7 @@ function _getScriptArguments()
           printf "          1 = inject extra (turbo) P-State at the top with maximum (turbo) frequency + 1 MHz\n"
           printf "          2 = inject extra P-States at the bottom\n"
           printf "          3 = both\n"
-          printf "       -${STYLE_BOLD}x${STYLE_RESET}cpm mode:\n"
+          printf "       -${STYLE_BOLD}x${STYLE_RESET}cpm mode [0-1]:\n"
           printf "          0 = XCPM mode disabled\n"
           printf "          1 = XCPM mode enabled\n\n"
           #
