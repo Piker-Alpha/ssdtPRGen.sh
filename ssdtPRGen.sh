@@ -4423,7 +4423,7 @@ function _getScriptArguments()
                       fi
                       ;;
 
-                  -x) shift
+                  -x|-xcpm) shift
 
                       if [[ "$1" =~ ^[01]+$ ]];
                         then
