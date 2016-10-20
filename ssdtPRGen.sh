@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 20.7 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 20.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=20.7
+gScriptVersion=20.8
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -1924,12 +1924,25 @@ function _getProcessorScope()
     for typeEncoding in "${byteEncodingList[@]}"
     do
       #
-      # "10[0-9a-f]{2}${grepPattern}"
-      # "10[0-9a-f]{4}${grepPattern}"
-      # "10[0-9a-f]{6}${grepPattern}"
-      # "10[0-9a-f]{8}${grepPattern}"
+      # "528310[0-9a-f]{2}${grepPattern}"
+      # "528310[0-9a-f]{4}${grepPattern}"
+      # "528310[0-9a-f]{6}${grepPattern}"
+      # "528310[0-9a-f]{8}${grepPattern}"
       #
-      local data=$(egrep -o "${AML_SCOPE_OPCODE}[0-9a-f]{${typeEncoding}}${grepPattern}" "$filename")
+      local data=$(egrep -o "${AML_PROCESSOR_SCOPE_OPCODE}${AML_SCOPE_OPCODE}[0-9a-f]{${typeEncoding}}${grepPattern}" "$filename")
+      let patternLengthCorrection=0
+
+      if [[ ${#data} -eq 0 ]];
+        then
+          #
+          # "10[0-9a-f]{2}${grepPattern}"
+          # "10[0-9a-f]{4}${grepPattern}"
+          # "10[0-9a-f]{6}${grepPattern}"
+          # "10[0-9a-f]{8}${grepPattern}"
+          #
+          local data=$(egrep -o "${AML_SCOPE_OPCODE}[0-9a-f]{${typeEncoding}}${grepPattern}" "$filename")
+          let patternLengthCorrection=2
+      fi
 
       if [[ $data ]];
         then
@@ -1980,8 +1993,7 @@ function _getProcessorScope()
             #
             # Get number of characters in grep pattern.
             #
-#           let grepPatternLength="${#AML_SCOPE_OPCODE}+$typeEncoding+${#grepPattern}"
-            let grepPatternLength="${#AML_SCOPE_OPCODE}+$typeEncoding+${#grepPattern}-2"
+            let grepPatternLength="${#AML_SCOPE_OPCODE}+$typeEncoding+${#grepPattern}-${patternLengthCorrection}"
             #
             # Lower scopeLength with the number of characters that we used for the match.
             #
@@ -5001,7 +5013,7 @@ function main()
 
       if [[ $gSystemType -eq 0 ]];
         then
-          _PRINT_MSG "Warning: 'board-id' [${gBoardID}] is not supported by ${bridgeTypeString} power management"
+          _PRINT_MSG "\nWarning: 'board-id' [${gBoardID}] is not supported by ${bridgeTypeString} power management"
         else
           if [ "${gTargetMacModel}" == "" ];
             then
