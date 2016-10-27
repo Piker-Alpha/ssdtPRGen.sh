@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 20.8 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 20.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=20.8
+gScriptVersion=20.9
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -78,9 +78,7 @@ let gXcpm=-1
 # 2 - Injects N extra Turbo P-States at the bottom.
 # 3 - Injects both of them.
 #
-# Note: Will be changed to 0 in _checkForXCPM() when XCPM mode is detected.
-#
-let gCPUWorkArounds=-1
+let gCPUWorkArounds=0
 
 #
 # Ask for confirmation before copying the new SSDT to the target location.
@@ -709,7 +707,7 @@ function _printScopeStart()
           echo "        Name (APLF, Zero)"                                            >> "$gSsdtPR"
       fi
 
-      if (( $gBridgeType == $IVY_BRIDGE && $gCPUWorkArounds & 1 ));
+      if [[ $gBridgeType -eq $IVY_BRIDGE && $gCPUWorkArounds -gt 0 ]];
         then
           let useWorkArounds=1
       fi
@@ -952,8 +950,9 @@ function _printMethodDSM()
       echo '                One'                                                          >> "$gSsdtPR"
       echo '            })'                                                               >> "$gSsdtPR"
       echo '        }'                                                                    >> "$gSsdtPR"
-      echo '    }'                                                                        >> "$gSsdtPR"
   fi
+
+  echo '    }'                                                                            y>> "$gSsdtPR"
 }
 
 
@@ -3344,7 +3343,7 @@ function _checkForXCPM()
               #
               # Yes. Disable Ivy Bridge workarounds.
               #
-              let gCPUWorkArounds=-1
+              let gCPUWorkArounds=0
               #
               # Is the target processor an Ivy Bridge one?
               #
@@ -4786,7 +4785,7 @@ function main()
       #
       # Check Ivy Bridge, XCPM mode and if -c argument is used.
       #
-      if [[ $gBridgeType -eq $IVY_BRIDGE && $gXcpm -eq -1 && $gCPUWorkArounds -eq -1 ]];
+      if [[ $gBridgeType -eq $IVY_BRIDGE && $gXcpm -eq -1 && $gCPUWorkArounds -eq 0 ]];
         then
           if [[ $gOSVersion -gt 10100 ]];
             then
