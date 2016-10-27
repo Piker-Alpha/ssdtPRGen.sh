@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 20.9 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 21.0 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=20.9
+gScriptVersion=21.0
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -950,9 +950,11 @@ function _printMethodDSM()
       echo '                One'                                                          >> "$gSsdtPR"
       echo '            })'                                                               >> "$gSsdtPR"
       echo '        }'                                                                    >> "$gSsdtPR"
+      echo '    }'                                                                        >> "$gSsdtPR"
+    elif [[ $gBridgeType -gt $SANDY_BRIDGE ]];
+      then
+        echo '    }'                                                                      >> "$gSsdtPR"
   fi
-
-  echo '    }'                                                                            >> "$gSsdtPR"
 }
 
 
