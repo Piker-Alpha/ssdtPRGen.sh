@@ -952,7 +952,7 @@ function _printMethodDSM()
       echo '        }'                                                                    >> "$gSsdtPR"
   fi
 
-  echo '    }'                                                                            y>> "$gSsdtPR"
+  echo '    }'                                                                            >> "$gSsdtPR"
 }
 
 
