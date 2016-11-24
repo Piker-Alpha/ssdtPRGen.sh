@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 21.1 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 21.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=21.1
+gScriptVersion=21.2
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -707,7 +707,7 @@ function _printScopeStart()
           echo "        Name (APLF, Zero)"                                            >> "$gSsdtPR"
       fi
 
-      if [[ $gBridgeType -eq $IVY_BRIDGE && $gCPUWorkArounds -gt 0 ]];
+      if [[ $gBridgeType -eq $IVY_BRIDGE && ($gCPUWorkArounds -eq 1 || $gCPUWorkArounds -eq 3) ]];
         then
           let useWorkArounds=1
       fi
@@ -768,7 +768,7 @@ function _printScopeStart()
 
       if [ $gBusFrequency -eq 100 ];
         then
-          echo '            /* CPU Workaround #1 */'                                  >> "$gSsdtPR"
+          echo '            /* CPU Workaround #1 */'                                    >> "$gSsdtPR"
           printf "            Package (0x06) { 0x%04X, 0x%06X, 0x0A, 0x0A, 0x%02X00, 0x%02X00 },\n" $extraF $maxTDP $extraR $extraR >> "$gSsdtPR"
         else
           echo "            /* Workaround for AppleIntelCPUPowerManagement mode */"     >> "$gSsdtPR"
