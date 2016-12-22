@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 21.2 - Copyright (c) 2014 by Pike <PikeRAlpha@yahoo.com>
+# Version 21.3 - Copyright (c) 2014-2016 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -3597,9 +3597,6 @@ function _initBroadwellSetup()
                           ;;
 
     Mac-BE0E8AC46FE800CC) gTargetMacModel="MacBook8,1"
-                          ;;
-
-    Mac-F305150B0C7DEEEF) gTargetMacModel="MacBook8,2"
                           ;;
 
     Mac-A369DDC4E67F1C45) gSystemType=1
