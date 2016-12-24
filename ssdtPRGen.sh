@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 21.3 - Copyright (c) 2014-2016 by Pike <PikeRAlpha@yahoo.com>
+# Version 21.4 - Copyright (c) 2014-2016 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=21.2
+gScriptVersion=21.4
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -2686,7 +2686,7 @@ function _checkSourceFilename
   #
   # Check for RevoBoot (legacy) setup on root volume.
   #
-  if [[ -d /Extra/ACPI && -d /Extra/EFI ]];
+  if [[ -d "/Extra/ACPI" && -d "/Extra/EFI" ]];
     then
       let gIsLegacyRevoBoot=1
 
@@ -5066,7 +5066,7 @@ function main()
       #
       if [[ $iaslStatus -eq 0 && $gAutoCopy -eq 1 ]];
         then
-          if [ -f "${gPath}/${gSsdtID}.aml" ];
+          if [[ -f "${gPath}/${gSsdtID}.aml" && -d "${gDestinationPath}" ]];
             then
               echo ""
               read -p "Do you want to copy ${gPath}/${gSsdtID}.aml to ${gDestinationPath}${gDestinationFile}? (y/n)? " choice
