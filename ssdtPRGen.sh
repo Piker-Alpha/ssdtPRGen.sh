@@ -3367,7 +3367,7 @@ function _checkForXCPM()
     #
     # Yes. Inform user to use inter-processor interrupt power management.
     #
-    _PRINT_MSG "\n\nWarning: You must use the -xcpm_ipi flag instead of -xcpm on multiprocessor systems.\n\n\n"
+    _PRINT_MSG "\n\nWarning: You must use the -xcpm_ipi boot argument instead of -xcpm on multiprocessor systems.\n\n\n"
   fi
 }
 
