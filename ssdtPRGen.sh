@@ -4,7 +4,7 @@
 #
 # Version 0.9 - Copyright (c) 2012 by RevoGirl
 #
-# Version 21.4 - Copyright (c) 2014-2016 by Pike <PikeRAlpha@yahoo.com>
+# Version 21.5 - Copyright (c) 2014-2017 by Pike <PikeRAlpha@yahoo.com>
 #
 # Readme......: https://github.com/Piker-Alpha/ssdtPRGen.sh/blob/master/README.md
 #
@@ -25,7 +25,7 @@
 #
 # Script version info.
 #
-gScriptVersion=21.4
+gScriptVersion=21.5
 
 #
 # GitHub branch to pull data from (master or Beta).
@@ -3689,13 +3689,13 @@ function _initKabyLakeSetup()
   # Overrides are set below.
   #
   case $gBoardID in
-    Mac-XXXXXXXXXXXXXXXX) gTargetMacModel="MacBook10,1"
+    Mac-B4831CEBD52A0C4C) gTargetMacModel="MacBookPro14,1"
                           ;;
 
-    Mac-XXXXXXXXXXXXXXXX) gTargetMacModel="MacBookPro14,1"
+    Mac-CAD6701F7CEA0921) gTargetMacModel="MacBookPro14,2"
                           ;;
 
-    Mac-XXXXXXXXXXXXXXXX) gTargetMacModel="iMac18,1"
+    Mac-551B86E5744E2388) gTargetMacModel="MacBookPro14,3"
                           ;;
   esac
 }
