@@ -4476,6 +4476,7 @@ function _getScriptArguments()
   fi
 }
 
+
 #
 #--------------------------------------------------------------------------------
 #
@@ -4497,13 +4498,14 @@ function _checkLFMCompatibility()
 
     if [[ "$boardID" == "$gBoardID" ]];
       then
-        _PRINT_MSG "\nNotice: The LFM frequency in $gBoardID.plist is set to 1300MHz!"
-        printf "\tThis problem can be fixed with help of freqVectorsEdit.sh from:\n"
+        _PRINT_MSG "\nNotice: The LFM frequency in $gBoardID.plist is set to 1300 MHz!"
+        printf "\tThis restriction can be lifted with help of freqVectorsEdit.sh from:\n"
         printf "\thttps://github.com/Piker-Alpha/freqVectorsEdit.sh\n\n"
         return
     fi
   done
 }
+
 
 #
 #--------------------------------------------------------------------------------
