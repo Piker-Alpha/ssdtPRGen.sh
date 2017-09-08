@@ -3697,6 +3697,21 @@ function _initKabyLakeSetup()
 
     Mac-551B86E5744E2388) gTargetMacModel="MacBookPro14,3"
                           ;;
+
+    Mac-EE2EBD4B90B839A8) gTargetMacModel="MacBook10,1"
+                          ;;
+
+    Mac-4B682C642B45593E) gSystemType=1
+                          gTargetMacModel="iMac18,1"
+                          ;;
+
+    Mac-77F17D7DA9285301) gSystemType=1
+                          gTargetMacModel="iMac18,2"
+                          ;;
+
+    Mac-BE088AF8C5EB4FA2) gSystemType=1
+                          gTargetMacModel="iMac18,3"
+                          ;;
   esac
 }
 
