@@ -3821,7 +3821,7 @@ function _showSupportedBoardIDsAndModels()
                     ;;
            Skylake) local modelDataList="gSkylakeModelData[@]"
                     ;;
-          Kabylake) local modelDataList="gKabylakeModelData[@]"
+       'Kaby Lake') local modelDataList="gKabyLakeModelData[@]"
                      ;;
   esac
   #
