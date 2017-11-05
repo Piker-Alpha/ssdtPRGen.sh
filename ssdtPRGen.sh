@@ -258,11 +258,12 @@ let HASWELL=8
 let BROADWELL=16
 let SKYLAKE=32
 let KABYLAKE=64
+let COFFEELAKE=128
 
 #
 # Array with configuration files (used to show version information).
 #
-gProcessorDataConfigFiles=("User Defined" "Sandy Bridge" "Ivy Bridge" "Haswell" "Broadwell" "Skylake" "Kaby Lake")
+gProcessorDataConfigFiles=("User Defined" "Sandy Bridge" "Ivy Bridge" "Haswell" "Broadwell" "Skylake" "Kaby Lake" "Coffee Lake")
 
 #
 # Global variable used as target cpu/bridge type.
@@ -3009,6 +3010,14 @@ function _checkForConfigFileUpdate
              let gCPUDataVersion=$gKabyLakeCPUDataVersion
          fi
          ;;
+
+     128) if [[ $gLatestDataVersion_CoffeeLake -gt $gCoffeeLakeCPUDataVersion ]];
+           then
+             return 1
+           else
+             let gCPUDataVersion=$gCoffeeLakeCPUDataVersion
+         fi
+         ;;
   esac
 
   return 0
@@ -3048,6 +3057,8 @@ function _getCPUDataByProcessorNumber
        32) local cpuSpecLists=("gDesktopSkylakeCPUList[@]" "gMobileSkylakeCPUList[@]" "gServerSkylakeCPUList[@]")
            ;;
        64) local cpuSpecLists=("gDesktopKabyLakeCPUList[@]" "gMobileKabyLakeCPUList[@]" "gServerKabyLakeCPUList[@]")
+           ;;
+       128) local cpuSpecLists=("gDesktopCoffeeLakeCPUList[@]" "gMobileCoffeeLakeCPUList[@]" "gServerCoffeeLakeCPUList[@]")
            ;;
     esac
 
@@ -3720,6 +3731,49 @@ function _initKabyLakeSetup()
 #--------------------------------------------------------------------------------
 #
 
+function _initCoffeeLakeSetup()
+{
+  #
+  # Global variable (re)initialisation.
+  #
+  gSystemType=2
+  gACST_CPU0=253  # C1, C3, C6, C7, C8, C9 and C10
+  gACST_CPU1=31   # C1, C2, C3, C6 and C7
+  #
+  # Overrides are set below.
+  #
+  case $gBoardID in
+    Mac-B4831CEBD52A0C4C) gTargetMacModel="MacBookPro14,1"
+                          ;;
+
+    Mac-CAD6701F7CEA0921) gTargetMacModel="MacBookPro14,2"
+                          ;;
+
+    Mac-551B86E5744E2388) gTargetMacModel="MacBookPro14,3"
+                          ;;
+
+    Mac-EE2EBD4B90B839A8) gTargetMacModel="MacBook10,1"
+                          ;;
+
+    Mac-4B682C642B45593E) gSystemType=1
+                          gTargetMacModel="iMac18,1"
+                          ;;
+
+    Mac-77F17D7DA9285301) gSystemType=1
+                          gTargetMacModel="iMac18,2"
+                          ;;
+
+    Mac-BE088AF8C5EB4FA2) gSystemType=1
+                          gTargetMacModel="iMac18,3"
+                          ;;
+  esac
+}
+
+
+#
+#--------------------------------------------------------------------------------
+#
+
 function _exitWithError()
 {
   case "$1" in
@@ -3823,6 +3877,8 @@ function _showSupportedBoardIDsAndModels()
                     ;;
        'Kaby Lake') local modelDataList="gKabyLakeModelData[@]"
                      ;;
+       'Coffee Lake') local modelDataList="gCoffeeLakeModelData[@]"
+                     ;;
   esac
   #
   # Split 'modelDataList' into array.
@@ -3889,6 +3945,7 @@ function _checkLibraryDirectory()
      [ -f Data/Haswell.cfg ] &&
      [ -f "Data/Ivy bridge.cfg" ] &&
      [ -f "Data/Kaby lake.cfg" ] &&
+     [ -f "Data/Coffee lake.cfg" ] &&
      [ -f Data/Models.cfg ] &&
      [ -f Data/Restrictions.cfg ] &&
      [ -f "Data/Sandy Bridge.cfg" ] &&
@@ -4009,6 +4066,7 @@ function _getScriptArguments()
           printf "          Broadwell\n"
           printf "          Skylake\n"
           printf "          Kabylake\n"
+          printf "          Coffeelake\n"
           printf "       -${STYLE_BOLD}target${STYLE_RESET} CPU type:\n"
           printf "          0 = Sandy Bridge\n"
           printf "          1 = Ivy Bridge\n"
@@ -4016,6 +4074,7 @@ function _getScriptArguments()
           printf "          3 = Broadwell\n"
           printf "          4 = Skylake\n"
           printf "          5 = Kabylake\n"
+          printf "          6 = Coffeelake\n"
           printf "       -${STYLE_BOLD}turbo${STYLE_RESET} maximum (turbo) frequency:\n"
           printf "          6300 for Sandy Bridge and Ivy Bridge\n"
           printf "          8000 for Haswell, Broadwell and greater\n"
@@ -4039,6 +4098,7 @@ function _getScriptArguments()
           printf "\nSupported board-id / model combinations for:\n"
           echo -e "--------------------------------------------\n"
 
+          _showSupportedBoardIDsAndModels "Coffee Lake"
           _showSupportedBoardIDsAndModels "Kaby Lake"
           _showSupportedBoardIDsAndModels "Skylake"
           _showSupportedBoardIDsAndModels "Broadwell"
@@ -4068,6 +4128,8 @@ function _getScriptArguments()
               SKYLAKE) _showSupportedBoardIDsAndModels "Skylake"
                        ;;
              KABYLAKE) _showSupportedBoardIDsAndModels "Kaby Lake"
+                       ;;
+             COFFEELAKE) _showSupportedBoardIDsAndModels "Coffee Lake"
                        ;;
           esac
           #
@@ -4144,12 +4206,12 @@ function _getScriptArguments()
 
                   -cpus) shift
 
-                      if [[ "$1" =~ ^[1-4]+$ ]];
+                      if [[ "$1" =~ ^[1-6]+$ ]];
                         then
                           #
                           # Sanity checking.
                           #
-                          if [[ $1 -gt 0 && $1 -lt 5 ]];
+                          if [[ $1 -gt 0 && $1 -lt 7 ]];
                             then
                               let gPhysicalCPUs=$1
                               _PRINT_MSG "Override value: (-cpus) number of processors, now using: ${1}!"
@@ -4375,6 +4437,9 @@ function _getScriptArguments()
                                      ;;
                                   5) local bridgeType=$KABYLAKE
                                      local bridgeTypeString="Kaby Lake"
+                                     ;;
+                                  6) local bridgeType=$COFFEELAKE
+                                     local bridgeTypeString="Coffee Lake"
                                      ;;
                                 esac
 
@@ -4972,7 +5037,10 @@ function main()
                    ;;
         $KABYLAKE) local cpuTypeString="09"
                    _initKabyLakeSetup
-;;
+                   ;;
+        $COFFEELAKE) local cpuTypeString="10"
+                   _initCoffeeLakeSetup
+                   ;;
   esac
 
   let scopeIndex=0
